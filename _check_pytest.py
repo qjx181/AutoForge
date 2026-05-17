@@ -1,0 +1,2 @@
+import pytest
+print(f"pytest version: {pytest.__version__}")
