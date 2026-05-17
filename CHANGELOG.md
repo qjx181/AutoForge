@@ -13,41 +13,9 @@
 - 完成: 执行 Round 1 状态审计
 - 摘要: 协调者状态审计，检测到 7 个待办任务
 
-## Round 2 — 20260515_210001
-- 完成: 执行 Round 2 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 3 — 20260515_213002
-- 完成: 执行 Round 3 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 4 — 20260515_220002
-- 完成: 执行 Round 4 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 5 — 20260516_080001
-- 完成: 执行 Round 5 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 6 — 20260516_083001
-- 完成: 执行 Round 6 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 7 — 20260516_090001
-- 完成: 执行 Round 7 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 8 — 20260516_100001
-- 完成: 执行 Round 8 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 9 — 20260516_103002
-- 完成: 执行 Round 9 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
-
-## Round 10 — 20260516_110001
-- 完成: 执行 Round 10 状态审计
-- 摘要: 协调者状态审计，检测到 5 个待办任务
+## Round 2~10 — 20260515_210001 ~ 20260516_110001（空转期，已合并）
+- 状态: Hermes cronjob 空转 9 轮，仅执行状态审计未执行实质开发
+- 修复: Round 12 重建 cronjob 后恢复正常
 
 ## Round 11 — 20260516_111306 (Swarm 进化首轮)
 - 完成: 更新 README.md 补充架构说明, 创建 git-safe-commit SKILL, 创建 cross-skill-learning SKILL, 实现 swarm_health.py 心跳检测
@@ -70,3 +38,11 @@
 - 审查: B队 Agent 5 审查评分 8.5/10, 发现 1 个高危(JSON序列化容错)+3 个中危(线程安全/异常保护), 协调者修复后合并
 - 修复: JsonFormatter json.dumps 加 default=str + try/except; log() 加 try/except 保护; handlers 遍历用 list() 快照防并发; 删除死代码 _extra_local; .gitignore 排除 logs/ 目录
 - 摘要: A 队 Agent 1 实现 swarm_logger.py 日志记录工具 —— 支持 DEBUG~CRITICAL 5 级别、TEXT/JSON 双输出格式、按文件大小自动轮转、可配置路径和级别、结构化 extra 字段。B 队审查发现 7 个问题(1 高危、3 中危、3 低危)，协调者修复关键问题后合并。同步完善 .gitignore 排除 logs/ 目录并移除已跟踪的日志文件。swarm_logger 现可被其他模块直接 import 使用。push 失败（国内网络），本地 commit 已完成。
+
+## Round 14 — 20260517_202000
+- 完成: 为全部 3 个核心模块（swarm_utils / swarm_logger / swarm_health）编写完整 pytest 单元测试
+- 新增: test_swarm_utils.py（16测试）、test_swarm_logger.py（35测试）、test_swarm_health.py（41测试）—— 共 92 个测试全部通过
+- 审查: B队 Agent 5 审查评分 9.3/10, 裁决 PASS（仅 2 个 cosmetic/minor 问题），无需修改直接合并
+- 清理: 合并 Round 2~10 空转条目为单条记录
+- 里程碑: 所有初始 TODO 任务全部完成
+- 摘要: Round 14 完成单元测试体系建设——使用 pytest + tmp_path fixture 为 swarm_utils.py（文件读写工具）、swarm_logger.py（结构化日志）、swarm_health.py（心跳检测）三个模块编写了 92 个单元测试，覆盖正常路径、边界条件、异常情况和 CLI 入口。测试使用临时目录避免污染项目文件系统。B 队审查高度评价（9.3/10），无阻塞问题直接合并。至此所有初始 TODO 任务全部标记为完成。push 失败（国内网络），本地 commit 已完成。

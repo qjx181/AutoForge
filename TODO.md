@@ -1,19 +1,21 @@
 # TODO — 待办任务
 
 ## Priority: HIGH
-- [x] 实现 `swarm_utils.py` 基础工具函数集（包含文件读写、日志辅助函数）
-- [x] 更新 README.md 补充架构说明
+- [ ] 实现 `swarm_config.py` 配置管理系统 — YAML 驱动的 Agent 行为、路径、轮次配置管理
 
 ## Priority: MEDIUM
-- [x] 实现 `swarm_logger.py` 日志记录工具
-- [x] 创建一个 SKILL 描述如何安全地提交 Git
+- [ ] 实现 `swarm_metrics.py` 指标收集模块 — 轮次计时、任务完成率、问题频率追踪
+- [ ] 为所有现有模块补全类型注解（PEP 484）
 
 ## Priority: LOW
-- [x] 设计 Agent 互相学习的交叉 Skill 导入机制
-- [x] 设计心跳检测机制，确认每个 Agent 健康运行
+- [ ] 编写集成测试，模拟完整 A→B→Git 闭环流程
 
-## 下一批任务（可选的）
-- [x] 实现 `swarm_logger.py` 日志记录工具
-- [ ] 添加单元测试覆盖率
-- [x] 完善 .gitignore（排除 tmp_agent/ logs/）
-- [ ] 定期清理空转的 CHANGELOG 条目（Round 2-10）
+---
+
+## Round 15+ 进入第二阶段：可观测性与基础设施
+
+所有初始任务已完成后，进入系统的第二个进化阶段：
+1. **配置管理** — 将硬编码参数抽离到 YAML 配置
+2. **可观测性** — 追踪轮次、任务、问题数据
+3. **类型安全** — 全模块类型注解
+4. **集成测试** — 端到端流程验证
