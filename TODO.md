@@ -2,7 +2,7 @@
 
 ## Priority: HIGH
 - [ ] **集成监控仪表盘** — 利用 `swarm_metrics.py` 的数据生成可读的 HTML 监控面板，展示轮次耗时、任务完成率、问题分布等关键指标
-- [ ] **swarm_config.yaml 示例文件** — 创建标准化的 `config.yaml` 示例配置文件，集成 `swarm_config.py` + `swarm_logger.py` 的配置
+- [x] **swarm_config.yaml 示例文件** — 创建标准化的 `config.yaml` 示例配置文件，集成 `swarm_config.py` + `swarm_logger.py` 的配置
 
 ## Priority: MEDIUM
 - [ ] 为所有现有模块补全类型注解（PEP 484）— `swarm_metrics.py` + `swarm_logger.py` + `swarm_health.py`
@@ -10,7 +10,7 @@
 
 ## Priority: LOW
 - [ ] 编写集成测试，模拟完整 A→B→Git 闭环流程
-- [ ] 清理临时测试脚手架文件（`_verify_swarm_metrics.py` 等）
+- [x] 清理临时测试脚手架文件（`_verify_swarm_metrics.py` 等）
 
 ---
 

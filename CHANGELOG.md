@@ -55,3 +55,11 @@
 - 新增: swarm_metrics.py（完整指标收集模块）, swarm_config.py 首次被 git 跟踪（此前未被提交过）
 - 更新: TODO.md 进入第三阶段——可观测性与基础设施深化（监控仪表盘/配置集成/通知模块/类型注解）
 - 摘要: Round 15 实现指标收集模块——A 队 Agent 1 使用 DeepSeek 实现覆盖 5 个组件类的完整 API（start_round/end_round/record_task/record_issue/save/load/generate_report），B 队审查发现 2 个运行时崩溃风险（#E001: import sys 在 `__main__` 内导致 NameError；#E002: dict.get() None 值引发 TypeError）和 4 个设计问题。协调者修复关键问题后合并。swarm_config.py（785 行）也首次被纳入版本控制——此前已完成但未提交过。TODO 进入第三阶段，新增 4 个新任务。push 失败（国内网络），本地 commit 已完成。
+
+## Round 16 — 20260517_221500
+- 完成: 创建 config.yaml 标准化示例配置文件（208行），集成 swarm_config.py + swarm_logger.py + swarm_metrics.py 的配置
+- 新增: config.yaml（208行）— 包含 swarm/agents/logger/metrics/git 5个配置模块，所有字段均有详细英文注释和类型说明
+- 审查: B队 Agent 5 审查评分 100/100，PASS，无任何问题
+- 决策: 直接合并
+- 清理: 排除 A 队遗留的 check_yaml.py 临时验证文件，仅保留 config.yaml 到 Git
+- 摘要: Round 16 创建标准化 YAML 示例配置文件——A 队 Agent 1 实现覆盖 swarm/agents/logger/metrics/git 5 个模块、20 个字段的完整 YAML 配置示例，每个字段附带类型/默认值/用途注释。B 队审查满分通过（100/100），无阻塞问题直接合并。push 失败（credential issue），本地 commit 已完成。
