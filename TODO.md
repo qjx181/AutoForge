@@ -5,7 +5,7 @@
 - [x] 更新 README.md 补充架构说明
 
 ## Priority: MEDIUM
-- [ ] 实现 `swarm_logger.py` 日志记录工具
+- [x] 实现 `swarm_logger.py` 日志记录工具
 - [x] 创建一个 SKILL 描述如何安全地提交 Git
 
 ## Priority: LOW

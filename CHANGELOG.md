@@ -63,3 +63,10 @@
 - 新增: tmux daemon (hermes-swarm) 已启动常驻
 - 同步: TODO.md 更新反映真实进度（git-safe-commit/cross-skill-learning/swarm_health 标记为完成）
 - 摘要: 修复项目三核心问题 —— Hermes cronjob 从 5月15日22:02 后停止工作, Round 6-10 空转。删除旧 cronjob 重建为带 skills (orchestrate-swarm/dev-cell/qa-cell) 和完整 prompt 的版本。手动验证一轮 A→B→Git 闭环通过。tmux daemon 已启动让 cronjob 可以自动触发。
+
+## Round 13 — 20260517_194100
+- 完成: 实现 swarm_logger.py 结构化日志记录工具
+- 新增: swarm_logger.py (436行) — SwarmLogger 类, 5级日志, TEXT/JSON 双格式, RotatingFileHandler 文件轮转, **extra 结构化字段, CLI 入口
+- 审查: B队 Agent 5 审查评分 8.5/10, 发现 1 个高危(JSON序列化容错)+3 个中危(线程安全/异常保护), 协调者修复后合并
+- 修复: JsonFormatter json.dumps 加 default=str + try/except; log() 加 try/except 保护; handlers 遍历用 list() 快照防并发; 删除死代码 _extra_local
+- 摘要: A 队 Agent 1 实现 swarm_logger.py 日志记录工具 —— 支持 DEBUG~CRITICAL 5 级别、TEXT/JSON 双输出格式、按文件大小自动轮转、可配置路径和级别、结构化 extra 字段。B 队审查发现 7 个问题(1 高危、3 中危、3 低危)，协调者修复关键问题后合并。swarm_logger 现可被其他模块直接 import 使用。push 失败（国内网络），本地 commit 已完成。
