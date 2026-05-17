@@ -46,3 +46,12 @@
 - 清理: 合并 Round 2~10 空转条目为单条记录
 - 里程碑: 所有初始 TODO 任务全部完成
 - 摘要: Round 14 完成单元测试体系建设——使用 pytest + tmp_path fixture 为 swarm_utils.py（文件读写工具）、swarm_logger.py（结构化日志）、swarm_health.py（心跳检测）三个模块编写了 92 个单元测试，覆盖正常路径、边界条件、异常情况和 CLI 入口。测试使用临时目录避免污染项目文件系统。B 队审查高度评价（9.3/10），无阻塞问题直接合并。至此所有初始 TODO 任务全部标记为完成。push 失败（国内网络），本地 commit 已完成。
+
+## Round 15 — 20260517_213400
+- 完成: 实现 swarm_metrics.py 指标收集模块（1073行），包含 RoundTimer/TaskTracker/IssueTracker/MetricsStore/MetricsReporter 五个核心组件 + SwarmMetrics 聚合类
+- 修复: 回溯标记 TODO.md 中实际已完成的 swarm_config.py 为 [x]
+- 审查: B队 Agent 5 审查评分 7.5/10, 裁定 NEEDS_FIXES（2 ERROR + 4 WARNING + 4 INFO）
+- 修复: 协调者修复 2 个 ERROR（import sys 作用域错误 + duration_sec None 值类型错误）后合并
+- 新增: swarm_metrics.py（完整指标收集模块）, swarm_config.py 首次被 git 跟踪（此前未被提交过）
+- 更新: TODO.md 进入第三阶段——可观测性与基础设施深化（监控仪表盘/配置集成/通知模块/类型注解）
+- 摘要: Round 15 实现指标收集模块——A 队 Agent 1 使用 DeepSeek 实现覆盖 5 个组件类的完整 API（start_round/end_round/record_task/record_issue/save/load/generate_report），B 队审查发现 2 个运行时崩溃风险（#E001: import sys 在 `__main__` 内导致 NameError；#E002: dict.get() None 值引发 TypeError）和 4 个设计问题。协调者修复关键问题后合并。swarm_config.py（785 行）也首次被纳入版本控制——此前已完成但未提交过。TODO 进入第三阶段，新增 4 个新任务。push 失败（国内网络），本地 commit 已完成。
