@@ -1,5 +1,0 @@
-[2026-05-17 19:44:39] [DEBUG   ] [swarm] 这是一条 DEBUG 日志（仅当级别 ≤ DEBUG 时可见）
-[2026-05-17 19:44:39] [INFO    ] [swarm] 这是一条 INFO 日志
-[2026-05-17 19:44:39] [WARNING ] [swarm] 这是一条 WARNING 日志  [component=auth]  [component=auth]  [component=auth]
-[2026-05-17 19:44:39] [ERROR   ] [swarm] 这是一条 ERROR 日志  [service=db | host=10.0.0.1]  [service=db | host=10.0.0.1]  [service=db | host=10.0.0.1]
-[2026-05-17 19:44:39] [CRITICAL] [swarm] 这是一条 CRITICAL 日志  [panic=True]  [panic=True]  [panic=True]

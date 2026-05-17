@@ -1,4 +1,0 @@
-[2026-05-17 19:48:41] [INFO    ] [test] test message
-[2026-05-17 19:48:41] [WARNING ] [test] test warning  [component=auth]  [component=auth]
-{"timestamp": "2026-05-17T11:48:41.469185+00:00", "level": "ERROR", "name": "test", "message": "json error", "module": "(unknown file)", "function": null, "line": 0, "extra": {"service": "db"}}
-{"timestamp": "2026-05-17T11:48:41.469588+00:00", "level": "DEBUG", "name": "test", "message": "debug test", "module": "swarm_logger", "function": "log", "line": 307}

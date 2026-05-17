@@ -1,6 +1,7 @@
 # 忽略临时工作产物
 tmp_agent/
 heartbeats/
+logs/
 __pycache__/
 *.pyc
 *.pyo
