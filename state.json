@@ -10,5 +10,18 @@
   "retry_counts": {},
   "paused_due_to_conflict": false,
   "paused_due_to_error": false,
-  "manual_intervention_needed": false
+  "manual_intervention_needed": false,
+  "cost_tracker": {
+    "current_task_id": null,
+    "estimated_tokens": 0,
+    "actual_tokens": 0,
+    "ratio": 0.0,
+    "status": "normal"
+  },
+  "completed_task_ids": [],
+  "disk_status": {
+    "available_mb": 0,
+    "logs_dir_size_mb": 0,
+    "warning": null
+  }
 }
