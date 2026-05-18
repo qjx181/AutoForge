@@ -74,7 +74,7 @@
     74|  依赖: 无
     75|  预估 token 量: 2500
     76|
-    77|- [ ] 任务ID: aggressive_truncation_by_tokens
+    77|- [x] 任务ID: aggressive_truncation_by_tokens
     78|  描述: 将结果截断从字符数改为按 token 数截断，使用更激进的策略
     79|  验收标准:
     80|    - 使用近似分词（如 tiktoken 或自定义 token 估算）替代字符数切片
@@ -87,7 +87,7 @@
     87|
     88|## Priority: MEDIUM
     89|
-    90|- [ ] 任务ID: introduce_jieba_tokenizer
+    90|- [x] 任务ID: introduce_jieba_tokenizer
     91|  描述: 引入 jieba 分词替换 BM25 的 .split() 空格分词，提升中文召回率
     92|  验收标准:
     93|    - data_loader.py 中 tokenize() 使用 jieba.lcut 替代 .split()
@@ -100,7 +100,7 @@
    100|
    101|## Priority: LOW
    102|
-   103|- [ ] 任务ID: tune_cache_params
+   103|- [x] 任务ID: tune_cache_params
    104|  描述: 调优 lru_cache 模块级缓存大小参数（如 cached_encode maxsize=8192）
    105|  验收标准:
    106|    - 分析各缓存的热点数据量，为每个缓存设置匹配的 maxsize
@@ -115,5 +115,5 @@
    115|
    116|- [x] 恢复 cronjob（swarm-evolve-round）
    117|- [x] 启动 tmux daemon（hermes-swarm）
-   118|- [ ] 配置 round 结束后自动 push 到 GitHub
+   118|- [x] 配置 round 结束后自动 push 到 GitHub
    119|
