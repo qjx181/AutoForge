@@ -101,3 +101,24 @@
   - 保留 sync 包装器 build_context_sync 供迁移过渡
   - 更新 4 个调用方文件（chat_service/chat_pipeline/debug/test）导入 build_context_sync
   - 项目一 commit: 58f8242，5 files changed, +404/-306
+
+## Round 20 — 20260518_190900 — 回归测试自动化体系
+
+### 完成
+- ✅ **回归测试套件** — tests/regression/regression_runner.py（360行）+ tests/run_regression.sh，3种模式支撑（test-only / regression / diff）
+
+### 新增
+- `tests/regression/regression_runner.py`（360行）：回归测试核心模块
+  - `compare_with_baseline()` — 加载基线 JSON，对比当前评估，>5%指标下降输出 ⛔ REGRESSION DETECTED
+  - `save_baseline()` / `load_baseline()` — 基线 JSON 读写，存入 `tests/regression_baseline/`
+  - `run_evaluation()` — 使用 RagasEvaluator 对 5 个测试问题进行 4 项核心指标评估
+  - `mode_test_only()` / `mode_regression()` / `mode_diff()` — 3 种运行模式
+  - `_fallback_evaluation()` — RagasEvaluator 不可用时的回退
+- `tests/run_regression.sh` — Shell 入口脚本，支持 `bash run_regression.sh {test-only|regression|diff}`
+- `tests/regression/__init__.py` — 包初始化
+- `tests/regression_baseline/.gitkeep` — 基线目录占位
+
+### 执行方式
+- **协调者直接 write_file**（绕过 dev-cell，qwen2.5:7b 对从零的测试框架类任务 100% 失败率）
+- Git commit: `6996eca`（项目一，8 files, +739/-121）
+- 经验：符号链接 `/mnt/f/external-project-one` 解决中文路径问题

@@ -37,15 +37,16 @@
   依赖: build_ragas_evaluator（已存在，基于它做集成）
   预估 token 量: 3500
 
-- [ ] 任务ID: add_regression_test_suite
+- [x] 任务ID: add_regression_test_suite
   描述: 搭建回归测试自动化体系，每次修改前后对比核心指标，指标下降超过 5% 自动标记回归
   验收标准:
-    - run_tests.sh 或 Makefile 支持 3 种模式：test-only / regression / diff
-    - regression 模式下加载基线 JSON，运行测试后对比
-    - 任何指标下降 > 5% 时输出 ⛔ REGRESSION DETECTED 并列出具体指标
-    - 基线缓存在 tests/regression_baseline/ 目录
-  依赖: build_ragas_evaluator（需要其报告格式才能实现对比）
+    - ✅ run_tests.sh 支持 3 种模式：test-only / regression / diff
+    - ✅ regression 模式下加载基线 JSON，运行测试后对比
+    - ✅ 任何指标下降 > 5% 时输出 ⛔ REGRESSION DETECTED 并列出具体指标
+    - ✅ 基线缓存在 tests/regression_baseline/ 目录
+  依赖: build_ragas_evaluator（已基于其格式）
   预估 token 量: 2500
+  实际完成: Round 20 — 协调者直接 write_file，Git commit 6996eca
 
 - [ ] 任务ID: add_stress_test_suite
   描述: 编写压力测试套件，验证系统在 50 并发下的 P95 响应时间 < 10s，成功率 > 95%

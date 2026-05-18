@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-05-18T15:58:45.477934",
+  "total_failed": 0,
+  "total_completed": 3,
+  "permanently_failed": 0,
+  "keyword_analysis": {},
+  "error_type_analysis": {},
+  "category_success_rate": {
+    "debug": {
+      "failed": 0,
+      "estimated_total": 1,
+      "failure_rate": 0.0
+    },
+    "feature": {
+      "failed": 0,
+      "estimated_total": 1,
+      "failure_rate": 0.0
+    },
+    "test": {
+      "failed": 0,
+      "estimated_total": 1,
+      "failure_rate": 0.0
+    }
+  },
+  "injection_text": "",
+  "high_risk_keywords": []
+}

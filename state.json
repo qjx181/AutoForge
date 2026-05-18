@@ -1,10 +1,10 @@
 {
-  "current_round": 19,
+  "current_round": 20,
   "step": "done",
   "project_one_step": "done",
   "project_three_step": "done",
-  "started_at": "2026-05-18 13:43:37",
-  "completed_at": "2026-05-18 15:19:00",
+  "started_at": "2026-05-18 19:09:00",
+  "completed_at": "2026-05-18 19:11:00",
   "last_error": null,
   "conflict_files": [],
   "retry_counts": {},
@@ -12,25 +12,24 @@
   "paused_due_to_error": false,
   "manual_intervention_needed": false,
   "cost_tracker": {
-    "current_task_id": null,
-    "estimated_tokens": 0,
-    "actual_tokens": 0,
-    "ratio": 0.0,
+    "current_task_id": "add_regression_test_suite",
+    "estimated_tokens": 2500,
+    "actual_tokens": 3000,
+    "ratio": 1.2,
     "status": "normal",
     "tier": "green",
-    "dollar_spent_today": 0.0,
+    "dollar_spent_today": 0.15,
     "dollar_limit": 5.0
   },
   "completed_task_ids": [
     "build_ragas_evaluator",
     "add_rate_limit_tests",
-    "add_milvus_pool_tests"
+    "add_milvus_pool_tests",
+    "add_regression_test_suite"
   ],
   "in_progress_tasks": [],
   "permanently_failed": [],
-  "blocked_tasks": [
-    "add_regression_test_suite"
-  ],
+  "blocked_tasks": [],
   "error_patterns": [],
   "failed_tasks": [],
   "blacklist_hits": [],
@@ -59,12 +58,12 @@
   "recovery_at": null,
   "daily_budget": {
     "dollar_limit": 5.0,
-    "dollar_spent_today": 0.0,
+    "dollar_spent_today": 0.15,
     "date": "2026-05-18",
     "readonly_mode": false,
     "last_budget_warning": null,
     "tier": "green",
-    "tier_reason": "当日花费 $0.00 < $2.00，正常调度"
+    "tier_reason": "当日花费 $0.15 < $2.00，正常调度"
   },
   "disk_status": {
     "available_mb": 0,
