@@ -1,27 +1,46 @@
-# TODO — 待办任务
+# TODO — 项目三护航任务：持续改进项目一
+
+> 项目三现在的工作目标：用 swarm 自主驱动对项目一的持续改进和优化。
+> 项目一目录：`C:\Users\qjx\Desktop\agent-自进化版\项目一cursor版本\在线部分\`
 
 ## Priority: HIGH
-- [ ] **集成监控仪表盘** — 利用 `swarm_metrics.py` 的数据生成可读的 HTML 监控面板，展示轮次耗时、任务完成率、问题分布等关键指标
-- [x] **swarm_config.yaml 示例文件** — 创建标准化的 `config.yaml` 示例配置文件，集成 `swarm_config.py` + `swarm_logger.py` 的配置
+
+- [ ] **Phase 3 — RAGAS 测试体系**
+  - [ ] 搭建 RAGAS 评估框架（context_precision / context_recall / faithfulness / answer_relevancy）
+  - [ ] 回归测试自动化（修改前后指标对比，核心指标下降>5%标记回归）
+  - [ ] 压力测试（50并发 P95<10s，成功率>95%）
+
+- [ ] **新增模块补测试**
+  - [ ] middleware/rate_limit.py — TokenBucket + Semaphore 单元测试
+  - [ ] milvus_pool.py — 连接池初始化测试
+  - [ ] services/retrieval_cache.py — Redis 缓存读写测试
+  - [ ] services/knowledge_store.py — 聊天知识库沉淀/检索测试
+  - [ ] services/chat_service.py — 流式聊天编排测试
 
 ## Priority: MEDIUM
-- [ ] 为所有现有模块补全类型注解（PEP 484）— `swarm_metrics.py` + `swarm_logger.py` + `swarm_health.py`
-- [ ] 实现 `swarm_notifier.py` 通知模块 — 轮次完成/失败时的通知回调机制（支持 stdout/文件/日志）
+
+- [ ] **代码清理**
+  - [ ] `chat_service.py` 和 `chat_pipeline.py` 二选一，删除重复代码
+  - [ ] 检查旧版 `milvus.py` 是否可删除（已被 `milvus_pool.py` 替代）
+  - [ ] `services/session.py` 与 `services/session_service.py` 清理
+
+- [ ] **BM25 分词优化**
+  - [ ] 当前 `tokenize()` 只用 `.split()` 按空格分词，中文效果差
+  - [ ] 考虑引入 jieba 分词提升 BM25 召回效果
+
+- [ ] **路由层异步化补全**
+  - [ ] routes/session.py 从 sync def 改为 async def
+  - [ ] routes/auth.py 从 sync def 改为 async def
 
 ## Priority: LOW
-- [ ] 编写集成测试，模拟完整 A→B→Git 闭环流程
-- [x] 清理临时测试脚手架文件（`_verify_swarm_metrics.py` 等）
+
+- [ ] `lru_cache` 模块级缓存大小参数调优（`cached_encode maxsize=8192` 等）
+- [ ] bm25_top_k=20 与 Reranker 输入截断 12 的匹配性确认
 
 ---
 
-## Round 15+ 进入第三阶段：可观测性与基础设施深化
+## 项目三自身维护
 
-已完成第二阶段核心模块：
-1. ✅ **配置管理** — `swarm_config.py` 配置管理系统（YAML+环境变量+校验）
-2. ✅ **可观测性** — `swarm_metrics.py` 指标收集模块（轮次计时/任务追踪/问题统计/持久化/报告生成）
-
-第三阶段目标：
-1. **监控可视化** — 将指标数据转化为可读工作面板
-2. **配置集成** — 统一所有模块的配置入口
-3. **通知机制** — 轮次完成/失败的通知回调
-4. **持续质量** — 类型注解、集成测试、脚手架清理
+- [x] 恢复 cronjob（swarm-evolve-round）
+- [x] 启动 tmux daemon（hermes-swarm）
+- [ ] 配置 round 结束后自动 push 到 GitHub

@@ -1,59 +1,62 @@
 #!/usr/bin/env python3
-"""cron_trigger.py — 系统 cron 触发器，每 30 分钟调用 hermes 执行一轮自我进化。
+"""cron_trigger.py — 系统 cron 触发器。
 
-使用方式（添加系统 cron）：
-   crontab -e
-   添加一行：*/30 * * * * /usr/bin/python3 /mnt/f/项目三：多Agent/cron_trigger.py >> /mnt/f/项目三：多Agent/logs/cron.log 2>&1
+作用：每30分钟由系统 crontab 触发一次。
+为什么：Hermes cronjob 是主要的 A→B→Git 调度器，
+本脚本作为 backup 确保 Git 兜底和状态日志。
 
-注意：这个脚本需要 Hermes Agent 的提供者（当前对话的模型）能够正常访问。
-它通过 hermes CLI 发起一个自我进化循环的请求。
+逻辑：
+1. 记录触发时间
+2. 调用 self_evolve_round.py 做 Git 后勤
+3. 检查 Hermes cronjob 是否存活
 """
 
-import datetime
-import os
+import logging
 import subprocess
 import sys
+from datetime import datetime
+from pathlib import Path
 
-WORKDIR = "/mnt/f/项目三：多Agent"
-TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_DIR = os.path.join(WORKDIR, "logs")
-os.makedirs(LOG_DIR, exist_ok=True)
-LOG_FILE = os.path.join(LOG_DIR, f"cron_{TIMESTAMP}.log")
+SWARM_DIR = Path("/mnt/f/项目三：多Agent")
+LOG_DIR = SWARM_DIR / "logs"
 
-
-def log(msg: str) -> None:
-    line = f"[{TIMESTAMP}] {msg}"
-    print(line)
-    with open(LOG_FILE, "a") as f:
-        f.write(line + "\n")
-
-
-def run_self_evolve() -> bool:
-    """执行 self_evolve_round.py（Git 提交 + 状态检查）。"""
-    log("执行 self_evolve_round.py...")
-    result = subprocess.run(
-        [sys.executable, os.path.join(WORKDIR, "self_evolve_round.py")],
-        capture_output=True, text=True, cwd=WORKDIR, timeout=600
-    )
-    if result.stdout:
-        log(f"stdout: {result.stdout.strip()[-200:]}")
-    if result.returncode != 0:
-        log(f"错误: exit={result.returncode}, {result.stderr[-200:]}")
-        return False
-    return True
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+    ],
+)
+logger = logging.getLogger("cron_trigger")
 
 
 def main():
-    log("=" * 50)
-    log("系统 cron 触发 — 自我进化循环")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    logger.info("=" * 50)
+    logger.info("Cron 触发器启动 — %s", timestamp)
+    logger.info("=" * 50)
 
-    success = run_self_evolve()
-
-    if success:
-        log("完成 ✅")
+    # 1. 运行后勤脚本
+    script_path = SWARM_DIR / "self_evolve_round.py"
+    if script_path.exists():
+        logger.info("执行后勤脚本...")
+        result = subprocess.run(
+            ["python3", str(script_path)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.stdout:
+            for line in result.stdout.strip().split("\n"):
+                logger.info("  %s", line)
+        if result.stderr:
+            logger.warning("  stderr: %s", result.stderr.strip())
+        logger.info("后勤脚本退出码: %d", result.returncode)
     else:
-        log("失败 ❌")
-    log("=" * 50)
+        logger.warning("脚本不存在: %s", script_path)
+
+    logger.info("=" * 50)
+    logger.info("Cron 触发器完成 — %s", timestamp)
 
 
 if __name__ == "__main__":

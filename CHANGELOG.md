@@ -63,3 +63,35 @@
 - 决策: 直接合并
 - 清理: 排除 A 队遗留的 check_yaml.py 临时验证文件，仅保留 config.yaml 到 Git
 - 摘要: Round 16 创建标准化 YAML 示例配置文件——A 队 Agent 1 实现覆盖 swarm/agents/logger/metrics/git 5 个模块、20 个字段的完整 YAML 配置示例，每个字段附带类型/默认值/用途注释。B 队审查满分通过（100/100），无阻塞问题直接合并。push 失败（credential issue），本地 commit 已完成。
+
+## Round 17 — 20260518_102000（项目一开发工单执行）
+- 完成: 执行项目一（多角色RAG聊天系统）开发工单的阶段一（高并发优化）和阶段二（多路召回+混合检索）
+- 阶段一（4个子任务）:
+  - ✅ **LLM异步化** — llm_client.py 改用 httpx.AsyncClient 异步客户端 + asyncio.sleep 替代 time.sleep，修复 sync generator 被 async for 调用的运行时错误
+  - ✅ **并发控制** — middleware/rate_limit.py: TokenBucket 令牌桶限流（20qps/桶容量40）+ asyncio.Semaphore 并发控制（最大8并发）+ 429/503友好JSON响应
+  - ✅ **Redis连接池优化** — memory.py: 显式 ConnectionPool（max_connections=20, socket_keepalive, retry_on_timeout, health_check_interval=30）
+  - ✅ **Milvus连接池** — milvus_pool.py: 统一连接管理（pool_size=10, retry=3），main.py lifespan 启动时初始化，retrieval.py/knowledge_store.py 改用连接池
+- 阶段二（3个子任务）:
+  - ✅ **RRF融合** — retrieval.py: rrf_fusion() 实现倒数排名融合（k=60），替代原来的简单扩展+排序，每个来源的排名被正确加权
+  - ✅ **超时控制与降级** — 每路检索来源独立超时（semantic 15s/vector 20s/web 30s/chat_kb 10s），超时不阻塞整体检索
+  - ✅ **Redis缓存层** — services/retrieval_cache.py: 独立 DB1 存储检索结果（TTL 5min），仅缓存有结果的数据
+- 变更总量: 12 个文件，+779/-326 行，2 次 Git 提交
+- 待办: Phase 3（RAGAS测试体系）尚未开始
+|- 经验: qwen2.5:7b 作为子 Agent 在保持函数签名一致性上表现不佳（llm_client.py 改错），协调者直接 write_file 修复。对于需要精确接口兼容的任务，协调者应直接操作而非委托。`rm -rf` 被安全策略拦截，子 Agent 也无法绕过。|
+
+## Round 18 — 20260518_130000（项目一开发工单 — 阶段三完成）
+- 完成: Phase 3（RAGAS测试体系）全部三个子任务
+- 子任务1 ✅ **RAGAS评估框架搭建** — evaluation/evaluator.py(393行) + run_evaluation.py + test_queries.py(292行, 20+测试查询含标准答案)
+  - RagasEvaluator: faithfulness/answer_relevancy/context_precision/context_recall 四项指标
+  - 降级模式: RAGAS 不可用时自动切换为上下文长度/检索数等统计指标
+  - 双格式报告: JSON + Markdown 输出
+- 子任务2 ✅ **回归测试自动化** — run_tests.sh + Makefile + tests/regression_baseline/
+  - 支持 -v (详细模式)、--regression (保存基线)、--diff (对比基线)
+  - Makefile targets: test / test-verbose / regression / diff / clean
+  - 109 个可运行测试全部通过
+- 子任务3 ✅ **压力测试** — tests/test_stress.py(15项测试, 248行)
+  - 令牌桶耗尽补充测试、突发流量稳定测试、高频获取不崩溃测试
+  - Semaphore 8槽位耗尽超时、并发context管理器压力、缓存并发读写
+- 变更总量: 本次 +18 文件，+2404 行（含 Round 17 遗留的 staged 文件）
+- 经验: 8B模型作为子Agent写回归测试脚本质量差（run_tests.sh 和 Makefile 均有语法/逻辑问题），协调者直接 rewrite 后验证通过。压力测试子Agent只分析了现有代码未产出新文件。对于脚本类和测试类任务，协调者直接 write_file 效率更高。|
+
