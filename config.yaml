@@ -52,6 +52,129 @@ swarm:
   tmp_dir: "tmp_agent"
 
 # ──────────────────────────────────────────────────────────────────
+# cost_strategy 节 — 三级成本策略（项2/3）
+# ──────────────────────────────────────────────────────────────────
+# 根据当日已花费的 LLM 调用金额，动态调整任务调度策略。
+# cost_tracker 在每轮 Step 1（决策）前读取 daily_budget 判断。
+# ──────────────────────────────────────────────────────────────────
+cost_strategy:
+  # daily_budget_dollars: 每日预算上限（美元）
+  # 类型: float，最小值: 0
+  # 默认: 5.0
+  daily_budget_dollars: 5.0
+
+  # tiers: 三级策略阈值
+  # 绿色（< tier2_boundary）: 正常调度所有任务
+  # 黄色（>= tier2_boundary, < tier3_boundary）: 跳过 feature 类任务
+  # 红色（>= tier3_boundary）: 只读模式（仅更新 TODO，不执行 LLM 调用）
+  # 类型: dict
+  tiers:
+    # tier2_boundary: 黄色阈值（美元）
+    # 超过此金额进入黄色模式，跳过 feature 任务
+    # 类型: float
+    tier2_boundary: 2.0
+
+    # tier3_boundary: 红色阈值（美元）
+    # 超过此金额进入红色模式，只读
+    # 类型: float
+    tier3_boundary: 4.5
+
+  # skip_task_types_on_yellow: 黄色模式下跳过的任务类型
+  # 类型: list[str]
+  skip_task_types_on_yellow:
+    - "feature"
+    - "refactor"
+
+# ──────────────────────────────────────────────────────────────────
+# container_pool 节 — 容器预热池配置（项1）
+# ──────────────────────────────────────────────────────────────────
+# 控制 Docker 容器预热池的自动扩缩容行为。
+# ContainerPoolMonitor 每 scan_interval_seconds 扫描一次池状态。
+# ──────────────────────────────────────────────────────────────────
+container_pool:
+  # enabled: 是否启用自动扩缩容
+  # 类型: bool
+  # 默认: true
+  enabled: true
+
+  # max_pool_size: 容器池最大数量
+  # 自动扩容时上限不超过此值
+  # 类型: int，最小值: 1
+  # 默认: 10
+  max_pool_size: 10
+
+  # min_pool_size: 容器池最小保留数量
+  # 自动缩容时保留不低于此值的常驻容器
+  # 类型: int，最小值: 0
+  # 默认: 2
+  min_pool_size: 2
+
+  # scan_interval_seconds: 池状态扫描间隔（秒）
+  # ContainerPoolMonitor 每隔此秒数检查一次队列长度和容器空闲状态
+  # 类型: int，最小值: 10
+  # 默认: 300（5分钟）
+  scan_interval_seconds: 300
+
+  # queue_scale_up_threshold: 扩容队列长度阈值
+  # 当等待队列超过此长度且持续超过 queue_wait_seconds，触发扩容
+  # 类型: int，最小值: 1
+  # 默认: 2
+  queue_scale_up_threshold: 2
+
+  # queue_wait_seconds: 扩容等待时间阈值（秒）
+  # 等待队列需持续超过此时间才触发扩容（防抖动）
+  # 类型: int，最小值: 1
+  # 默认: 10
+  queue_wait_seconds: 10
+
+  # idle_cleanup_threshold: 空闲容器清理阈值
+  # 当空闲容器数超过此值时，停止最旧的几个直到等于此值
+  # 类型: int，最小值: 0
+  # 默认: 3
+  idle_cleanup_threshold: 3
+
+  # docker_image: 预热容器使用的 Docker 镜像
+  # ContainerPoolMonitor 首次拉起容器时 pull 此镜像
+  # 类型: str
+  # 默认: "python:3.11-slim"
+  docker_image: "python:3.11-slim"
+
+  # container_workdir: 容器内工作目录
+  # 类型: str
+  # 默认: "/workspace"
+  container_workdir: "/workspace"
+
+# ──────────────────────────────────────────────────────────────────
+# self_healing 节 — 自愈参数（项8）
+# ──────────────────────────────────────────────────────────────────
+# 控制 self_evolve_round.py 中三项自愈逻辑的行为参数。
+# ──────────────────────────────────────────────────────────────────
+self_healing:
+  # conflict_timeout_seconds: git 冲突超时阈值（秒）
+  # 冲突持续时间超过此值时，自动执行 git reset --hard HEAD
+  # 类型: int，最小值: 60
+  # 默认: 3600（1小时）
+  conflict_timeout_seconds: 3600
+
+  # pid_zombie_timeout_seconds: PID 文件僵尸超时阈值（秒）
+  # PID 文件超过此时间未更新且进程不存活时，自动删除并重启
+  # 类型: int，最小值: 10
+  # 默认: 120（2分钟）
+  pid_zombie_timeout_seconds: 120
+
+  # disk_min_mb: 磁盘最小空间阈值（MB）
+  # 可用磁盘低于此值时触发日志清理
+  # 类型: int，最小值: 50
+  # 默认: 100
+  disk_min_mb: 100
+
+  # disk_target_mb: 日志清理后目标空间（MB）
+  # 清理旧日志直到可用空间恢复到不少于此值
+  # 类型: int，最小值: 100
+  # 默认: 500
+  disk_target_mb: 500
+
+# ──────────────────────────────────────────────────────────────────
 # agents 节 — Agent 运行参数
 # ──────────────────────────────────────────────────────────────────
 # 控制哪些 agent 被启用以及单个 agent 的超时时间。
@@ -112,7 +235,6 @@ logger:
 
   # backup_count: 保留的轮转备份文件个数
   # 轮转时保留此数量的历史日志文件，最旧的将被删除。
-  # 设为 0 表示不保留任何备份（轮转后直接覆盖）。
   # 类型: int
   # 默认: 5
   backup_count: 5
@@ -169,6 +291,8 @@ metrics:
     - agent_failure
     - heartbeat_lag
     - git_commits
+    - container_queue_length
+    - pool_size
 
 # ──────────────────────────────────────────────────────────────────
 # git 节 — 版本控制与提交配置

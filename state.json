@@ -1,10 +1,10 @@
 {
-  "current_round": 0,
+  "current_round": 19,
   "step": "done",
   "project_one_step": "done",
   "project_three_step": "done",
   "started_at": "2026-05-18 13:43:37",
-  "completed_at": "2026-05-18 13:43:39",
+  "completed_at": "2026-05-18 15:19:00",
   "last_error": null,
   "conflict_files": [],
   "retry_counts": {},
@@ -16,12 +16,79 @@
     "estimated_tokens": 0,
     "actual_tokens": 0,
     "ratio": 0.0,
-    "status": "normal"
+    "status": "normal",
+    "tier": "green",
+    "dollar_spent_today": 0.0,
+    "dollar_limit": 5.0
   },
-  "completed_task_ids": [],
+  "completed_task_ids": [
+    "build_ragas_evaluator",
+    "add_rate_limit_tests",
+    "add_milvus_pool_tests"
+  ],
+  "in_progress_tasks": [],
+  "permanently_failed": [],
+  "blocked_tasks": [
+    "add_regression_test_suite"
+  ],
+  "error_patterns": [],
+  "failed_tasks": [],
+  "blacklist_hits": [],
+  "failure_stats": {
+    "last_analysis": "2026-05-18T15:20:00",
+    "weekly_patterns": {
+      "test_creation": {
+        "failed": 3,
+        "total": 3,
+        "rate": 1.0
+      },
+      "signature_conversion": {
+        "failed": 1,
+        "total": 1,
+        "rate": 1.0
+      },
+      "api_misuse": {
+        "failed": 1,
+        "total": 1,
+        "rate": 1.0
+      }
+    },
+    "failure_injection_text": "⚠️ 历史经验：避免委托子Agent创建从零的测试文件或执行框架类任务。优先协调者直接write_file。避免涉及中文路径的cd操作。"
+  },
+  "recovery_attempted": false,
+  "recovery_at": null,
+  "daily_budget": {
+    "dollar_limit": 5.0,
+    "dollar_spent_today": 0.0,
+    "date": "2026-05-18",
+    "readonly_mode": false,
+    "last_budget_warning": null,
+    "tier": "green",
+    "tier_reason": "当日花费 $0.00 < $2.00，正常调度"
+  },
   "disk_status": {
     "available_mb": 0,
     "logs_dir_size_mb": 0,
     "warning": null
+  },
+  "estimated_duration_seconds": {
+    "debug": 180,
+    "feature": 600,
+    "test": 300,
+    "refactor": 240,
+    "documentation": 120
+  },
+  "task_history": {},
+  "task_coefficients": {
+    "debug": 1.5,
+    "feature": 2.5,
+    "test": 2.0,
+    "refactor": 1.8,
+    "documentation": 1.0
+  },
+  "cost_strategy": {
+    "tier2_boundary": 2.0,
+    "tier3_boundary": 4.5,
+    "skip_on_yellow": ["feature", "refactor"]
   }
 }

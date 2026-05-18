@@ -31,3 +31,10 @@ Phase 1（高并发优化）和 Phase 2（多路召回+RRF融合）已完成。
 - push 到 GitHub 时使用 Windows Git：`F:\人工智能专业\Git\bin\git.exe`
 - 所有操作在 agent-自进化版 目录下执行
 - 如果国内网络导致 push 失败，仅做本地 commit 即可
+
+## Auto-Generated Fixes
+<!-- 此章节由 failure_analysis.py 自动生成，请勿手动编辑 -->
+<!-- 生成时间: 2026-05-18 15:58:45 -->
+<!-- 共 0 条规则 -->
+
+暂无自动生成的修复规则。
