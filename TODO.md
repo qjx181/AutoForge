@@ -62,7 +62,7 @@
     62|  依赖: 无
     63|  预估 token 量: 2000
     64|
-    65|- [ ] 任务ID: asyncify_small_routes
+    65|- [x] 任务ID: asyncify_small_routes
     66|  描述: 将 routes/session.py 和 routes/auth.py 从 sync def 改为 async def
     67|  验收标准:
     68|    - routes/session.py 所有路由改为 async def

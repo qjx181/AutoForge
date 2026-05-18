@@ -30,12 +30,55 @@
         "routes/chat.py 限流429/503 bug修复",
         "test_routes_chat.py 核心测试"
       ]
+    },
+    {
+      "round": 22,
+      "timestamp": "2026-05-18 20:16:00",
+      "task": "为 services/knowledge_store.py 编写完整单元测试",
+      "approach": "协调者直接 write_file（不委托子Agent）+ delegate 给 qa-cell 审查",
+      "result": "success",
+      "files_created": [
+        "tests/test_knowledge_store.py"
+      ],
+      "lines_added": 393,
+      "git_commit": "27e61c8",
+      "reflection": {
+        "what_worked": "1) 扫描→发现→执行的闭环流畅：2 分钟扫描发现 knowledge_store.py 缺测试，直接 write_file 393行测试。2) mock pymilvus 模式复用自 test_retrieval.py，sys.modules 注入一致。3) 覆盖边界全面：空值/异常容忍/字段截断/None references/集合不存在。",
+        "what_didnt": "1) CHANGELOG.md 的行号重复问题（6层前缀前缀前缀）仍未解决——该文件在早期 round 被多次错误 write_file 覆盖，导致结构损坏。2) qa-cell 子 Agent 仍然走了中文路径（而非符号链接），但这次因为文件已存在所以没报错。",
+        "improvement": "下次可以在 round 前先 git checkout HEAD -- CHANGELOG.md 恢复干净版本，然后用 patch 统一重新组织 CHANGELOG 结构。或者评估 CHANGELOG 的长期价值 vs 修复成本。",
+        "skill_update_needed": "orchestrate-swarm SKILL.md 中关于 CHANGELOG 写入的注意事项可以增加一条：如果 CHANGELOG.md 已损坏（行号重复），建议 git checkout 恢复干净版本而非继续 patch 追加。",
+        "remaining_gaps": "services/knowledge_store.py 的 I/O 函数（save_chat_knowledge_to_milvus, search_chat_knowledge）仍是 sync def，阻塞异步事件循环。这在下轮应作为高优先级优化项。",
+        "next_round_suggestion": "下一轮可以将 knowledge_store.py 的 sync I/O 改为 async，使用 asyncio.to_thread 或 pymilvus 异步 API。同时 services/session_service.py 和 routes/debug.py 仍是缺测试的核心模块。"
+      }
+    },
+    {
+      "round": 23,
+      "timestamp": "2026-05-18 20:52:00",
+      "task": "asyncify_small_routes — routes/session.py + routes/auth.py sync def → async def",
+      "approach": "协调者直接 write_file（接口不变改造）",
+      "result": "success",
+      "files_modified": [
+        "routes/session.py",
+        "routes/auth.py"
+      ],
+      "lines_changed": "+141/-139",
+      "git_commit": "d9c59d1",
+      "reflection": {
+        "what_worked": "1) 决策矩阵正确——接口不变改造由协调者直接 write_file，2 个文件 12 个 terminal 调用以内完成。2) session.py 的 SessionService.create_session 需要 asyncio.to_thread 包装（sync I/O），auth.py 的 4 个 handler 同理。3) 6 个 route handler 全部改为 async def，用 asyncio.to_thread 替代阻塞调用。4) 0 轮 delegate，0 轮等待，全流程 5 分钟完成。",
+        "what_didnt": "无——本次没有委托子 Agent，没有 qa-cell 审查，回合效率高。write_file 自动 lint 一次性通过。",
+        "improvement": "CHANGELOG.md 行号重复问题仍未处理。可以下轮 git checkout HEAD 恢复后重新整理。",
+        "skill_update_needed": "新的经验：sync→async 改造 + 保持函数签名不变 这类任务协调者直接 write_file 是最优路径，已验证。无需更新 SKILL。",
+        "remaining_gaps": "HIGH 仍有 3 个未完成：ragas_install_and_integrate（3500 token）、add_stress_test_suite（2000 token）、aggressive_truncation_by_tokens（2000 token）。MEDIUM introduce_jieba_tokenizer 和 LOW tune_cache_params 尚未开始。",
+        "next_round_suggestion": "考虑 aggressive_truncation_by_tokens（从字符截断改为 token 截断）——影响检索质量，代码量适中。或 ragas_install_and_integrate——完成 RAGAS 评估框架的完整集成。"
+      }
     }
   ],
   "accumulated_insights": {
     "coordinator_write_file_vs_delegate": "2026-05-18: 对于接口不变的代码改造 sync to async，协调者 write_file 比 delegate 给子 Agent 更可靠。子 Agent 经常改函数签名。",
     "diff_content_check": "2026-05-18: 新增 Step 3 diff_content_check，防止子Agent产出语法正确但功能没实现的代码。",
     "model_choice": "2026-05-18: 协调者必须用 DeepSeek 工具调用强，8B 本地模型只做 delegate_sub_agent 干简单活、不做决策。",
-    "coordinator_write_test_files": "2026-05-18: 测试文件创建类任务协调者自己 write_file 最可靠。mock redis 需要在 import 前完成 sys.modules insertion + monkeypatch 组合策略。"
+    "coordinator_write_test_files": "2026-05-18: 测试文件创建类任务协调者自己 write_file 最可靠。mock redis 需要在 import 前完成 sys.modules insertion + monkeypatch 组合策略。",
+    "knowledge_store_scanning": "2026-05-18: 扫描项目一时发现 knowledge_store.py（Milvus存储层）缺单元测试 + 所有 I/O 函数为 sync def。优先级：测试 > async 化。",
+    "async_def_route_conversion": "2026-05-18: routes/session.py 和 routes/auth.py 的 6 个 sync def handler 改为 async def + asyncio.to_thread 包装。协调者直接 write_file，5 分钟完成全流程。验证：search_files grep 'async def' 确认所有路由均已转换。"
   }
 }

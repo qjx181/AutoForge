@@ -1,17 +1,19 @@
 {
-  "current_round": 21,
+  "current_round": 23,
   "step": "done",
   "project_one_step": "done",
   "project_three_step": "done",
-  "started_at": "2026-05-18 19:43:00",
-  "completed_at": "2026-05-18 19:44:00",
+  "started_at": "2026-05-18 20:52:00",
+  "completed_at": "2026-05-18 21:15:00",
   "last_error": null,
   "completed_task_ids": [
     "build_ragas_evaluator",
     "add_rate_limit_tests",
     "add_milvus_pool_tests",
     "add_regression_test_suite",
-    "add_retrieval_cache_tests"
+    "add_retrieval_cache_tests",
+    "add_knowledge_store_tests",
+    "asyncify_small_routes"
   ],
   "in_progress_tasks": [],
   "permanently_failed": [],
@@ -24,26 +26,26 @@
   "paused_due_to_error": false,
   "manual_intervention_needed": false,
   "cost_tracker": {
-    "current_task_id": "add_retrieval_cache_tests",
-    "estimated_tokens": 1500,
-    "actual_tokens": 2750,
-    "ratio": 1.83,
+    "current_task_id": "asyncify_small_routes",
+    "estimated_tokens": 2500,
+    "actual_tokens": 300,
+    "ratio": 0.12,
     "status": "normal",
     "tier": "green",
-    "dollar_spent_today": 0.28,
+    "dollar_spent_today": 0.37,
     "dollar_limit": 5.0
   },
   "daily_budget": {
     "dollar_limit": 5.0,
-    "dollar_spent_today": 0.28,
+    "dollar_spent_today": 0.37,
     "date": "2026-05-18",
     "readonly_mode": false,
     "last_budget_warning": null,
     "tier": "green",
-    "tier_reason": "当日花费 $0.28 < $2.00，正常调度"
+    "tier_reason": "当日花费 $0.37 < $2.00，正常调度"
   },
   "failure_stats": {
-    "last_analysis": "2026-05-18T19:43:00",
+    "last_analysis": "2026-05-18T20:43:00",
     "weekly_patterns": {
       "test_creation": { "failed": 3, "total": 3, "rate": 1.0 },
       "signature_conversion": { "failed": 1, "total": 1, "rate": 1.0 },
