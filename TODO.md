@@ -13,7 +13,7 @@
 
 ## Priority: HIGH
 
-- [ ] 任务ID: build_ragas_evaluator
+- [x] 任务ID: build_ragas_evaluator
   描述: 搭建 RAGAS 评估框架，实现 RagasEvaluator 类，支持 4 项核心指标（context_precision / context_recall / faithfulness / answer_relevancy）
   验收标准:
     - RagasEvaluator 类可独立实例化，传入 retriever + llm_client 即可运行
@@ -23,6 +23,19 @@
     - 错误处理和超时兜底
   依赖: 无
   预估 token 量: 3000
+
+- [ ] 任务ID: ragas_install_and_integrate
+  描述: 安装 ragas + datasets 库，配置 LLM-as-judge 裁判，将 RagasEvaluator 集成到项目一主流程
+  验收标准:
+    - 项目一环境已安装 ragas 和 datasets（pip install）
+    - 配置 LLM 裁判：让 RAGAS 使用 DeepSeek API 或本地 Ollama 做 LLM-as-judge 打分（参考 llm_client.py 的调用方式）
+    - 在 evaluation/ 下创建 run_ragas_eval.py 单次运行入口，支持命令行参数（--question / --count）
+    - 在 services/ 中建一个 eveluation_service.py（或合并到已有服务），在每次对话结束时异步触发 RagasEvaluator.evaluate_single()
+    - 评估结果写入 logs/ragas/ 目录，按日期分文件
+    - 报告格式兼容现有的 format_json_report / format_txt_report
+    - 运行一次手动测试，输出有效分数（非 0 或纯降级值）
+  依赖: build_ragas_evaluator（已存在，基于它做集成）
+  预估 token 量: 3500
 
 - [ ] 任务ID: add_regression_test_suite
   描述: 搭建回归测试自动化体系，每次修改前后对比核心指标，指标下降超过 5% 自动标记回归
@@ -44,7 +57,7 @@
   依赖: 无
   预估 token 量: 2000
 
-- [ ] 任务ID: add_rate_limit_tests
+- [x] 任务ID: add_rate_limit_tests
   描述: 为 middleware/rate_limit.py 编写单元测试，覆盖 TokenBucket 和 Semaphore 的构造/消耗/恢复/超时
   验收标准:
     - TokenBucket: 构造容量正确 → 消耗不超额 → 恢复速率正确 → 突发消耗后恢复
@@ -54,7 +67,7 @@
   依赖: 无
   预估 token 量: 2000
 
-- [ ] 任务ID: add_milvus_pool_tests
+- [x] 任务ID: add_milvus_pool_tests
   描述: 编写 milvus_pool.py 连接池的单元测试
   验收标准:
     - 连接池初始化创建正确数量的连接
