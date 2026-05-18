@@ -206,3 +206,45 @@
 - 你write_file的代码跳过qa-cell审查（你比子Agent可靠），delegate的子代码保留审查
 - 自进化反思：每轮必做但只用3字段简版格式
 - 企业级6条标准完整保留
+
+## Round 24 — 20260518_215000 — 激进 token 级截断
+
+### 完成
+- ✅ **token 级截断** — 替换 retrieval.py/web_fallback.py 的字符切片截断为 token 估算截断
+
+### 新增
+- `services/token_utils.py`（143行）：无外部依赖的 token 估算工具
+  - `estimate_tokens()` — CJK 1.5t/char + ASCII 0.25t/char 启发式估算
+  - `truncate_to_tokens()` — 按 token 数截断文本
+  - `truncate_ref_fields()` — 一次性返回 content(300t)/excerpt(200t)/preview(100t)
+
+### 修改
+- `services/retrieval.py` — short_content[:1200] → ~300t, excerpt[:800] → ~200t, preview[:500] → ~100t
+- `web_fallback.py` — content[:1000] → truncate_to_tokens(content, 250)
+
+### 策略
+- **协调者 write_file + patch**（接口不变优化，不委托子Agent）
+- 无外部依赖（token 估算器仅用 Python 标准库）
+
+### Git
+- 项目一 commit: `e9ce487`（3 files, +155/-10）
+
+## Round 25 — 20260518_220000 — chat_service 单元测试（13个测试）
+
+### 完成
+- ✅ **chat_service 测试** — tests/test_chat_service.py（314行，13个测试用例）
+
+### 新增
+- `tests/test_chat_service.py`（314行）：核心聊天服务单元测试
+  - `TestBuildMessages`（8项）— 覆盖6条业务分支（RAG/small talk/web fallback/low score/general chat/history summary）+ debug_info + 边界条件
+  - `TestStreamChatResponse`（5项）— 正常流/missing token/empty session_id/empty query/error 容错
+
+### 策略
+- **协调者直接 write_file**（子Agent创建测试文件100%失败率，符合历史经验）
+- 使用模块级 mock 而非 patch 装饰器，避免污染测试间隔离
+- **write_file 自动 lint** 通过，跳过 qa-cell（省 ~6000 token）
+
+### Git
+- 项目一 commit: `f41d076`（1 file, +314行）
+- Push: 跳过（no upstream branch）
+
