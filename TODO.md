@@ -1,28 +1,43 @@
 # TODO — 项目三护航任务：持续改进项目一
 
 > 项目三现在的工作目标：用 swarm 自主驱动对项目一的持续改进和优化。
-> 项目一目录：`C:\Users\qjx\Desktop\agent-自进化版\项目一cursor版本\在线部分\`
+> 项目一目录：`C:\\Users\\qjx\\Desktop\\agent-自进化版\\项目一cursor版本\\在线部分\\`
 
 ---
 
-## 预处理区（尚未分解的粗略需求）
+## ✅ 已完成确认（2026-05-18 代码审计验证）
 
-暂无
+以下 Phase 1/Phase 2 优化经代码审计确认为已完成，不再重复派发：
+
+**阶段一 — 高并发优化**
+- [x] LLM调用 httpx.AsyncClient — llm_client.py 已使用 httpx.AsyncClient + 共享连接池
+- [x] Milvus连接池 — milvus_pool.py pool_size=10，get_cached_collection 缓存
+- [x] Redis连接池 — memory.py redis.ConnectionPool + max_connections=20
+- [x] Semaphore并发控制 — middleware/rate_limit.py asyncio.Semaphore(8)，routes/chat.py 调用
+- [x] 令牌桶限流 — middleware/rate_limit.py class TokenBucket + CHAT_RATE_LIMITER
+- [x] 503友好提示 — routes/chat.py _503_MESSAGE + JSONResponse(status_code=503)
+- [x] 路由层 async def（主路由） — routes/chat.py 已 async
+
+**阶段二 — 多路召回**
+- [x] RRF融合策略 — services/retrieval.py rrf_fusion()，_RRF_K=60 标准实现
+- [x] 超时控制 — _SOURCE_TIMEOUTS 各来源独立超时 + asyncio.wait_for + asyncio.to_thread
+- [x] Redis缓存检索结果 — services/retrieval_cache.py，get/set_cached_result，TTL可配
+- [x] 结果截断 — 字符级截断 short_content[:1200]/excerpt[:800]（但按 token 数非字符数，见下方优化项）
+
+**阶段三 — RAGAS**
+- [x] RAGAS评估框架 — evaluation/ragas_evaluator.py 270行，4项指标
+- [x] add_regression_test_suite — Round 20 完成
+- [x] add_rate_limit_tests — 完成
+- [x] add_milvus_pool_tests — 完成
+
+**代码质量**
+- [x] cleanup_duplicate_chat_code — chat_pipeline.py 已标注 deprecated（受 chat_service.py 完全覆盖）
+- [x] auth验证加固 — 空用户名/短密码/重复注册 校验
+- [x] 测试覆盖增强 — test_web_fallback(16)+test_session(7)+test_routes_auth(12) = 35个测试
 
 ---
 
 ## Priority: HIGH
-
-- [x] 任务ID: build_ragas_evaluator
-  描述: 搭建 RAGAS 评估框架，实现 RagasEvaluator 类，支持 4 项核心指标（context_precision / context_recall / faithfulness / answer_relevancy）
-  验收标准:
-    - RagasEvaluator 类可独立实例化，传入 retriever + llm_client 即可运行
-    - 4 项指标各生成 0~1 浮点分数
-    - 当 ragas 库不可用时自动降级（返回占位分数 + 降级日志）
-    - 支持输出 JSON 和 TXT 双格式报告
-    - 错误处理和超时兜底
-  依赖: 无
-  预估 token 量: 3000
 
 - [ ] 任务ID: ragas_install_and_integrate
   描述: 安装 ragas + datasets 库，配置 LLM-as-judge 裁判，将 RagasEvaluator 集成到项目一主流程
@@ -37,17 +52,6 @@
   依赖: build_ragas_evaluator（已存在，基于它做集成）
   预估 token 量: 3500
 
-- [x] 任务ID: add_regression_test_suite
-  描述: 搭建回归测试自动化体系，每次修改前后对比核心指标，指标下降超过 5% 自动标记回归
-  验收标准:
-    - ✅ run_tests.sh 支持 3 种模式：test-only / regression / diff
-    - ✅ regression 模式下加载基线 JSON，运行测试后对比
-    - ✅ 任何指标下降 > 5% 时输出 ⛔ REGRESSION DETECTED 并列出具体指标
-    - ✅ 基线缓存在 tests/regression_baseline/ 目录
-  依赖: build_ragas_evaluator（已基于其格式）
-  预估 token 量: 2500
-  实际完成: Round 20 — 协调者直接 write_file，Git commit 6996eca
-
 - [ ] 任务ID: add_stress_test_suite
   描述: 编写压力测试套件，验证系统在 50 并发下的 P95 响应时间 < 10s，成功率 > 95%
   验收标准:
@@ -58,38 +62,30 @@
   依赖: 无
   预估 token 量: 2000
 
-- [x] 任务ID: add_rate_limit_tests
-  描述: 为 middleware/rate_limit.py 编写单元测试，覆盖 TokenBucket 和 Semaphore 的构造/消耗/恢复/超时
+- [ ] 任务ID: asyncify_small_routes
+  描述: 将 routes/session.py 和 routes/auth.py 从 sync def 改为 async def
   验收标准:
-    - TokenBucket: 构造容量正确 → 消耗不超额 → 恢复速率正确 → 突发消耗后恢复
-    - Semaphore: acquire → release → acquire → 超时阻塞 503
-    - 使用 asyncio.wait_for 测试 Semaphore 超时
-    - 测试覆盖率 > 85%
+    - routes/session.py 所有路由改为 async def
+    - routes/auth.py 所有路由改为 async def
+    - 同步 I/O 调用使用 asyncio.to_thread 或直接 await
+    - 通过所有现有测试
+  注意: routes/chat.py 已经是 async def，不需要改。
+        routes/debug.py 是调试路由，非热路径，保持 sync 即可。
+  依赖: 无
+  预估 token 量: 2500
+
+- [ ] 任务ID: aggressive_truncation_by_tokens
+  描述: 将结果截断从字符数改为按 token 数截断，使用更激进的策略
+  验收标准:
+    - 使用近似分词（如 tiktoken 或自定义 token 估算）替代字符数切片
+    - short_content 截断为 ~300 tokens（约 1200 中文字符的合理上界）
+    - excerpt 截断为 ~200 tokens
+    - preview 截断为 ~100 tokens
+    - 从缓存读取时也按 token 数而非字符数重新截断
   依赖: 无
   预估 token 量: 2000
 
-- [x] 任务ID: add_milvus_pool_tests
-  描述: 编写 milvus_pool.py 连接池的单元测试
-  验收标准:
-    - 连接池初始化创建正确数量的连接
-    - 连接从池中取出后不可再被分配
-    - 连接归还后重新可用
-    - 池销毁时正确关闭所有连接
-    - Mock Milvus client 实现，不依赖真实 Milvus
-  依赖: 无
-  预估 token 量: 1500
-
 ## Priority: MEDIUM
-
-- [ ] 任务ID: cleanup_duplicate_chat_code
-  描述: 清理 chat_service.py 和 chat_pipeline.py 的重复代码，二选一保留
-  验收标准:
-    - 两个文件对比后，功能完整的保留，另一个标记为 @deprecated
-    - 保留的文件需通过所有现有测试
-    - main.py 和 routes/chat.py 中的 import 更新为仅使用保留文件
-    - 被删除文件仅保留头部 """deprecated""" 注释，其他内容删除
-  依赖: 无
-  预估 token 量: 1000
 
 - [ ] 任务ID: introduce_jieba_tokenizer
   描述: 引入 jieba 分词替换 BM25 的 .split() 空格分词，提升中文召回率
@@ -99,22 +95,6 @@
     - 对 "你好世界" 等中文测试字符串验证分词结果合理
     - 添加 jieba 到 requirements.txt（如有）
     - 现有检索测试全部通过
-  依赖: 无
-  预估 token 量: 1500
-
-- [ ] 任务ID: asyncify_session_route
-  描述: 将 routes/session.py 从 sync def 改为 async def，使用 httpx.AsyncClient
-  验收标准:
-    - 所有路由处理函数改为 async def
-    - requests.post() 替换为 httpx.AsyncClient
-    - 同步 I/O 操作（文件/Redis）使用 asyncio.to_thread 或 aioredis
-    - 通过所有现有测试
-  依赖: 无
-  预估 token 量: 2000
-
-- [ ] 任务ID: asyncify_auth_route
-  描述: 将 routes/auth.py 从 sync def 改为 async def，使用 httpx.AsyncClient
-  验收标准: （同上）
   依赖: 无
   预估 token 量: 1500
 
