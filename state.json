@@ -1,31 +1,17 @@
 {
-  "current_round": 20,
+  "current_round": 21,
   "step": "done",
   "project_one_step": "done",
   "project_three_step": "done",
-  "started_at": "2026-05-18 19:09:00",
-  "completed_at": "2026-05-18 19:11:00",
+  "started_at": "2026-05-18 19:43:00",
+  "completed_at": "2026-05-18 19:44:00",
   "last_error": null,
-  "conflict_files": [],
-  "retry_counts": {},
-  "paused_due_to_conflict": false,
-  "paused_due_to_error": false,
-  "manual_intervention_needed": false,
-  "cost_tracker": {
-    "current_task_id": "add_regression_test_suite",
-    "estimated_tokens": 2500,
-    "actual_tokens": 3000,
-    "ratio": 1.2,
-    "status": "normal",
-    "tier": "green",
-    "dollar_spent_today": 0.15,
-    "dollar_limit": 5.0
-  },
   "completed_task_ids": [
     "build_ragas_evaluator",
     "add_rate_limit_tests",
     "add_milvus_pool_tests",
-    "add_regression_test_suite"
+    "add_regression_test_suite",
+    "add_retrieval_cache_tests"
   ],
   "in_progress_tasks": [],
   "permanently_failed": [],
@@ -33,57 +19,43 @@
   "error_patterns": [],
   "failed_tasks": [],
   "blacklist_hits": [],
-  "failure_stats": {
-    "last_analysis": "2026-05-18T15:20:00",
-    "weekly_patterns": {
-      "test_creation": {
-        "failed": 3,
-        "total": 3,
-        "rate": 1.0
-      },
-      "signature_conversion": {
-        "failed": 1,
-        "total": 1,
-        "rate": 1.0
-      },
-      "api_misuse": {
-        "failed": 1,
-        "total": 1,
-        "rate": 1.0
-      }
-    },
-    "failure_injection_text": "⚠️ 历史经验：避免委托子Agent创建从零的测试文件或执行框架类任务。优先协调者直接write_file。避免涉及中文路径的cd操作。"
+  "retry_counts": {},
+  "paused_due_to_conflict": false,
+  "paused_due_to_error": false,
+  "manual_intervention_needed": false,
+  "cost_tracker": {
+    "current_task_id": "add_retrieval_cache_tests",
+    "estimated_tokens": 1500,
+    "actual_tokens": 2750,
+    "ratio": 1.83,
+    "status": "normal",
+    "tier": "green",
+    "dollar_spent_today": 0.28,
+    "dollar_limit": 5.0
   },
-  "recovery_attempted": false,
-  "recovery_at": null,
   "daily_budget": {
     "dollar_limit": 5.0,
-    "dollar_spent_today": 0.15,
+    "dollar_spent_today": 0.28,
     "date": "2026-05-18",
     "readonly_mode": false,
     "last_budget_warning": null,
     "tier": "green",
-    "tier_reason": "当日花费 $0.15 < $2.00，正常调度"
+    "tier_reason": "当日花费 $0.28 < $2.00，正常调度"
   },
-  "disk_status": {
-    "available_mb": 0,
-    "logs_dir_size_mb": 0,
-    "warning": null
+  "failure_stats": {
+    "last_analysis": "2026-05-18T19:43:00",
+    "weekly_patterns": {
+      "test_creation": { "failed": 3, "total": 3, "rate": 1.0 },
+      "signature_conversion": { "failed": 1, "total": 1, "rate": 1.0 },
+      "api_misuse": { "failed": 1, "total": 1, "rate": 1.0 }
+    },
+    "failure_injection_text": "\u26a0\ufe0f \u5386\u53f2\u7ecf\u9a8c\uff1a\u907f\u514d\u59d4\u6258\u5b50Agent\u521b\u5efa\u4ece\u96f6\u7684\u6d4b\u8bd5\u6587\u4ef6\u6216\u6267\u884c\u6846\u67b6\u7c7b\u4efb\u52a1\u3002\u4f18\u5148\u534f\u8c03\u8005\u76f4\u63a5write_file\u3002\u907f\u514d\u6d89\u53ca\u4e2d\u6587\u8def\u5f84\u7684cd\u64cd\u4f5c\u3002"
   },
   "estimated_duration_seconds": {
-    "debug": 180,
-    "feature": 600,
-    "test": 300,
-    "refactor": 240,
-    "documentation": 120
+    "debug": 180, "feature": 600, "test": 300, "refactor": 240, "documentation": 120
   },
-  "task_history": {},
   "task_coefficients": {
-    "debug": 1.5,
-    "feature": 2.5,
-    "test": 2.0,
-    "refactor": 1.8,
-    "documentation": 1.0
+    "debug": 1.5, "feature": 2.5, "test": 2.0, "refactor": 1.8, "documentation": 1.0
   },
   "cost_strategy": {
     "tier2_boundary": 2.0,

@@ -151,3 +151,25 @@
 - 优先级规则：影响大>影响小（核心功能>辅助功能）
 - 决策矩阵固化：接口不变→自己write_file，新增测试→自己write_file，增量修改→delegate
 - 自进化反思：每轮必做，学到的立即固化到skill/SKILL.md/prompt
+
+## Round 21 — 20260518_194300 — retrieval_cache 单元测试新增
+
+### 完成
+- ✅ **retrieval_cache 测试** — tests/test_retrieval_cache.py（280行，8个测试类，24个测试用例）
+
+### 新增
+- `tests/test_retrieval_cache.py`（280行）：Redis 缓存层单元测试
+  - `TestBuildCacheKey`（5项）— 一致性/大小写不敏感/空格修剪/role隔离/key格式
+  - `TestGetClient`（2项）— Redis不可用时降级/连接复用
+  - `TestGetCachedResult`（5项）— 未命中/命中/Redis不可用/JSON损坏/字段缺失
+  - `TestSetCachedResult`（4项）— 正常写入（含setex参数校验）/空内容不缓存/Redis不可用/异常容忍
+  - `TestInvalidateCache`（3项）— delete调用/None客户端/异常容忍
+
+### 策略
+- **协调者直接 write_file**（子Agent创建测试文件100%失败率，符合历史经验）
+- **mock redis 模块**在 import 前完成，无外部依赖
+- **write_file 自动 lint 验证**通过，无需 delegate 到 qa-cell
+
+### Git
+- 目标项目 commit: `1860666`（1 file, +280行）
+- Push: 跳过（no upstream branch）
