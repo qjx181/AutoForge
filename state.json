@@ -1,10 +1,10 @@
 {
-  "current_round": 25,
+  "current_round": 29,
   "step": "done",
   "project_one_step": "done",
   "project_three_step": "done",
-  "started_at": "2026-05-18 22:00:00",
-  "completed_at": "2026-05-18 22:10:00",
+  "started_at": "2026-05-19 09:38:00",
+  "completed_at": "2026-05-19 09:50:00",
   "last_error": null,
   "completed_task_ids": [
     "build_ragas_evaluator",
@@ -15,7 +15,9 @@
     "add_knowledge_store_tests",
     "asyncify_small_routes",
     "aggressive_truncation_by_tokens",
-    "add_chat_service_tests"
+    "add_chat_service_tests",
+    "ragas_install_and_integrate",
+    "add_stress_test_suite"
   ],
   "in_progress_tasks": [],
   "permanently_failed": [],
@@ -28,23 +30,23 @@
   "paused_due_to_error": false,
   "manual_intervention_needed": false,
   "cost_tracker": {
-    "current_task_id": "add_chat_service_tests",
-    "estimated_tokens": 1800,
-    "actual_tokens": 314,
-    "ratio": 0.17,
+    "current_task_id": "add_stress_test_suite",
+    "estimated_tokens": 2000,
+    "actual_tokens": 0,
+    "ratio": 0,
     "status": "normal",
     "tier": "green",
-    "dollar_spent_today": 0.55,
+    "dollar_spent_today": 1.30,
     "dollar_limit": 5.0
   },
   "daily_budget": {
     "dollar_limit": 5.0,
-    "dollar_spent_today": 0.55,
-    "date": "2026-05-18",
+    "dollar_spent_today": 1.30,
+    "date": "2026-05-19",
     "readonly_mode": false,
     "last_budget_warning": null,
     "tier": "green",
-    "tier_reason": "当日花费 $0.55 < $2.00，正常调度"
+    "tier_reason": "当日花费 $1.30 < $2.00（绿色模式），HIGH任务全部完成"
   },
   "failure_stats": {
     "last_analysis": "2026-05-18T20:43:00",
@@ -70,16 +72,12 @@
   "estimated_duration_seconds": {
     "debug": 180,
     "feature": 600,
-    "test": 300,
-    "refactor": 240,
-    "documentation": 120
+    "test": 300
   },
   "task_coefficients": {
     "debug": 1.5,
     "feature": 2.5,
-    "test": 2.0,
-    "refactor": 1.8,
-    "documentation": 1.0
+    "test": 2.0
   },
   "cost_strategy": {
     "tier2_boundary": 2.0,
