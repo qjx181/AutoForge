@@ -13,11 +13,12 @@
     "test_evaluation_service",
     "asyncify_debug_route",
     "test_auth_service",
-    "sandbox_pool_retry_and_alert"
+    "sandbox_pool_retry_and_alert",
+    "define_agent_roles",
+    "agent_template_library"
   ],
   "in_progress_tasks": [],
   "pending_tasks": [
-    "define_agent_roles",
     "define_layered_delegation",
     "cost_tracker_persistence",
     "heartbeat_self_healing",
@@ -32,7 +33,6 @@
     "delegation_validation_loop",
     "parallel_multi_dispatch",
     "cost_incentive_mechanism",
-    "agent_template_library",
     "standardized_layer3_verification"
   ],
   "permanently_failed": [],

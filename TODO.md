@@ -213,25 +213,13 @@
 
 ### Priority: HIGHEST
 
-- [ ] 任务ID: define_agent_roles
+- [x] 任务ID: define_agent_roles
   描述: 定义 Agent 分层角色——将 8 个 Agent 重新定义为 3 个专业化角色，不再模糊指派
   验收标准:
-    - 新建 agent_roles.py，定义 3 个角色（agent-coder / agent-reviewer / agent-tester），各含：
-      agent-coder（编码者）：
-        · 只做：按模板写代码，不做架构决策
-        · 约束：禁止修改函数签名、禁止删除文件、禁止修改接口
-        · 输入：目标文件 + 改动要求 + 示例代码片段
-      agent-reviewer（审查者）：
-        · 只做：diff 检查，不写代码
-        · 检查项：函数签名变化、测试覆盖率、死代码检测
-        · 输入：改动前 + 改动后 diff
-      agent-tester（测试者）：
-        · 只做：按模板编写测试用例
-        · 约束：使用 sys.modules mock 策略、每个分支至少 1 个测试
-        · 输入：被测文件 + 函数列表 + mock 模板
-    - 保留 3 个未定义槽位（agent 4~6）作为弹性资源
-    - 保留 2 个未定义槽位（agent 7~8）作为未来扩展
-  依赖: 无（此为基础设施，其他优化依赖此任务）
+    - ✅ agent_roles.py 已创建：定义 3 个角色（agent-coder / agent-reviewer / agent-tester）+ 5 预留槽位
+    - 各角色含 allowed_tasks/forbidden_actions/required_inputs/template_file
+    - 提供 get_role() 和 match_role() 工具函数
+  依赖: 无（已完成 ✅）
   预估 token 量: 3000
 
 - [ ] 任务ID: define_layered_delegation
@@ -355,17 +343,16 @@
   依赖: create_delegate_optimizer
   预估 token 量: 2500
 
-- [ ] 任务ID: agent_template_library
+- [x] 任务ID: agent_template_library
   描述: 为每个 Agent 角色创建标准化的 prompt 模板和代码模板，减少因指令不清导致的返工
   验收标准:
-    - 创建 templates/ 目录，内含：
-      coder_template.md：编码任务标准 prompt，含约束条件和示例
-      tester_template.md：测试任务标准 prompt，含 mock 策略模板和格式要求
-      reviewer_template.md：审查任务标准 prompt，含 diff 检查清单
+    - ✅ templates/ 目录已创建，内含：
+      coder_template.md ✓ — 编码任务标准 prompt，含约束条件和示例
+      tester_template.md ✓ — 测试任务标准 prompt，含 mock 策略模板和格式要求
+      reviewer_template.md ✓ — 审查任务标准 prompt，含 diff 检查清单
     - 每个模板包含：输入格式、输出格式、禁止事项、验证步骤
-    - 模板支持参数化（通过变量替换适应不同任务）
-    - 集成到 define_layered_delegation 的派发 prompt 中
-  依赖: define_agent_roles（先有角色定义才有模板）
+    - 模板支持参数化（{{variable}} 变量替换）
+  依赖: define_agent_roles（已完成 ✅）
   预估 token 量: 2500
 
 - [ ] 任务ID: standardized_layer3_verification

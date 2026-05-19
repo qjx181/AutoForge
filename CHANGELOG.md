@@ -45,3 +45,19 @@
 - 令牌桶耗尽/Semaphore槽位占满/缓存穿透/综合并发，4场景覆盖
 - commit cc3ad23，+437行
 - 所有 HIGH 优先级 TODO 任务全部完成
+
+## Round 30 — 2026-05-19 knowledge_store async 改造
+- services/knowledge_store.py sync I/O → async def + asyncio.to_thread 桥接
+- +299/-204 行，commit a7a40eb
+- 测试直接测 sync 层避免线程边界问题
+
+## Round 31 — 2026-05-19 session_service async 改造
+- SessionService.create_session + list_sessions 改为 async def
+- 纯 CPU 操作（无需 to_thread），+198/-125 行，commit 3c2ff64
+- 13 个单元测试全部通过（含 11 async + 2 sync）
+
+## Round 32 — 2026-05-19 清理废弃文件 + 修复 sync Redis I/O bug
+- 删除 services/chat_pipeline.py（已被 chat_service.py 完全覆盖）
+- 删除 services/session.py（已被 session_service.py 完全覆盖）
+- 修复 async def build_context 中 sync Redis I/O 未用 to_thread 包装的 event loop 阻塞 bug
+- commit 6cd7c82，-57 行
