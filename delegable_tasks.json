@@ -1,0 +1,250 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-05-19T15:50:00",
+  "description": "微委托任务类型注册表。定义子 Agent 能做和不能做的事。每个微任务只改一个文件的一处。",
+  "rules": {
+    "golden_rule": "每个微任务只改一个文件的一处。违反此规则的子 Agent 产出直接被拒绝。",
+    "always_verify": true,
+    "max_retries": 2,
+    "rollback_on_fail": true
+  },
+  "task_types": [
+    {
+      "id": "insert_line",
+      "name": "插入行",
+      "description": "在指定行号后插入一行或多行代码",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file", "rename_function"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "after_line": "int — 在哪个行号之后插入",
+        "content": "str — 要插入的代码内容",
+        "indent": "int（可选）— 缩进级别，默认与目标行一致"
+      },
+      "output_check": "grep -n '插入内容的前5个字符' 目标文件",
+      "success_rate": "~85%",
+      "example": {
+        "file": "services/session.py",
+        "after_line": 15,
+        "content": "import asyncio"
+      }
+    },
+    {
+      "id": "replace_string",
+      "name": "替换字符串",
+      "description": "将文件中唯一的字符串替换为另一字符串",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file", "rename_function"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "old_string": "str — 要被替换的文本（必须唯一）",
+        "new_string": "str — 替换后的文本"
+      },
+      "output_check": "grep -n '新字符串前10个字符' 目标文件",
+      "success_rate": "~80%",
+      "example": {
+        "file": "services/session.py",
+        "old_string": "def create_session",
+        "new_string": "async def create_session"
+      }
+    },
+    {
+      "id": "rename_function",
+      "name": "重命名函数/变量",
+      "description": "将一个函数名或变量名改为新名称（同时更新调用处）",
+      "allowed_tools": ["patch", "read_file", "search_files"],
+      "forbidden": ["write_file", "delete_file"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "old_name": "str — 原函数/变量名",
+        "new_name": "str — 新函数/变量名"
+      },
+      "output_check": "grep -n '新名称' 目标文件 && grep -c '旧名称' 目标文件=0",
+      "success_rate": "~75%",
+      "example": {
+        "file": "services/session.py",
+        "old_name": "_build_sync",
+        "new_name": "_build_async"
+      }
+    },
+    {
+      "id": "add_import",
+      "name": "添加 import",
+      "description": "在文件顶部 import 块中添加一个 import 语句",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "import_stmt": "str — 完整的 import 语句",
+        "position": "str — 'top'（文件开头）或 'after:<模块名>'（在指定 import 之后）"
+      },
+      "output_check": "grep 'import语句' 目标文件",
+      "success_rate": "~90%",
+      "example": {
+        "file": "services/retrieval.py",
+        "import_stmt": "import asyncio",
+        "position": "after:import json"
+      }
+    },
+    {
+      "id": "add_decorator",
+      "name": "添加装饰器",
+      "description": "在函数 def 行上方添加一行装饰器",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file", "modify_function_body"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "function_name": "str — 要装饰的函数名",
+        "decorator": "str — 完整的装饰器文本"
+      },
+      "output_check": "grep -B1 'def 函数名' 目标文件 | head -1",
+      "success_rate": "~80%",
+      "example": {
+        "file": "routes/debug.py",
+        "function_name": "debug_rag",
+        "decorator": "@router.post(\"/debug/rag\")"
+      }
+    },
+    {
+      "id": "add_docstring",
+      "name": "添加文档字符串",
+      "description": "在函数/类定义的第一行后添加 docstring",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "function_name": "str — 目标函数名",
+        "docstring": "str — 完整的 docstring 文本（含引号）"
+      },
+      "output_check": "grep -A2 'def 函数名' 目标文件",
+      "success_rate": "~85%",
+      "example": {
+        "file": "services/session.py",
+        "function_name": "create_session",
+        "docstring": "\"\"\"创建新会话。返回 session_id。\"\"\""
+      }
+    },
+    {
+      "id": "delete_line",
+      "name": "删除行",
+      "description": "删除文件中指定行号的一行或多行",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file", "rename_function"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "line_number": "int — 要删除的行号",
+        "confirm_text": "str — 该行的文本内容（用于行号确认）"
+      },
+      "output_check": "sed -n '行号p' 目标文件为空",
+      "success_rate": "~90%",
+      "example": {
+        "file": "services/retrieval.py",
+        "line_number": 42,
+        "confirm_text": "# deprecated"
+      }
+    },
+    {
+      "id": "wrap_with_try_except",
+      "name": "try/except 包装",
+      "description": "将指定函数体用 try/except 包装",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file", "rename_function"],
+      "input_schema": {
+        "file": "str — 目标文件路径",
+        "function_name": "str — 函数名",
+        "exception_type": "str — 捕获的异常类型（默认 Exception）",
+        "fallback": "str — 异常时的返回/处理代码"
+      },
+      "output_check": "grep -A5 'def 函数名' 目标文件 | grep -c 'try:'",
+      "success_rate": "~70%",
+      "example": {
+        "file": "services/session.py",
+        "function_name": "create_session",
+        "exception_type": "Exception",
+        "fallback": "return None"
+      }
+    },
+    {
+      "id": "add_config_field",
+      "name": "添加配置字段",
+      "description": "在配置文件中添加一个新字段及其注释",
+      "allowed_tools": ["patch", "read_file"],
+      "forbidden": ["write_file", "delete_file"],
+      "input_schema": {
+        "file": "str — 配置文件路径",
+        "section": "str — 配置节名称",
+        "field_name": "str — 字段名",
+        "field_value": "str — 字段的默认值",
+        "comment": "str — 字段上方的注释"
+      },
+      "output_check": "grep '字段名' 配置文件",
+      "success_rate": "~80%",
+      "example": {
+        "file": "config.yaml",
+        "section": "delegation",
+        "field_name": "micro_task_timeout",
+        "field_value": "30",
+        "comment": "# 微任务超时秒数"
+      }
+    },
+    {
+      "id": "run_command",
+      "name": "执行命令",
+      "description": "在终端执行一条命令并返回输出",
+      "allowed_tools": ["terminal"],
+      "forbidden": [],
+      "input_schema": {
+        "command": "str — 要执行的 shell 命令",
+        "workdir": "str（可选）— 工作目录",
+        "timeout": "int（可选）— 超时秒数（默认 30）"
+      },
+      "output_check": "exit_code == 0",
+      "success_rate": "~95%",
+      "example": {
+        "command": "python -m py_compile services/session.py",
+        "timeout": 10
+      }
+    },
+    {
+      "id": "grep_verify",
+      "name": "Grep 验证",
+      "description": "在文件中搜索指定模式并返回匹配行数和内容",
+      "allowed_tools": ["terminal", "search_files"],
+      "forbidden": ["write_file", "patch", "delete_file"],
+      "input_schema": {
+        "pattern": "str — 搜索模式",
+        "file": "str — 目标文件",
+        "expect_count": "int（可选）— 期望的匹配行数"
+      },
+      "output_check": "返回匹配行数和内容",
+      "success_rate": "~98%",
+      "example": {
+        "pattern": "async def create_session",
+        "file": "services/session.py",
+        "expect_count": 1
+      }
+    }
+  ],
+  "forbidden_tasks": [
+    {
+      "id": "do_not_delegate",
+      "reason": "子 Agent 一定会改函数签名或删文件",
+      "examples": [
+        "从零创建测试文件",
+        "重构整个模块的接口",
+        "重写任何文件的全部内容",
+        "修改 main.py 或入口文件的路由注册逻辑"
+      ]
+    }
+  ],
+  "pipeline": {
+    "flow": [
+      "协调者（你）分析 TODO 任务 → 拆成微任务列表",
+      "从 delegable_tasks.json 为每个微任务匹配 task_type",
+      "调用 micro_delegation.build_micro_goal() 构建委托 goal",
+      "调用 delegate_task 并行派发多个微任务",
+      "调用 micro_delegation.verify_micro_result() 逐一验证",
+      "全部通过 → 标记完成；有失败 → 打回重做（最多 2 次）"
+    ]
+  }
+}

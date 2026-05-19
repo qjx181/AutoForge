@@ -585,6 +585,229 @@ def plan_parallel_tasks() -> dict | None:
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# 7b. ⬆️ 心跳自愈检查 — PID 文件超时自动重启
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def _get_heartbeat_config() -> dict:
+    """从 config.yaml 提取心跳配置（无 yaml 依赖）。"""
+    config_path = SWARM_DIR / "config.yaml"
+    if not config_path.exists():
+        return {"heartbeat_dir": "heartbeats", "heartbeat_timeout": 30}
+    try:
+        text = config_path.read_text()
+        hb_dir = "heartbeats"
+        hb_timeout = 30
+        m = re.search(r'heartbeat_dir:\s*["\']?([^"\'#\n]+)', text)
+        if m:
+            hb_dir = m.group(1).strip().strip("\"'")
+        m = re.search(r'heartbeat_timeout_seconds:\s*(\d+)', text)
+        if m:
+            hb_timeout = int(m.group(1))
+        return {"heartbeat_dir": hb_dir, "heartbeat_timeout": hb_timeout}
+    except Exception as e:
+        relog("⚠️", "读取心跳配置失败: %s，使用默认值", e)
+        return {"heartbeat_dir": "heartbeats", "heartbeat_timeout": 30}
+
+
+def check_and_heal_heartbeats() -> int:
+    """心跳超时检测 + 自动重启失联 agent。
+
+    读取 config.yaml 的 heartbeat_timeout_seconds 和 heartbeat_dir，
+    扫描心跳目录中的 PID 文件。若某 PID 文件存在但未在超时阈值内更新，
+    则 kill 原进程并通过 subprocess 重启。
+
+    Returns:
+        本轮重启的 agent 数量（上限 3）。
+    """
+    cfg = _get_heartbeat_config()
+    hb_dir = SWARM_DIR / cfg["heartbeat_dir"]
+    hb_timeout = cfg["heartbeat_timeout"]
+
+    if not hb_dir.exists():
+        relog("💓", "心跳目录不存在: %s，创建", hb_dir)
+        hb_dir.mkdir(parents=True, exist_ok=True)
+        return 0
+
+    restarted = 0
+    max_restarts = 3
+    now = time.time()
+
+    for pid_file in sorted(hb_dir.iterdir()):
+        if restarted >= max_restarts:
+            break
+
+        if not pid_file.is_file() or not pid_file.name.endswith(".pid"):
+            continue
+
+        # 检查文件修改时间
+        try:
+            mtime = pid_file.stat().st_mtime
+            age = now - mtime
+            agent_name = pid_file.name.replace(".pid", "")
+        except OSError as e:
+            relog("⚠️", "心跳文件 %s 读取失败: %s", pid_file.name, e)
+            continue
+
+        if age < hb_timeout:
+            continue  # 心跳正常，跳过
+
+        # 心跳超时 — 尝试 kill + restart
+        try:
+            pid_text = pid_file.read_text().strip()
+            old_pid = int(pid_text) if pid_text and pid_text.isdigit() else None
+        except (OSError, ValueError):
+            old_pid = None
+
+        if old_pid:
+            try:
+                os.kill(old_pid, 0)  # 检查进程是否存在
+                # 进程存在但超时 → kill
+                relog("💓", "心跳超时: %s (pid=%d, %.0fs 无更新), kill 并重启", agent_name, old_pid, age)
+                os.kill(old_pid, 15)  # SIGTERM
+                pid_file.unlink(missing_ok=True)
+            except OSError:
+                # 进程已不存在, 清理 PID 文件
+                relog("💓", "僵尸心跳: %s (pid=%d 已无进程), 清理 PID 文件", agent_name, old_pid)
+                pid_file.unlink(missing_ok=True)
+                continue
+        else:
+            relog("💓", "无 PID 的心跳文件: %s, 清理", pid_file.name)
+            pid_file.unlink(missing_ok=True)
+            continue
+
+        # 尝试重启（通过 agent_name.py 脚本）
+        script_path = SWARM_DIR / f"{agent_name}.py"
+        if script_path.exists():
+            try:
+                proc = subprocess.Popen(
+                    [sys.executable, str(script_path)],
+                    cwd=str(SWARM_DIR),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                pid_file.write_text(str(proc.pid))
+                relog("✅", "重启 %s 成功 (新 pid=%d)", agent_name, proc.pid)
+                restarted += 1
+            except OSError as e:
+                relog("❌", "重启 %s 失败: %s", agent_name, e)
+        else:
+            relog("⚠️", "无法重启 %s: 脚本 %s 不存在", agent_name, script_path.name)
+
+    if restarted > 0:
+        relog("💓", "本轮重启 %d 个失联 agent", restarted)
+    else:
+        relog("✅", "心跳检查: 所有 agent 状态正常")
+
+    # 记录重启事件到恢复日志
+    if restarted > 0:
+        recovery_log = SWARM_DIR / "logs" / "heartbeat_recovery.log"
+        recovery_log.parent.mkdir(parents=True, exist_ok=True)
+        with recovery_log.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "restarted": restarted,
+                "reason": "heartbeat_timeout",
+            }, ensure_ascii=False) + "\n")
+
+    return restarted
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 7c. ⬆️ Git push 分支保护检查（git_autopush_safety）
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def check_git_push_safety(repo_dir: Path) -> tuple[bool, str]:
+    """检查 git push 是否安全——分支保护 + 远程冲突检测。
+
+    检查项：
+    1. 当前分支名，禁止在 main/master/protected-* 分支上自动 push
+    2. 远程是否有未拉取的提交（ahead/behind 检测）
+
+    Returns:
+        (True, "reason") 如果安全，或 (False, "原因") 如果存在冲突/保护。
+    """
+    try:
+        # 检查项 1：分支名保护
+        result = _run_git(["git", "rev-parse", "--abbrev-ref", "HEAD"], repo_dir, timeout=10)
+        if result.returncode != 0:
+            return False, "无法检测当前分支"
+        branch = result.stdout.strip()
+
+        protected_prefixes = ("main", "master", "protected-")
+        for prefix in protected_prefixes:
+            if branch.startswith(prefix):
+                return False, f"受保护分支禁止自动 push: {branch}"
+
+        # 检查项 2：远程冲突
+        fetch = _run_git(["git", "fetch", "origin"], repo_dir, timeout=30)
+        if fetch.returncode != 0:
+            return False, f"git fetch 失败: {fetch.stderr[:100]}"
+
+        rev_list = _run_git(
+            ["git", "rev-list", "--left-right", "--count", f"origin/{branch}...{branch}"],
+            repo_dir,
+            timeout=10,
+        )
+        if rev_list.returncode == 0:
+            parts = rev_list.stdout.strip().split()
+            if len(parts) == 2:
+                behind = int(parts[0])  # remote ahead → we are behind
+                ahead = int(parts[1])
+                if behind > 0:
+                    return False, f"远程领先 {behind} 个 commit——请先 git pull"
+                if ahead > 0:
+                    return True, f"本地领先 {ahead} 个 commit——可安全推送"
+
+        return True, "全部检查通过——可安全 push"
+    except subprocess.TimeoutExpired:
+        return False, "git 命令超时"
+    except Exception as e:
+        return False, f"安全检查异常: {e}"
+
+
+def run_safe_git_push(repo_dir: Path, message: str, repo_name: str = "unknown") -> bool:
+    """带分支保护检查的安全 git push。
+
+    先在本地 commit，然后检查分支保护，最后 push。
+    push 失败不阻塞流程（国内网络容错）。
+    """
+    # 先 commit
+    try:
+        status = _run_git(["git", "status", "--porcelain"], repo_dir, timeout=10)
+        if not status.stdout.strip():
+            relog("✅", "%s 工作区干净，无需提交", repo_name)
+            return True
+
+        _run_git(["git", "add", "-A"], repo_dir, timeout=30)
+        cmt = _run_git(["git", "commit", "-m", message], repo_dir, timeout=30)
+        relog("✅", "%s 提交成功: %s", repo_name, (cmt.stdout or "")[:30])
+    except subprocess.TimeoutExpired:
+        relog("❌", "%s git commit 超时", repo_name)
+        return False
+
+    # 安全检查
+    safe, reason = check_git_push_safety(repo_dir)
+    if not safe:
+        relog("⏭️", "%s push 跳过: %s", repo_name, reason)
+        return False
+
+    # push
+    try:
+        push = _run_git(["git", "push"], repo_dir, timeout=60)
+        if push.returncode == 0:
+            relog("✅", "%s push 成功", repo_name)
+            return True
+        else:
+            relog("⚠️", "%s push 失败 (网络/凭据): %s", repo_name, push.stderr[:100])
+            return False
+    except subprocess.TimeoutExpired:
+        relog("⏭️", "%s push 超时 (国内网络正常), 跳过", repo_name)
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # 主函数
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -714,8 +937,20 @@ def main():
         # ── 5a. 强制委托检查 ──
         check_forced_delegation()
 
-        # ── 6. ⬆️ 并行任务规划（新） ──
+        # ── 5b. 心跳自愈检查 ──
+        check_and_heal_heartbeats()
+
+        # ── 6. ⬆️ 并行任务规划（微委托集成） ──
         plan_parallel_tasks()
+        try:
+            sys.path.insert(0, str(SWARM_DIR))
+            from micro_delegation import plan_micro_delegations
+            plan_micro_delegations()
+            relog("📋", "微委托规划完成")
+        except ImportError as e:
+            relog("⚠️", "micro_delegation 不可用: %s", e)
+        except Exception as e:
+            relog("⚠️", "微委托规划失败: %s", e)
 
         # ── 7. 更新 state.json ──
         state = load_state()
