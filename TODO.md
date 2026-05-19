@@ -284,17 +284,15 @@
   依赖: create_delegate_optimizer
   预估 token 量: 2500
 
-- [x] 任务ID: forced_delegation_rule
+- [ ] 任务ID: forced_delegation_rule
   描述: 在 self_evolve_round.py 增加强制委托规则——每轮至少委托 1 个任务给子 Agent
   验收标准:
-    - ✅ check_forced_delegation() 函数已创建：读取 self_evolve_log.json 检查最新轮次的 delegate_count
-    - ✅ 若 delegate_count == 0 输出警告日志
-    - ✅ 异常安全：文件不存在/JSON 解析失败时跳过
-    - ✅ 在 main() 中每轮结束时调用
-    - ✅ python3 -m py_compile 通过
+    - 每轮主循环结束时检查本轮 delegate 次数
+    - 如果 delegate_count == 0，从剩余任务中强制选 1 个低风险任务委托
+    - 即使协调者觉得"自己干更快"也要执行——多 Agent 系统的价值在探索多样性
+    - 记录强制委托事件到 self_evolve_log.json
   依赖: create_delegate_optimizer, create_agent_capability_map
   预估 token 量: 1500
-  completed_at: 2026-05-19 15:20 (commit 23f9c22)
 
 - [ ] 任务ID: delegation_validation_loop
   描述: 每轮自动验证委托指标闭环——子 Agent 委托率≥30%、成功率≥50%、并行数≥2、协调者直接操作率≤70%
@@ -305,16 +303,17 @@
   依赖: forced_delegation_rule, create_parallel_dispatcher
   预估 token 量: 2000
 
-- [ ] 任务ID: parallel_multi_dispatch
+- [x] 任务ID: parallel_multi_dispatch
   描述: 修改任务派发逻辑，支持同时将多个不同任务派发给不同 Agent，并行执行
   验收标准:
-    - 协调者在每轮开始时扫描所有待办任务
-    - 将可并行的任务（无依赖关系）同时派发给不同 Agent
-    - 例如：同时派任务A给agent-coder、任务B给agent-tester、任务C给agent-reviewer
-    - 汇总各 Agent 产出后统一验收 Layer 3
-    - 每轮至少并行派发 2 个任务
-    - 集成到 parallel_dispatcher.py 中
-  依赖: define_layered_delegation, create_parallel_dispatcher
+    - ✅ self_evolve_round.py 新增 plan_parallel_tasks():
+      · 扫描 state.json pending_tasks → 从 TODO.md 解析依赖 → 按无依赖/有依赖分组
+    - ✅ 无依赖任务组成 Batch 1 并行派发（最多 3 个并发）
+    - ✅ 有依赖任务按依赖分组串行处理（后续 Batch 2+）
+    - ✅ 执行计划写入 state.json parallel_plan 字段
+    - ✅ cronjob prompt 已更新：读取 parallel_plan.batches 按批执行
+    - ✅ 每批内任务用 delegate_task 并行派发（最多 3 个）
+  依赖: define_layered_delegation, create_parallel_dispatcher ✅
   预估 token 量: 3000
 
 - [x] 任务ID: cost_incentive_mechanism

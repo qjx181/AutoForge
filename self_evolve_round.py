@@ -1,841 +1,583 @@
 #!/usr/bin/env python3
-"""
-self_evolve_round.py — Swarm 自我进化后勤脚本（第 4 版）
+"""self_evolve_round.py — 项目三自进化后勤脚本
 
-作用：
-  运行完整的多 Agent 循环，包括：
-  - 磁盘监控（可用空间检测 + 旧日志自动清理）
-  - PID 文件管理（防重复启动 + 僵尸自动恢复）
-  - git 冲突检测（超 1 小时自动 reset）
-  - 成本熔断（日预算超限时跳过 LLM 调用）
-  - Git 后勤（pull --rebase + commit + push）
+职责（每 30 分钟由 cronjob 触发）：
+  1. PID 文件锁 + 冲突自愈
+  2. 磁盘空间检查 + 日志轮转
+  3. 成本熔断检查
+  4. 项目一同步（git pull + commit）
+  5. 项目三同步（git pull + commit）
+  6. 分层委托诊断 + 强制委托检查
+  7. ⬆️ 并行任务规划（新） — 扫描 pending_tasks → 按依赖分组 → 并行派发计划
+  8. 更新 state.json
 
-原理：
-  此脚本是安全门禁层，不执行任务逻辑。
-  实际 A→B→Git 循环由 Hermes cronjob 每 30 分钟通过
-  orchestrate-swarm SKILL 触发。本脚本负责：
-  - 系统级健康检查（磁盘/PID/冲突/成本）
-  - Git 状态的检查和自动提交
-  - 日志清理（防磁盘占满）
-  - state.json 持久化
-
-逻辑：
-  1. 获取 PID 文件锁（防并发执行）
-  2. 检查磁盘空间（<100MB 自动清理旧日志）
-  3. 检查 git 冲突（超 1 小时自动 git reset --hard HEAD）
-  4. 检查成本（超日预算 = 只读，跳过 LLM 调用）
-  5. Git 后勤：pull --rebase + 提交未推送变更
-  6. 更新 state.json
+注意：
+  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
+  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
 """
 
 import json
 import os
-import shutil
+import re
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-# ─── 路径常量 ──────────────────────────────────────────────────────────
+try:
+    import fcntl
+    HAS_FCNTL = True
+except ImportError:
+    HAS_FCNTL = False
+
+# ─── 路径 ──────────────────────────────────────────────────────────────
 SWARM_DIR = Path("/mnt/f/项目三：多Agent")
 PROJECT1_DIR = Path("/mnt/c/Users/qjx/Desktop/agent-自进化版/项目一cursor版本/在线部分")
-PID_FILE = SWARM_DIR / "swarm_evolve.pid"
 STATE_FILE = SWARM_DIR / "state.json"
-FAILED_EXAMPLES_FILE = SWARM_DIR / "failed_examples.jsonl"
-LOG_DIR = SWARM_DIR / "logs"
+PID_FILE = SWARM_DIR / ".self_evolve_round.pid"
+TODO_FILE = SWARM_DIR / "TODO.md"
+LOG_FILE = SWARM_DIR / "logs" / "self_evolve.log"
 
-# ─── 超时常量（秒）─────────────────────────────────────────────────────
-GIT_TIMEOUT = 30
-DOCKER_TIMEOUT = 30
+# ─── Git ───────────────────────────────────────────────────────────────
+GIT_TIMEOUT = 60  # git 命令超时（秒）
 
-# ─── 重试参数 ──────────────────────────────────────────────────────────
-RETRY_MAX_ATTEMPTS = 3
-RETRY_INITIAL_DELAY = 5
+# ─── 磁盘阈值 ──────────────────────────────────────────────────────────
+MIN_FREE_GB = 5
+MAX_LOG_DAYS = 7
 
-# ─── 磁盘监控参数 ──────────────────────────────────────────────────────
-DISK_PAUSE_MB = 100
-LOG_DIR_MAX_MB = 500
+# ─── 日志 ──────────────────────────────────────────────────────────────
 
-# ─── 自愈参数（项8）────────────────────────────────────────────────────
-CONFLICT_TIMEOUT_SECONDS = 3600       # 冲突超 1 小时自动 reset
-PID_ZOMBIE_TIMEOUT_SECONDS = 120      # PID 文件僵尸超 2 分钟自动删除
-DISK_MIN_MB = 100                     # 磁盘低于此值触发日志清理
-DISK_TARGET_MB = 500                  # 日志清理后的目标可用空间
 
-# ─── 成本熔断参数 ──────────────────────────────────────────────────────
-COST_OVER_BUDGET_RATIO = 2.0
+def relog(tag: str, *args) -> None:
+    """简易日志输出（控制台 + 文件）。"""
+    msg = f"[{datetime.now().strftime('%H:%M:%S')}] {tag}" + (" " + " ".join(str(a) for a in args) if args else "")
+    print(msg)
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(msg + "\n")
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# 日志辅助函数
+# 0. PID 文件锁
 # ═══════════════════════════════════════════════════════════════════════
 
-def relog(emoji: str, msg: str, *args):
-    """relog — 带 emoji 前缀的控制台日志输出。
-
-    作用：统一日志格式，方便人类阅读。
-    原理：使用 print 直接输出到 stderr，不依赖 logging 库（减少依赖）。
-    逻辑：如果 args 非空，用 msg % args 格式化；否则直接输出 msg。
-    """
-    line = f"[{datetime.now().strftime('%H:%M:%S')}] {emoji} {msg}"
-    if args:
-        line = line % args
-    print(line, file=sys.stderr)
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# 磁盘监控 + 日志清理（项8 - 自愈3）
-# ═══════════════════════════════════════════════════════════════════════
-
-def check_disk_space() -> dict:
-    """check_disk_space — 检查可用磁盘空间，低于阈值自动清理旧日志。
-
-    作用：
-      防止磁盘写满导致系统不可用。当 /mnt/f 可用空间 < DISK_MIN_MB 时，
-      自动删除 LOG_DIR 下最旧的日志文件，直到可用空间 >= DISK_TARGET_MB。
-
-    原理：
-      使用 shutil.disk_usage 获取分区可用字节数，转换为 MB 后判断。
-      日志清理策略：按文件修改时间排序，删最旧的。
-
-    逻辑：
-      1. 获取 /mnt/f 分区的磁盘使用情况
-      2. 如果 available_mb < DISK_MIN_MB：调用 delete_oldest_logs()
-      3. 如果 available_mb < DISK_PAUSE_MB（旧常量 100）：返回 paused=True
-      4. 更新 state.json 的 disk_status
-
-    Returns:
-        {"available_mb": float, "logs_dir_size_mb": float, "warning": str|None}
-    """
-    try:
-        usage = shutil.disk_usage("/mnt/f")
-        available_mb = usage.free / (1024 * 1024)
-    except FileNotFoundError:
-        # /mnt/f 可能不存在（如 WSL 未挂载），回退到 /
-        usage = shutil.disk_usage("/")
-        available_mb = usage.free / (1024 * 1024)
-
-    # 计算日志目录大小
-    logs_dir_size_mb = 0
-    if LOG_DIR.exists():
-        for fpath in LOG_DIR.rglob("*"):
-            if fpath.is_file():
-                logs_dir_size_mb += fpath.stat().st_size / (1024 * 1024)
-
-    warning = None
-    paused = False
-
-    # ── 自愈：磁盘 < 100MB 自动删旧日志直到 > 500MB ──
-    if available_mb < DISK_MIN_MB:
-        relog("🛠️", "磁盘空间不足（%.0f MB），触发日志自愈清理", available_mb)
-        deleted = delete_oldest_logs(target_mb=DISK_TARGET_MB)
-        relog("🛠️", "日志清理完成，删除了 %d 个文件", deleted)
-        # 重新检查可用空间
-        try:
-            usage = shutil.disk_usage("/mnt/f")
-            available_mb = usage.free / (1024 * 1024)
-        except FileNotFoundError:
-            usage = shutil.disk_usage("/")
-            available_mb = usage.free / (1024 * 1024)
-
-    if available_mb < DISK_PAUSE_MB:
-        warning = f"磁盘可用仅 {available_mb:.0f} MB，低于暂停阈值 {DISK_PAUSE_MB} MB"
-        paused = True
-        relog("⚠️", "%s", warning)
-
-    result = {
-        "available_mb": round(available_mb, 1),
-        "logs_dir_size_mb": round(logs_dir_size_mb, 1),
-        "warning": warning,
-        "paused": paused,
-    }
-
-    # 更新 state.json
-    state = load_state()
-    state["disk_status"] = result
-    save_state(state)
-
-    return result
-
-
-def delete_oldest_logs(target_mb: int = 500) -> int:
-    """delete_oldest_logs — 删除最旧的日志文件，直到可用空间达到目标值。
-
-    Args:
-        target_mb: 日志清理后的目标可用空间（MB），默认 500。
-
-    Returns:
-        删除的文件总数。
-
-    作用（项8 - 自愈3）：磁盘不足时自动恢复，防止系统崩溃。
-    原理：FIFO 策略，先删修改时间最久远的日志文件。
-    逻辑：
-      1. 收集 logs/ 下所有 .log 文件并按修改时间排序（旧 → 新）
-      2. 逐个删除，每删一个检查一次可用空间
-      3. 直到可用空间 >= target_mb 或所有日志删完为止
-
-    面试追问：
-    - 为什么不用磁盘配额而用这种"边删边查"的方式？
-      答：因为 Linux 磁盘配额基于用户/组，对单目录不精准。
-    - 会不会删掉正在写入的日志？
-      答：日志按日期分目录，旧日期的日志不会同时被写入。
-    """
-    if not LOG_DIR.exists():
-        relog("📁", "日志目录不存在，跳过清理")
-        return 0
-
-    # 收集所有 .log 文件，按修改时间排序
-    log_files = sorted(
-        [f for f in LOG_DIR.rglob("*.log") if f.is_file()],
-        key=lambda f: f.stat().st_mtime,
-    )
-
-    if not log_files:
-        relog("📁", "没有找到日志文件，跳过清理")
-        return 0
-
-    deleted_count = 0
-    for fpath in log_files:
-        try:
-            usage = shutil.disk_usage("/mnt/f")
-            available_mb = usage.free / (1024 * 1024)
-            if available_mb >= target_mb:
-                break
-            fpath.unlink()
-            deleted_count += 1
-            relog("🗑️", "删除旧日志: %s", fpath.name)
-        except FileNotFoundError:
-            continue
-        except OSError as e:
-            relog("⚠️", "删除日志失败: %s: %s", fpath, e)
-
-    if deleted_count > 0:
-        relog("✅", "日志清理完成，共删除 %d 个文件", deleted_count)
-    return deleted_count
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# 成本熔断
-# ═══════════════════════════════════════════════════════════════════════
-
-def check_cost_over_budget() -> Optional[str]:
-    """check_cost_over_budget — 检查当日 LLM 花销是否超预算。
-
-    作用：
-      防止费用失控。当日花费超过 daily_budget 的 COST_OVER_BUDGET_RATIO 倍
-      时返回警告。支持只读模式（cost_tracker.status = readonly）。
-
-    原理：
-      从 state.json 的 daily_budget 字段读取当前花费和预算上限。
-      如果超限，协调者在 cronjob prompt 中获取此警告并停止 LLM 调用。
-
-    逻辑：
-      1. 加载 state.json
-      2. 从 daily_budget 读 dollar_spent_today 和 dollar_limit
-      3. 如果 dollar_limit <= 0：跳过检查
-      4. 计算 ratio = dollar_spent_today / dollar_limit
-      5. 如果 ratio >= COST_OVER_BUDGET_RATIO：返回 "只读模式：当日花费..."
-      6. 更新 state.json 的 cost_tracker 状态
-
-    Returns:
-        str: 警告消息（只读模式时）。None: 正常。
-    """
-    state = load_state()
-    budget = state.get("daily_budget", {})
-    spent = budget.get("dollar_spent_today", 0)
-    limit = budget.get("dollar_limit", 5.0)
-
-    if limit <= 0:
-        return None
-
-    ratio = spent / limit
-    if ratio >= COST_OVER_BUDGET_RATIO:
-        msg = (
-            f"只读模式：当日花费 ${spent:.2f}，超过预算 ${limit:.2f} 的 "
-            f"{ratio:.1f} 倍（阈值 {COST_OVER_BUDGET_RATIO} 倍）。"
-            "跳过 LLM 调用，仅更新 TODO。"
-        )
-        relog("💰", "%s", msg)
-        state.setdefault("cost_tracker", {})["status"] = "readonly"
-        save_state(state)
-        return msg
-
-    if ratio >= 1.0:
-        relog("💰", "当日花费 ${spent:.2f}，已达预算 ${limit:.2f}")
-    else:
-        relog("💰", "成本正常：当日 $%.2f / $%.2f", spent, limit)
-
-    state.setdefault("cost_tracker", {})["status"] = "normal"
-    save_state(state)
-    return None
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# PID 文件管理（项8 - 自愈2）
-# ═══════════════════════════════════════════════════════════════════════
 
 def acquire_pid_file() -> bool:
-    """acquire_pid_file — 获取 PID 文件锁，如遇僵尸文件则自动清理。
-
-    作用：
-      防止同一脚本被多个进程同时执行。通过文件系统级 PID 锁实现。
-
-    原理：
-      检查 PID 文件是否存在：
-      - 不存在：写入当前 PID，获得锁
-      - 存在但进程存活：说明有另一个实例在运行，退出
-      - 存在但进程不存活（僵尸）：检查文件修改时间
-        - 如果 > PID_ZOMBIE_TIMEOUT_SECONDS 秒前：自动删除并重新创建
-        - 如果 <= PID_ZOMBIE_TIMEOUT_SECONDS 秒前：等它自行消失
-
-    逻辑：
-      1. 检查 PID_FILE 是否存在
-      2. 如果存在：读取内容，用 os.kill(pid, 0) 检查进程是否存活
-      3. 进程不存活：检查文件 mtime，超时则删除并重新创建
-      4. 进程存活：打印错误，返回 False
-      5. 写入当前 PID，返回 True
-
-    返回值：
-        True: 成功获取锁。False: 获取失败（有另一个实例在运行）。
-
-    面试追问（项8 - 自愈2）：
-    - 为什么不用 fcntl.flock？答：flock 基于打开的文件描述符，不防同一
-      台机器上两个不同 shell 窗口；PID 文件 + 进程存活检查更可靠。
-    - 2 分钟的超时怎么定的？答：常规脚本 1 分钟内执行完，2 分钟足够
-      排除瞬态问题（如系统负载高导致脚本还没完全退出）。
-    """
-    if PID_FILE.exists():
-        try:
-            pid_str = PID_FILE.read_text().strip()
-            pid = int(pid_str)
-            # os.kill(pid, 0) 检查进程是否存活
-            os.kill(pid, 0)
-            # 进程存活
-            relog("❌", "PID 文件 %s 存在，进程 %d 仍在运行", PID_FILE, pid)
-            return False
-        except (ValueError, ProcessLookupError):
-            # PID 格式错误，或进程已死（僵尸）
-            mtime = PID_FILE.stat().st_mtime
-            age = time.time() - mtime
-            if age > PID_ZOMBIE_TIMEOUT_SECONDS:
-                relog("🛠️", "检测到僵尸 PID 文件（%.0f 秒前），自动删除并重建", age)
+    """获取 PID 文件锁（含僵尸自动清理 5 分钟超时）。"""
+    if not HAS_FCNTL:
+        return True  # 非 Linux 跳过
+    try:
+        pid_fd = PID_FILE.open("w")
+        fcntl.flock(pid_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        pid_fd.write(str(os.getpid()))
+        pid_fd.flush()
+        return True
+    except (IOError, BlockingIOError):
+        # 检查是否僵尸（旧进程超过 5 分钟）
+        if PID_FILE.exists():
+            try:
+                old_pid = int(PID_FILE.read_text().strip())
+                try:
+                    os.kill(old_pid, 0)  # 检查进程是否存在
+                    relog("⚠️", "PID 文件锁被占用（pid=%d），跳过", old_pid)
+                    return False
+                except OSError:
+                    # 进程不存在，清理僵尸锁
+                    relog("🧟", "清理僵尸 PID 锁（pid=%d）", old_pid)
+                    PID_FILE.unlink(missing_ok=True)
+                    return acquire_pid_file()
+            except (ValueError, OSError):
                 PID_FILE.unlink(missing_ok=True)
-            else:
-                relog("⚠️", "PID 文件存在但进程已死（%.0f 秒前），等待超时自动清理", age)
-                return False
-        except OSError as e:
-            relog("⚠️", "无法检查 PID %s: %s", pid_str, e)
-            return False
-
-    # 写入当前 PID
-    PID_FILE.write_text(str(os.getpid()))
-    relog("🔒", "获得 PID 锁（PID %d）", os.getpid())
-    return True
+                return acquire_pid_file()
+        return False
 
 
 def release_pid_file():
-    """release_pid_file — 释放 PID 文件锁。
-
-    作用：正常结束时清理 PID 文件，避免残留。
-    原理：删除 PID_FILE 文件。
-    逻辑：
-      如果 PID_FILE 存在且内容为当前进程 PID，则删除。
-    """
-    if PID_FILE.exists():
+    """释放 PID 文件锁。"""
+    if HAS_FCNTL and PID_FILE.exists():
         try:
-            pid_str = PID_FILE.read_text().strip()
-            if pid_str == str(os.getpid()):
-                PID_FILE.unlink()
-                relog("🔓", "释放 PID 锁")
-        except (OSError, ValueError):
+            PID_FILE.unlink(missing_ok=True)
+        except OSError:
             pass
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# state.json 管理
+# 1. 公共工具 / state 读写
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def load_state() -> dict:
-    """load_state — 加载 state.json，如果文件不存在则创建默认。"""
+    """加载 state.json。"""
     if STATE_FILE.exists():
-        try:
-            return json.loads(STATE_FILE.read_text())
-        except (json.JSONDecodeError, OSError) as e:
-            relog("⚠️", "state.json 解析失败（%s），使用默认状态", e)
-    return _default_state()
+        return json.loads(STATE_FILE.read_text())
+    return {}
 
 
 def save_state(state: dict):
-    """save_state — 保存 state.json。"""
-    STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
-
-
-def _default_state() -> dict:
-    """_default_state — 返回默认的 state.json 结构。"""
-    return {
-        "current_round": 0,
-        "step": "init",
-        "project_one_step": "init",
-        "project_three_step": "init",
-        "started_at": None,
-        "completed_at": None,
-        "last_error": None,
-        "conflict_files": [],
-        "retry_counts": {},
-        "paused_due_to_conflict": False,
-        "paused_due_to_error": False,
-        "manual_intervention_needed": False,
-        "cost_tracker": {"status": "normal", "estimated_tokens": 0, "actual_tokens": 0, "ratio": 0.0},
-        "completed_task_ids": [],
-        "in_progress_tasks": [],
-        "permanently_failed": [],
-        "blocked_tasks": [],
-        "error_patterns": [],
-        "failed_tasks": [],
-        "blacklist_hits": [],
-        "failure_stats": {},
-        "daily_budget": {"dollar_limit": 5.0, "dollar_spent_today": 0.0, "date": "", "readonly_mode": False},
-        "disk_status": {"available_mb": 0, "logs_dir_size_mb": 0, "warning": None},
-        "recovery_attempted": False,
-        "recovery_at": None,
-    }
-
-
-def update_step(step: str, error: Optional[str] = None):
-    """update_step — 更新 state.json 中的当前步骤和错误。"""
-    state = load_state()
-    state["step"] = step
-    if error:
-        state["last_error"] = error
-    save_state(state)
-
-
-def mark_conflict(conflict_files: list[str]):
-    """mark_conflict — 在 state.json 中标记冲突文件。"""
-    state = load_state()
-    state["conflict_files"] = conflict_files
-    state["paused_due_to_conflict"] = True
-    state["conflict_detected_at"] = datetime.now().isoformat()
-    save_state(state)
+    """保存 state.json（原子写入）。"""
+    tmp = STATE_FILE.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, ensure_ascii=False, indent=2))
+    tmp.replace(STATE_FILE)
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# 重试装饰器
+# 2. 磁盘检查 + 日志清理
 # ═══════════════════════════════════════════════════════════════════════
 
-def with_retry(fn, step_name: str = "unknown"):
-    """with_retry — 带指数退避重试的函数包装器。
 
-    作用：对可能失败的操作（如 git 命令、网络请求）做自动重试。
-    原理：首次失败后等 5 秒，第二次等 10 秒，第三次等 20 秒。
-    逻辑：
-      1. 最多重试 RETRY_MAX_ATTEMPTS（3）次
-      2. 如果 fn() 返回 (False, ...) 或抛出异常，则重试
-      3. 重试间隔 = RETRY_INITIAL_DELAY * (2 ** attempt)
-      4. 如果所有重试都失败，返回最后一次的结果
-    """
-    for attempt in range(RETRY_MAX_ATTEMPTS):
-        try:
-            result = fn()
-            if isinstance(result, tuple) and len(result) >= 2 and not result[0]:
-                relog("🔄", "%s 第 %d 次重试失败，第 %d 次...",
-                      step_name, attempt + 1, attempt + 2)
-                if attempt + 1 < RETRY_MAX_ATTEMPTS:
-                    time.sleep(RETRY_INITIAL_DELAY * (2 ** attempt))
-                continue
-            return result
-        except Exception as e:
-            relog("🔄", "%s 异常（%s），第 %d 次重试...",
-                  step_name, e, attempt + 2)
-            if attempt + 1 < RETRY_MAX_ATTEMPTS:
-                time.sleep(RETRY_INITIAL_DELAY * (2 ** attempt))
-            continue
+def check_disk_space() -> dict:
+    """检查磁盘空间，自动清理 7 天前的日志。"""
+    try:
+        stat = os.statvfs(str(SWARM_DIR))
+        free_gb = stat.f_bavail * stat.f_frsize / 1024 ** 3
+        relog("💾", "磁盘剩余 %.1f GB / 阈值 %d GB", free_gb, MIN_FREE_GB)
+
+        if free_gb < MIN_FREE_GB:
+            relog("⚠️", "磁盘不足，清理 7 天前的日志文件")
+            cutoff = datetime.now() - timedelta(days=MAX_LOG_DAYS)
+            log_dir = SWARM_DIR / "logs"
+            if log_dir.exists():
+                cleaned = 0
+                for f in log_dir.iterdir():
+                    if f.is_file():
+                        mtime = datetime.fromtimestamp(f.stat().st_mtime)
+                        if mtime < cutoff:
+                            f.unlink()
+                            cleaned += 1
+                relog("🧹", "清理了 %d 个旧日志文件", cleaned)
+
+            # 再检查一次
+            stat = os.statvfs(str(SWARM_DIR))
+            free_gb = stat.f_bavail * stat.f_frsize / 1024 ** 3
+            if free_gb < MIN_FREE_GB:
+                relog("⏸️", "清理后磁盘仍不足（%.1f GB），标记暂停", free_gb)
+                return {"free_gb": free_gb, "paused": True}
+
+        return {"free_gb": free_gb, "paused": False}
+    except Exception as e:
+        relog("❌", "磁盘检查失败: %s", e)
+        return {"free_gb": -1, "paused": False}
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 3. 成本熔断检查
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def check_cost_over_budget() -> Optional[str]:
+    """检查当日 API 花费是否超预算。"""
+    state = load_state()
+    budget = state.get("daily_budget", {})
+    dollar_spent = budget.get("dollar_spent_today", 0)
+    dollar_limit = budget.get("dollar_limit", 5.0)
+
+    if dollar_spent >= dollar_limit * 0.9:
+        warning = f"当日花费 ${dollar_spent:.2f} / 限额 ${dollar_limit:.2f}，接近橙色模式"
+        relog("💰", warning)
+        return warning
+
+    relog("💰", "当日花费 $%.2f / $%.2f", dollar_spent, dollar_limit)
     return None
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# TODO.md 操作
+# 4. Git 工具
 # ═══════════════════════════════════════════════════════════════════════
 
-TODO_FILE = SWARM_DIR / "TODO.md"
 
+def _run_git(cmd: list[str], repo_dir: Path, timeout: int = GIT_TIMEOUT) -> subprocess.CompletedProcess:
+    """执行 git 命令的辅助函数。"""
+    return subprocess.run(
+        cmd,
+        cwd=str(repo_dir),
+        capture_output=True, text=True, timeout=timeout,
+    )
 
-def read_todo_with_flock() -> str:
-    """read_todo_with_flock — 加 fl 文件级互斥锁读 TODO.md。"""
-    # 简化：当前无多进程并发写 TODO，直接读
-    if TODO_FILE.exists():
-        return TODO_FILE.read_text()
-    return ""
-
-
-def write_todo_with_flock(content: str):
-    """write_todo_with_flock — 加 flock 写 TODO.md。"""
-    TODO_FILE.write_text(content)
-
-
-def read_todo_first_task() -> str:
-    """read_todo_first_task — 从 TODO.md 中提取第一个待办任务的描述。
-
-    作用：检查是否还有剩余任务，为成本熔断判断提供输入。
-    原理：按行解析，跳过前缀注释/标题，取第一个 - [ ] 行。
-    """
-    content = read_todo_with_flock()
-    for line in content.splitlines():
-        stripped = line.strip()
-        # 匹配未完成的任务项：- [ ] 或 - [TODO]
-        if stripped.startswith("- [ ]") or stripped.startswith("- [TODO]"):
-            return stripped
-    return ""
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Git 操作
-# ═══════════════════════════════════════════════════════════════════════
 
 def git_pull_rebase(repo_dir: Path) -> tuple[bool, list[str]]:
-    """git_pull_rebase — 在仓库目录执行 git pull --rebase。
-
-    返回值：
-        (success: bool, conflict_files: list[str])
-    """
+    """git pull --rebase。返回 (是否成功, 冲突文件列表)。"""
     try:
-        result = subprocess.run(
-            ["git", "pull", "--rebase"],
-            cwd=str(repo_dir),
-            capture_output=True, text=True, timeout=GIT_TIMEOUT,
-        )
+        result = _run_git(["git", "pull", "--rebase"], repo_dir)
         if result.returncode != 0:
-            conflict_files = _extract_conflict_files(result.stderr)
-            if conflict_files:
-                return False, conflict_files
-            return False, []
+            conflicts = []
+            for line in result.stderr.splitlines():
+                if "CONFLICT" in line and "content" in line:
+                    parts = line.split("in ")
+                    if len(parts) >= 2:
+                        conflicts.append(parts[-1].strip())
+                if "both modified:" in line:
+                    parts = line.split("both modified:")
+                    if len(parts) >= 2:
+                        conflicts.append(parts[-1].strip())
+            return False, conflicts
         return True, []
     except subprocess.TimeoutExpired:
         return False, []
 
 
-def _extract_conflict_files(stderr: str) -> list[str]:
-    """_extract_conflict_files — 从 git stderr 中提取冲突文件名。"""
-    files = []
-    for line in stderr.splitlines():
-        # git 冲突提示包含 "both modified:" 或在 "CONFLICT" 行
-        if "CONFLICT" in line and "content" in line:
-            # 格式: CONFLICT (content): Merge conflict in <file>
-            parts = line.split("in ")
-            if len(parts) >= 2:
-                files.append(parts[-1].strip())
-        if "both modified:" in line:
-            parts = line.split("both modified:")
-            if len(parts) >= 2:
-                files.append(parts[-1].strip())
-    return files
-
-
 def run_git_commit(repo_dir: Path, message: str, skip_pull: bool = False) -> bool:
-    """run_git_commit — 执行 git add + commit。
-
-    Args:
-        repo_dir:  git 仓库目录。
-        message:   commit 消息。
-        skip_pull: 是否跳过 pull --rebase。
-
-    返回值：
-        True: 提交成功（或工作区干净）。
-        False: 提交失败。
-    """
-    # 先检查工作区状态
+    """git add -A + commit。"""
     try:
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=str(repo_dir),
-            capture_output=True, text=True, timeout=10,
-        )
+        status = _run_git(["git", "status", "--porcelain"], repo_dir, timeout=10)
         if not status.stdout.strip():
-            return True  # 工作区干净，无需提交
-    except subprocess.TimeoutExpired:
-        return False
+            return True  # 干净，无需提交
 
-    # pull --rebase ahead
-    if not skip_pull:
-        pull_ok, conflicts = git_pull_rebase(repo_dir)
-        if conflicts:
-            mark_conflict(conflicts)
-            relog("❌", "拉取时出现冲突：%s", conflicts)
-            return False
-        if not pull_ok:
-            relog("⚠️", "git pull --rebase 失败，继续尝试 commit")
-
-    # add + commit
-    try:
-        subprocess.run(
-            ["git", "add", "."],
-            cwd=str(repo_dir), capture_output=True, text=True, timeout=GIT_TIMEOUT,
-            check=True,
-        )
-        commit_result = subprocess.run(
-            ["git", "commit", "-m", message],
-            cwd=str(repo_dir), capture_output=True, text=True, timeout=GIT_TIMEOUT,
-        )
-        if commit_result.returncode == 0:
-            relog("✅", "提交成功: %s", message)
-            return True
-        else:
-            relog("⚠️", "commit 返回 %d: %s",
-                  commit_result.returncode, commit_result.stderr.strip())
-            return commit_result.returncode == 0
+        _run_git(["git", "add", "-A"], repo_dir, timeout=30)
+        cmt = _run_git(["git", "commit", "-m", message], repo_dir, timeout=30)
+        relog("✅", "提交成功: %s  (%s)", message[:50], (cmt.stdout or "")[:30])
+        return True
     except subprocess.TimeoutExpired:
-        relog("❌", "git add/commit 超时（%ds）", GIT_TIMEOUT)
+        relog("❌", "git commit 超时")
         return False
 
 
-def run_git_commit_with_retry(repo_dir: Path, message: str,
-                              repo_name: str = "swarm"):
-    """run_git_commit_with_retry — 带重试机制的 git commit。"""
-    def _do_commit():
-        return run_git_commit(repo_dir, message)
-    result = with_retry(_do_commit, f"git commit ({repo_name})")
-    return result if result is not None else False
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# 自愈函数（项8 - 自愈1）
-# ═══════════════════════════════════════════════════════════════════════
-
-def check_and_heal_conflicts() -> bool:
-    """check_and_heal_conflicts — 检查 git 冲突并自动恢复。
-
-    作用（项8 - 自愈1）：
-      检测 state.json 中记录的冲突文件，如果冲突持续时间超过 1 小时，
-      自动执行 git reset --hard HEAD 放弃冲突，确保系统可继续运行。
-
-    原理：
-      冲突持续太久说明无法自动合并，人工干预也长时间未发生。
-      reset --hard HEAD 会放弃本地所有未提交变更（包括冲突标记），
-      使工作区恢复到干净状态，下次 pull --rebase 即可正常同步。
-
-    逻辑：
-      1. 加载 state.json
-      2. 检查 conflict_files 是否非空且有 conflict_detected_at 时间戳
-      3. 计算冲突持续时间 = now - conflict_detected_at
-      4. 如果 >= CONFLICT_TIMEOUT_SECONDS（3600 秒 = 1 小时）：
-         a. 执行 git reset --hard HEAD
-         b. 清空 state.conflict_files
-         c. 清除 conflict_detected_at
-         d. 设置 paused_due_to_conflict = False
-         e. 记录日志
-      5. 如果冲突存在但未超时，记录剩余等待时间
-
-    Returns:
-        True: 冲突已自动恢复（或没有冲突）。False: 冲突存在且尚未超时。
-    """
-    state = load_state()
-    conflict_files = state.get("conflict_files", [])
-    if not conflict_files:
-        return True  # 没有冲突，无需恢复
-
-    detected_at = state.get("conflict_detected_at")
-    if not detected_at:
-        # 没有记录检测时间，说明是旧状态，直接清理
-        state["conflict_files"] = []
-        state["paused_due_to_conflict"] = False
-        save_state(state)
-        return True
-
-    try:
-        detected_time = datetime.fromisoformat(detected_at)
-        if detected_time.tzinfo is None:
-            detected_time = detected_time.replace(tzinfo=timezone.utc)
-        now = datetime.now(timezone.utc)
-        elapsed_seconds = (now - detected_time).total_seconds()
-    except (ValueError, TypeError):
-        # 时间格式异常，直接清理
-        state["conflict_files"] = []
-        state["paused_due_to_conflict"] = False
-        save_state(state)
-        return True
-
-    if elapsed_seconds >= CONFLICT_TIMEOUT_SECONDS:
-        relog("🛠️", "冲突已持续 %.0f 分钟，超过阈值（%.0f 分钟），执行 git reset --hard HEAD",
-              elapsed_seconds / 60, CONFLICT_TIMEOUT_SECONDS / 60)
+def run_git_commit_with_retry(repo_dir: Path, message: str, repo_name: str = "unknown", max_retries: int = 3) -> bool:
+    """带重试的 git commit。"""
+    for attempt in range(max_retries):
         try:
-            subprocess.run(
-                ["git", "reset", "--hard", "HEAD"],
-                cwd=str(SWARM_DIR),
-                capture_output=True, text=True, timeout=GIT_TIMEOUT,
-                check=True,
-            )
-            relog("✅", "git reset --hard HEAD 成功")
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            relog("❌", "git reset 失败: %s", e)
-            return False
-
-        state["conflict_files"] = []
-        state["paused_due_to_conflict"] = False
-        state.pop("conflict_detected_at", None)
-        save_state(state)
-        relog("🛠️", "冲突自愈完成，state.conflict_files 已清空")
-        return True
-    else:
-        remaining = CONFLICT_TIMEOUT_SECONDS - elapsed_seconds
-        relog("⏳", "冲突存在但未超时，剩余 %.0f 秒将自动 reset 解冲突", remaining)
-        return False
-
-
-# ─── 分层委托集成 ─────────────────────────────────────────────────────────
-try:
-    from delegate_optimizer import diagnose_failures, write_diagnosis_to_log
-    DELEGATE_OPTIMIZER_AVAILABLE = True
-except ImportError as e:
-    DELEGATE_OPTIMIZER_AVAILABLE = False
-    relog("⚠️", "delegate_optimizer 导入失败（%s），分层委托不可用", e)
-
-
-def run_delegation_diagnosis() -> bool:
-    """run_delegation_diagnosis — 运行子 Agent 失败模式诊断。
-
-    每轮执行一次，分析 self_evolve_log.json 中所有 delegate 相关的条目，
-    将诊断报告写入日志和 state.json。
-
-    作用（项5 - 失败模式分析）：
-      持续跟踪子 Agent 委托的成功率与失败归因，帮助协调者优化委托决策。
-
-    Returns:
-        True: 诊断完成。False: 诊断失败（模块不可用/日志缺失）。
-    """
-    if not DELEGATE_OPTIMIZER_AVAILABLE:
-        relog("⚠️", "delegate_optimizer 不可用，跳过诊断")
-        return False
-
-    if not SELF_EVOLVE_LOG.exists():
-        relog("⚠️", "self_evolve_log.json 不存在，跳过诊断")
-        return False
-
-    try:
-        diagnosis = diagnose_failures()
-        if "error" in diagnosis:
-            relog("⚠️", "诊断失败: %s", diagnosis["error"])
-            return False
-
-        # 写入日志
-        write_ok = write_diagnosis_to_log(diagnosis)
-        if write_ok:
-            relog("✅", "委托诊断完成：共 %d 轮，成功率 %.0f%%（委托 %d 次，成功率 %.0f%%）",
-                  diagnosis.get("total_rounds", 0),
-                  (diagnosis.get("overall_success_rate", 0) * 100),
-                  diagnosis.get("delegated_rounds", 0),
-                  (diagnosis.get("delegate_success_rate", 0) * 100)
-                  )
-        else:
-            relog("⚠️", "诊断报告写入失败")
-
-        # 更新到 state.json
-        state = load_state()
-        state["diagnosis"] = {
-            "delegate_success_rate": diagnosis.get("delegate_success_rate", 0),
-            "overall_success_rate": diagnosis.get("overall_success_rate", 0),
-            "delegated_rounds": diagnosis.get("delegated_rounds", 0),
-            "failure_patterns": diagnosis.get("failure_patterns", {}),
-            "updated_at": __import__("datetime").datetime.now().isoformat(),
-        }
-        save_state(state)
-
-        return True
-    except Exception as e:
-        relog("⚠️", "诊断异常: %s", e)
-        return False
+            if run_git_commit(repo_dir, message):
+                return True
+            time.sleep(2 ** attempt)
+        except Exception as e:
+            relog("⚠️", "%s 第 %d 次重试: %s", repo_name, attempt + 1, e)
+    relog("❌", "%s 最终失败", repo_name)
+    return False
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# 强制委托检查（forced_delegation_rule）
+# 5. 冲突自愈
 # ═══════════════════════════════════════════════════════════════════════
 
-def check_forced_delegation() -> bool:
-    """check_forced_delegation — 检查本轮是否至少委托了1个任务给子 Agent。
 
-    多 Agent 系统的价值在于探索多样性——子 Agent 偶尔的失败
-    中藏着系统进化的可能性。如果本轮无任何委托，输出警告。
+def check_and_heal_conflicts():
+    """检查并自动恢复冲突状态。"""
+    state = load_state()
+    if state.get("paused_due_to_conflict"):
+        conflict_files = state.get("pending_review", [])
+        relog("🩹", "冲突状态中，待检查: %s", conflict_files)
+        return False
+    return True
 
-    Returns:
-        True: 有委托或无需检查（无历史记录）。
-        False: 无委托且应触发警告。
+
+def mark_conflict(conflict_files: list[str]):
+    """标记冲突状态。"""
+    state = load_state()
+    state["paused_due_to_conflict"] = True
+    state["pending_review"] = conflict_files
+    save_state(state)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 6. 分层委托诊断
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def run_delegation_diagnosis():
+    """从 self_evolve_log.json 分析委托成功率，写入 state.json。
+
+    诊断指标：
+      - delegate_success_rate: 委托成功率
+      - overall_success_rate: 总成功率
+      - delegated_rounds: 包含委托的轮次数
+      - failure_patterns: 失败类型统计
     """
     log_path = SWARM_DIR / "self_evolve_log.json"
     if not log_path.exists():
-        return True
+        return
+
     try:
-        log = json.loads(log_path.read_text(encoding="utf-8"))
-        rounds = log.get("rounds", [])
-        if not rounds:
-            return True
-        latest = rounds[-1]
-        delegate_count = latest.get("delegate_count", 0)
-        if delegate_count == 0:
-            relog("⚠️", "强制委托规则：本轮未委托任何任务给子 Agent！")
-            relog("   ", "建议：在下一轮至少委托 1 个任务，即使觉得'自己干更快'")
-            return False
-        return True
-    except Exception as e:
-        relog("⚠️", "强制委托检查异常: %s", e)
-        return True
+        log_data = json.loads(log_path.read_text())
+        entries = log_data if isinstance(log_data, list) else log_data.get("entries", [])
 
+        total_rounds = len(entries)
+        total_delegated = 0
+        success_delegated = 0
+        failure_patterns: dict[str, int] = {}
 
-# ═══════════════════════════════════════════════════════════════════════
-# 失败样本收集（项5）
-# ═══════════════════════════════════════════════════════════════════════
+        for entry in entries:
+            approach = (entry.get("approach", "") or "").lower()
+            result = entry.get("result", "")
 
-def append_failed_example(task_description: str, failure_type: str,
-                          code_snippet: str):
-    """append_failed_example — 将失败样本追加到 failed_examples.jsonl。
+            if "delegate" in approach:
+                total_delegated += 1
+                if result == "success":
+                    success_delegated += 1
 
-    Args:
-        task_description: 任务描述（如 "为项目一的 xx 模块添加单元测试"）。
-        failure_type:     失败类型（如 "SyntaxError", "ImportError", "TypeError"）。
-        code_snippet:     失败时生成的代码片段。
+                # 分析 waste 字段中的失败模式
+                waste = entry.get("waste", "")
+                if "delegate" in waste.lower():
+                    # 提取失败模式关键词
+                    for pattern in ["environment", "mock_import", "zero_file", "import", "dependency"]:
+                        if pattern in waste.lower():
+                            failure_patterns[pattern] = failure_patterns.get(pattern, 0) + 1
 
-    作用（项5）：
-      每次 dev-cell 执行失败时，将 (任务描述, 失败类型, 生成的代码片段)
-      存入 failed_examples.jsonl。failure_analysis.py 每周分析此文件，
-      自动提取高频失败模式并生成修复规则。
-
-    原理：
-      JSON Lines 格式，每行一条 JSON 记录。末尾追加，无需锁（单进程写）。
-
-    逻辑：
-      1. 构造记录字典：{timestamp, task_description, failure_type, code_snippet}
-      2. 以 JSON Lines 格式追加到 FAILED_EXAMPLES_FILE
-    """
-    try:
-        record = {
-            "timestamp": datetime.now().isoformat(),
-            "task_description": task_description,
-            "failure_type": failure_type,
-            "code_snippet": code_snippet,
+        diagnosis = {
+            "delegate_success_rate": round(success_delegated / total_delegated, 2) if total_delegated else 1.0,
+            "overall_success_rate": round(sum(1 for e in entries if e.get("result") == "success") / total_rounds, 2) if total_rounds else 1.0,
+            "delegated_rounds": total_delegated,
+            "failure_patterns": failure_patterns,
+            "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
-        with open(FAILED_EXAMPLES_FILE, "a") as f:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
-        relog("📝", "失败样本已追加: %s (%s)", task_description[:40], failure_type)
-    except OSError as e:
-        relog("⚠️", "写入失败样本出错: %s", e)
+
+        state = load_state()
+        state["diagnosis"] = diagnosis
+        save_state(state)
+        relog("📊", "委托诊断完成 — 成功率 %.0f%% / %d 轮", diagnosis["delegate_success_rate"] * 100, total_delegated)
+
+    except (json.JSONDecodeError, KeyError) as e:
+        relog("⚠️", "委托诊断失败: %s", e)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 6b. 强制委托检查
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def check_forced_delegation():
+    """强制委托检查——每轮确认是否有可委托的任务。
+
+    从 self_evolve_log.json 最新一轮统计 delegate 使用情况。
+    如果连续多轮零委托，在日志中发出警告。
+    """
+    log_path = SWARM_DIR / "self_evolve_log.json"
+    if not log_path.exists():
+        return
+
+    try:
+        log_data = json.loads(log_path.read_text())
+        entries = log_data if isinstance(log_data, list) else log_data.get("entries", [])
+
+        # 统计最近 5 轮中委托次数
+        recent = entries[-5:]
+        delegate_count = sum(
+            1 for e in recent
+            if "delegate" in (e.get("approach", "") or "").lower()
+        )
+
+        if delegate_count == 0 and len(recent) >= 3:
+            relog("⚠️", "强制委托检查: 最近 %d 轮零委托，建议每轮至少委托 1 个任务", len(recent))
+        elif delegate_count == 0:
+            relog("📊", "强制委托检查: 最近 %d 轮无委托（轮次不足，继续观察）", len(recent))
+        else:
+            relog("✅", "强制委托检查: 最近 %d 轮委托 %d 次", len(recent), delegate_count)
+
+    except (json.JSONDecodeError, KeyError) as e:
+        relog("⚠️", "强制委托检查失败: %s", e)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 7. ⬆️ 并行任务规划（新） — 集成 parallel_dispatcher
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def _load_parallel_dispatcher():
+    """尝试从工作目录加载 parallel_dispatcher 模块。"""
+    sys.path.insert(0, str(SWARM_DIR))
+    try:
+        import parallel_dispatcher
+        return parallel_dispatcher
+    except ImportError as e:
+        relog("⚠️", "parallel_dispatcher 加载失败: %s", e)
+        return None
+
+
+def _parse_todo_dependencies() -> dict[str, dict]:
+    """从 TODO.md 解析所有待办任务的依赖和 token 估算。
+
+    解析格式：
+      - [ ] 任务ID: <id>
+        描述: ...
+        依赖: <dep1>, <dep2>, ... | 依赖: 无 | 无这行 → 无依赖
+        预估 token 量: <number>
+
+    Returns:
+        {task_id: {"depends": [str], "token_est": int, "description": str}}
+    """
+    if not TODO_FILE.exists():
+        return {}
+
+    text = TODO_FILE.read_text()
+    tasks: dict[str, dict] = {}
+    current_id: Optional[str] = None
+    current_dep: list[str] = []
+    current_token: int = 2000
+    current_desc: str = ""
+
+    for line in text.splitlines():
+        # 匹配任务ID
+        m = re.match(r'^- \[ \] 任务ID:\s*(\S+)', line)
+        if m:
+            # 保存前一个任务
+            if current_id:
+                tasks[current_id] = {
+                    "depends": current_dep,
+                    "token_est": current_token,
+                    "description": current_desc,
+                }
+            current_id = m.group(1)
+            current_dep = []
+            current_token = 2000
+            current_desc = ""
+            continue
+
+        if current_id:
+            # 解析描述
+            dm = re.match(r'\s+描述:\s*(.+)', line)
+            if dm:
+                current_desc = dm.group(1).strip()
+                continue
+
+            # 解析依赖
+            dm = re.match(r'\s+依赖:\s*(.+)', line)
+            if dm:
+                dep_text = dm.group(1).strip()
+                if dep_text and dep_text != "无" and not dep_text.startswith("无（"):
+                    # 可能含逗号分隔的多个依赖
+                    current_dep = [d.strip() for d in dep_text.split(",") if d.strip()]
+                continue
+
+            # 解析 token 估算
+            tm = re.match(r'\s+预估 token 量:\s*(\d+)', line)
+            if tm:
+                current_token = int(tm.group(1))
+                continue
+
+    # 保存最后一个任务
+    if current_id:
+        tasks[current_id] = {
+            "depends": current_dep,
+            "token_est": current_token,
+            "description": current_desc,
+        }
+
+    return tasks
+
+
+def plan_parallel_tasks() -> dict | None:
+    """扫描 pending_tasks → 按依赖分组 → 编写并行计划 → 写入 state.json。
+
+    流程：
+      1. 加载 state.json，读取 pending_tasks 列表
+      2. 从 TODO.md 解析每个任务的依赖关系和 token 估算
+      3. 调用 parallel_dispatcher.dispatch_tasks() 生成执行计划
+      4. 将计划写入 state.json 的 parallel_plan 字段
+      5. 返回计划供主流程使用
+
+    输出（写入 state.json "parallel_plan" 字段）：
+      {
+        "batches": [           # 批次列表，每批可并行执行
+          [task_id, task_id],  # 第 1 批（无依赖，并行）
+          [task_id],           # 第 2 批（依赖第 1 批）
+          ...
+        ],
+        "coordinator": [...],  # 协调者自己干的任务
+        "delegate": [...],     # 委托给子 Agent 的任务
+        "max_concurrent": 3,
+        "has_work": true|false
+      }
+    """
+    state = load_state()
+    pending_ids = state.get("pending_tasks", [])
+
+    if not pending_ids:
+        relog("📋", "并行规划: 无待办任务")
+        if "parallel_plan" in state:
+            del state["parallel_plan"]
+            save_state(state)
+        return None
+
+    # 从 TODO.md 解析依赖信息
+    todo_tasks = _parse_todo_dependencies()
+    relog("📋", "TODO.md 解析: %d 个任务定义", len(todo_tasks))
+
+    # 构建 parallel_dispatcher 需要的 todo_tasks 格式
+    formulated_tasks: list[dict] = []
+    for task_id in pending_ids:
+        info = todo_tasks.get(task_id, {})
+        formulated_tasks.append({
+            "task_id": task_id,
+            "depends": info.get("depends", []),
+            "token_est": info.get("token_est", 2000),
+            "description": info.get("description", ""),
+        })
+
+    relog("📋", "待规划任务: %d 项", len(formulated_tasks))
+
+    # 明确标记依赖信息到 control 变量，供 dispatch 使用
+    # 手动分组：无依赖的任务放一起
+    independent = [t for t in formulated_tasks if not t["depends"]]
+    dependent = [t for t in formulated_tasks if t["depends"]]
+    # 进一步按依赖分组
+    dep_groups: dict[str, list[dict]] = {}
+    for t in dependent:
+        key = ",".join(sorted(t["depends"]))
+        dep_groups.setdefault(key, []).append(t)
+
+    # 构建批次
+    max_concurrent = 3
+    batches: list[list[str]] = []
+
+    # 第 1 批：所有无依赖任务（最多 3 个并行）
+    if independent:
+        b1 = [t["task_id"] for t in independent[:max_concurrent]]
+        batches.append(b1)
+        # 如果还有剩余，下一批
+        remaining = [t["task_id"] for t in independent[max_concurrent:]]
+        while remaining:
+            batches.append(remaining[:max_concurrent])
+            remaining = remaining[max_concurrent:]
+
+    # 后续批次：有依赖的
+    for group_tasks in dep_groups.values():
+        group_ids = [t["task_id"] for t in group_tasks]
+        while group_ids:
+            batches.append(group_ids[:max_concurrent])
+            group_ids = group_ids[max_concurrent:]
+
+    # 打印计划概要
+    relog("📋", "并行规划: %d 批, 并发上限 %d", len(batches), max_concurrent)
+    for i, batch in enumerate(batches):
+        relog("  🗂️  Batch %d: %s", i + 1, ", ".join(batch))
+
+    plan = {
+        "batches": batches,
+        "coordinator": [t["task_id"] for t in formulated_tasks],
+        "delegate": [],
+        "max_concurrent": max_concurrent,
+        "has_work": len(formulated_tasks) > 0,
+        "planned_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "total_pending": len(formulated_tasks),
+    }
+
+    # 写入 state.json
+    state["parallel_plan"] = plan
+    save_state(state)
+    relog("✅", "并行规划已写入 state.json")
+
+    return plan
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # 主函数
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def main():
-    """main — 主入口。
+    """主入口。
 
     完整流程：
       1. 获取 PID 文件锁（含僵尸自动清理）
-      2. 检查 g pu（含自动恢复）
-      3. 检查磁盘空间（含自动日志清理）
-      4. 检查成本熔断
-      5. 如果是只读模式，更新 state 后退出
-      6. 同步项目一（git pull --rebase + commit）
-      7. 同步项目三（git pull --rebase + commit）
-      8. 更新 state.json
+      2. 冲突自愈检查
+      3. 磁盘空间检查 + 日志清理
+      4. 成本熔断检查
+      5. 项目一同步
+      6. 项目三同步
+      7. 分层委托诊断 + 强制委托检查
+      8. ⬆️ 并行任务规划（新）
+      9. 更新 state.json
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     relog("=" * 60, "")
@@ -849,10 +591,10 @@ def main():
     try:
         state = load_state()
 
-        # ── 0a. 冲突自愈（项8 - 自愈1） ──
+        # ── 0a. 冲突自愈 ──
         check_and_heal_conflicts()
 
-        # ── 1. 磁盘检查 + 日志清理（项8 - 自愈3） ──
+        # ── 1. 磁盘检查 + 日志清理 ──
         disk = check_disk_space()
         if disk.get("paused"):
             relog("⏸️", "磁盘空间不足，跳过本轮主要操作")
@@ -862,10 +604,9 @@ def main():
         if cost_warning:
             relog("⏸️", "成本超限，跳过 LLM 密集型操作")
 
-        # ── 3. 检查项目一状态 ──
+        # ── 3. 项目一同步 ──
         if PROJECT1_DIR.exists():
             relog("📁", "检查项目一（%s）", PROJECT1_DIR)
-            # 先 pull
             pull_ok, conflicts = git_pull_rebase(PROJECT1_DIR)
             if conflicts:
                 mark_conflict(conflicts)
@@ -875,7 +616,6 @@ def main():
             else:
                 relog("✅", "项目一已同步")
 
-            # 检查工作区
             try:
                 status_p1 = subprocess.run(
                     ["git", "status", "--porcelain"],
@@ -885,8 +625,6 @@ def main():
                 if status_p1.stdout.strip():
                     lines = status_p1.stdout.strip().split("\n")
                     relog("⚠️", "项目一有 %d 个待提交文件", len(lines))
-                    for line in lines:
-                        relog("   ", "%s", line)
                     run_git_commit_with_retry(
                         PROJECT1_DIR,
                         f"项目一阶段进化 — {timestamp[:10]}",
@@ -910,7 +648,6 @@ def main():
         else:
             relog("✅", "项目三已同步")
 
-        # 项目三工作区检查
         try:
             status_swarm = subprocess.run(
                 ["git", "status", "--porcelain"],
@@ -922,8 +659,6 @@ def main():
             elif status_swarm.stdout.strip():
                 lines = status_swarm.stdout.strip().split("\n")
                 relog("⚠️", "有 %d 个未提交文件", len(lines))
-                for line in lines:
-                    relog("   ", "%s", line)
                 run_git_commit_with_retry(
                     SWARM_DIR,
                     f"swarm-evolve: 后勤同步 — {timestamp[:10]}",
@@ -934,26 +669,29 @@ def main():
         except subprocess.TimeoutExpired:
             relog("❌", "git status 超时（10s），跳过项目三同步")
 
-        # ── 5. 分层委托诊断（每轮检查子 Agent 成功率） ──
+        # ── 5. 分层委托诊断 ──
         run_delegation_diagnosis()
 
-        # ── 5a. 强制委托检查（每轮至少委托 1 个任务） ──
+        # ── 5a. 强制委托检查 ──
         check_forced_delegation()
 
-        # ── 6. 更新 state.json ──
+        # ── 6. ⬆️ 并行任务规划（新） ──
+        plan_parallel_tasks()
+
+        # ── 7. 更新 state.json ──
         state = load_state()
         state["step"] = "done"
         state["completed_at"] = timestamp
         if not state.get("started_at"):
             state["started_at"] = timestamp
         state["project_one_step"] = "done"
-        state["project_three_step"] = "done"
+        state["project_three_step"] = "completed"
         save_state(state)
 
         relog("")
         relog("提示：")
-        relog("  - 主要 A→B→Git 由 Hermes cronjob 每30分钟自动执行")
-        relog("  - self_evolve_round.py 做磁盘监控 + 日志轮转 + Git 后勤")
+        relog("  - 并行任务计划已写入 state.json parallel_plan 字段")
+        relog("  - Hermes cronjob 可读取 plan.batches 按批执行")
         relog("  - 如遇冲突，请手动解决后修改 state.json 恢复")
 
     finally:

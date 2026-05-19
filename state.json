@@ -23,7 +23,8 @@
     "create_parallel_dispatcher",
     "create_agent_capability_map",
     "standardized_layer3_verification",
-    "forced_delegation_rule"
+    "forced_delegation_rule",
+    "parallel_multi_dispatch"
   ],
   "in_progress_tasks": [],
   "pending_tasks": [
@@ -32,8 +33,7 @@
     "metrics_sqlite_storage",
     "git_autopush_safety",
     "json_logs_startup_flag",
-    "delegation_validation_loop",
-    "parallel_multi_dispatch"
+    "delegation_validation_loop"
   ],
   "permanently_failed": [],
   "blocked_tasks": [],
@@ -66,9 +66,21 @@
   "failure_stats": {
     "last_analysis": "2026-05-18T20:43:00",
     "weekly_patterns": {
-      "test_creation": {"failed": 3, "total": 3, "rate": 1.0},
-      "signature_conversion": {"failed": 1, "total": 1, "rate": 1.0},
-      "api_misuse": {"failed": 1, "total": 1, "rate": 1.0}
+      "test_creation": {
+        "failed": 3,
+        "total": 3,
+        "rate": 1.0
+      },
+      "signature_conversion": {
+        "failed": 1,
+        "total": 1,
+        "rate": 1.0
+      },
+      "api_misuse": {
+        "failed": 1,
+        "total": 1,
+        "rate": 1.0
+      }
     },
     "failure_injection_text": "⚠️ 历史经验：避免委托子Agent创建从零的测试文件或执行框架类任务。优先协调者直接write_file。避免涉及中文路径的cd操作。"
   },
@@ -85,7 +97,10 @@
   "cost_strategy": {
     "tier2_boundary": 2.0,
     "tier3_boundary": 4.5,
-    "skip_on_yellow": ["feature", "refactor"]
+    "skip_on_yellow": [
+      "feature",
+      "refactor"
+    ]
   },
   "diagnosis": {
     "delegate_success_rate": 0.75,
@@ -97,5 +112,27 @@
       "zero_file_output": 1
     },
     "updated_at": "2026-05-19T15:21:00"
+  },
+  "parallel_plan": {
+    "batches": [
+      [
+        "cost_tracker_persistence",
+        "json_logs_startup_flag"
+      ],
+      [
+        "heartbeat_self_healing",
+        "git_autopush_safety"
+      ],
+      [
+        "metrics_sqlite_storage"
+      ],
+      [
+        "delegation_validation_loop"
+      ]
+    ],
+    "max_concurrent": 3,
+    "has_work": true,
+    "planned_at": "2026-05-19T15:30:00",
+    "total_pending": 6
   }
 }
