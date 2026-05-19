@@ -683,6 +683,70 @@ def check_and_heal_conflicts() -> bool:
         return False
 
 
+# ─── 分层委托集成 ─────────────────────────────────────────────────────────
+try:
+    from delegate_optimizer import diagnose_failures, write_diagnosis_to_log
+    DELEGATE_OPTIMIZER_AVAILABLE = True
+except ImportError as e:
+    DELEGATE_OPTIMIZER_AVAILABLE = False
+    relog("⚠️", "delegate_optimizer 导入失败（%s），分层委托不可用", e)
+
+
+def run_delegation_diagnosis() -> bool:
+    """run_delegation_diagnosis — 运行子 Agent 失败模式诊断。
+
+    每轮执行一次，分析 self_evolve_log.json 中所有 delegate 相关的条目，
+    将诊断报告写入日志和 state.json。
+
+    作用（项5 - 失败模式分析）：
+      持续跟踪子 Agent 委托的成功率与失败归因，帮助协调者优化委托决策。
+
+    Returns:
+        True: 诊断完成。False: 诊断失败（模块不可用/日志缺失）。
+    """
+    if not DELEGATE_OPTIMIZER_AVAILABLE:
+        relog("⚠️", "delegate_optimizer 不可用，跳过诊断")
+        return False
+
+    if not SELF_EVOLVE_LOG.exists():
+        relog("⚠️", "self_evolve_log.json 不存在，跳过诊断")
+        return False
+
+    try:
+        diagnosis = diagnose_failures()
+        if "error" in diagnosis:
+            relog("⚠️", "诊断失败: %s", diagnosis["error"])
+            return False
+
+        # 写入日志
+        write_ok = write_diagnosis_to_log(diagnosis)
+        if write_ok:
+            relog("✅", "委托诊断完成：共 %d 轮，成功率 %.0f%%（委托 %d 次，成功率 %.0f%%）",
+                  diagnosis.get("total_rounds", 0),
+                  (diagnosis.get("overall_success_rate", 0) * 100),
+                  diagnosis.get("delegated_rounds", 0),
+                  (diagnosis.get("delegate_success_rate", 0) * 100)
+                  )
+        else:
+            relog("⚠️", "诊断报告写入失败")
+
+        # 更新到 state.json
+        state = load_state()
+        state["diagnosis"] = {
+            "delegate_success_rate": diagnosis.get("delegate_success_rate", 0),
+            "overall_success_rate": diagnosis.get("overall_success_rate", 0),
+            "delegated_rounds": diagnosis.get("delegated_rounds", 0),
+            "failure_patterns": diagnosis.get("failure_patterns", {}),
+            "updated_at": __import__("datetime").datetime.now().isoformat(),
+        }
+        save_state(state)
+
+        return True
+    except Exception as e:
+        relog("⚠️", "诊断异常: %s", e)
+        return False
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # 失败样本收集（项5）
 # ═══════════════════════════════════════════════════════════════════════
@@ -836,7 +900,10 @@ def main():
         except subprocess.TimeoutExpired:
             relog("❌", "git status 超时（10s），跳过项目三同步")
 
-        # ── 5. 更新 state.json ──
+        # ── 5. 分层委托诊断（每轮检查子 Agent 成功率） ──
+        run_delegation_diagnosis()
+
+        # ── 6. 更新 state.json ──
         state = load_state()
         state["step"] = "done"
         state["completed_at"] = timestamp
