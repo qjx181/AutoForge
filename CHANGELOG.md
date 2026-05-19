@@ -103,3 +103,16 @@
 - self_evolve_round.py 新增 _format_log() 辅助函数
 - 子 Agent（qwen2.5:7b × 2）：均零产出，协调者直接 write_file 接管
 - +285/-8 行，commit 429a1d0
+
+## Round 45 — 2026-05-19 heartbeat_self_healing + git_autopush_safety
+- self_evolve_round.py (+236行)：新增两大安全特性
+  - check_and_heal_heartbeats(): 心跳超时检测 + 自动重启失联 agent
+    - 从 config.yaml 读取 heartbeat_timeout_seconds 和 heartbeat_dir
+    - PID 文件超时 → kill 原进程 → subprocess 重启，上限 3 个/轮
+    - 重启事件写入 logs/heartbeat_recovery.log
+  - check_git_push_safety(): 分支保护 + 远程冲突检测
+    - 禁止在 main/master/protected-* 分支自动 push
+    - git fetch + ahead/behind 检测远程冲突
+  - run_safe_git_push(): 安全 git push 入口（commit → check → push）
+- 子 Agent（qwen2.5:7b × 1）：git_autopush_safety 零产出，协调者直接 write_file 接管
+- -/+15 行（清理 delegable_tasks.json），+236 行新代码

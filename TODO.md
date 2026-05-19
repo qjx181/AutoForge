@@ -115,7 +115,7 @@
   依赖: 与 cost_tracker_persistence 共用 SQLite 基础设施
   预估 token 量: 2500
 
-- [ ] 任务ID: git_autopush_safety
+- [x] 任务ID: git_autopush_safety
   描述: 启用 auto_push 前增加分支保护检查，避免误操作覆盖远程代码
   验收标准:
     - 在 self_evolve_round.py 的 git push 逻辑中增加分支检查
@@ -140,7 +140,7 @@
   依赖: 无
   预估 token 量: 2500
 
-- [ ] 任务ID: heartbeat_self_healing
+- [x] 任务ID: heartbeat_self_healing
   描述: 心跳超时后自动尝试重启失联 agent（通过 PID 文件）
   验收标准:
     - 读取 config.yaml 的 heartbeat_timeout_seconds 和 heartbeat_dir
@@ -385,7 +385,7 @@
   依赖: container_pool.py 存在
   预估 token 量: 1500
 
-- [ ] 任务ID: self_heartbeat_self_healing
+- [x] 任务ID: self_heartbeat_self_healing
   描述: 心跳超时后自动尝试重启失联 agent（通过 PID 文件）
   验收标准:
     - 读取 config.yaml 的 heartbeat_timeout_seconds 和 heartbeat_dir
@@ -430,7 +430,7 @@
 
 ### Priority: LOW
 
-- [ ] 任务ID: self_git_autopush_safety
+- [x] 任务ID: self_git_autopush_safety
   描述: 启用 auto_push 前增加分支保护检查，避免误操作覆盖远程代码
   验收标准:
     - 在 self_evolve_round.py 的 git push 逻辑中增加分支检查
