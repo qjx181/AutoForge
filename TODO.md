@@ -259,7 +259,7 @@
     - 集成到 self_evolve_round.py 的主循环中
   预估 token 量: 3000
 
-- [ ] 任务ID: create_parallel_dispatcher
+- [x] 任务ID: create_parallel_dispatcher
   描述: 创建 parallel_dispatcher.py 并行任务分发器——打破串行模式，同时跑3个Agent
   验收标准:
     - 新增文件 parallel_dispatcher.py
@@ -271,7 +271,7 @@
   依赖: diagnose_subagent_failure（先诊断再改造）, create_delegate_optimizer
   预估 token 量: 3500
 
-- [ ] 任务ID: create_agent_capability_map
+- [x] 任务ID: create_agent_capability_map
   描述: 创建 agent_capability_map.json 能力画像文件，每次委托后记录结果，建立各 Agent 的能力画像
   验收标准:
     - 新增文件 agent_capability_map.json，结构按 task_type 索引：{agent_id, task_type, success_rate, avg_tokens, failure_pattern}
@@ -340,7 +340,7 @@
   依赖: define_agent_roles（已完成 ✅）
   预估 token 量: 2500
 
-- [ ] 任务ID: standardized_layer3_verification
+- [x] 任务ID: standardized_layer3_verification
   描述: 将协调者验收Agent产出的流程标准化为4步固定步骤，消除审查随意性
   验收标准:
     - 每次 Agent 产出后，必须执行以下 4 步验收：

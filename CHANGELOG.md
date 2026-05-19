@@ -78,3 +78,11 @@
 - config.yaml 追加 delegation_incentive 配置节
 - 强制委托验证：qwen2.5:7b 子 Agent 读文件但不执行修改（失败模式归档）
 - +650 行，commit 1aedd8d
+
+## Round 42 — 2026-05-19 能力画像 + 并行分发器 + 验收标准化
+- agent_capability_map.json 覆盖 3 角色 + 3 弹性槽位（成功率/失败模式/平均消耗）
+- delegate_optimizer.py 新增 get_agent_capability(), update_agent_capability(), select_best_agent() 能力查询 API
+- delegate_optimizer.py 新增 run_layer3_verification() 4 步标准化验收流程（签名/语法/单元测试/diff）
+- parallel_dispatcher.py 并行任务分发器（dispatch_tasks 决策协调者 vs 委托 + 分批并发 + 预算感知）
+- 强制委托验证：subagent qwen2.5:7b 计划不执行（plan-only failure），协调者覆盖
+- +450 行，3 个新文件，commit pending

@@ -1,0 +1,79 @@
+{
+  "agents": {
+    "agent-coder": {
+      "task_type_description": "已有文件的增量修改（函数替换、常量更新、文档修改）",
+      "success_rate": 0.5,
+      "avg_tokens_used": 2000,
+      "failure_pattern": "signature_drift, zero_file_output",
+      "total_tasks_assigned": 4,
+      "successful_tasks": 2,
+      "last_assigned": null,
+      "notes": "从零创建新文件时 100% 失败，仅增量修改可靠"
+    },
+    "agent-reviewer": {
+      "task_type_description": "代码审查、diff 检查、测试覆盖率审计",
+      "success_rate": 0.0,
+      "avg_tokens_used": 0,
+      "failure_pattern": "never_assigned, weak_model_inadequate_for_complex_review",
+      "total_tasks_assigned": 0,
+      "successful_tasks": 0,
+      "last_assigned": null,
+      "notes": "qwen2.5:7b 不足以理解复杂审查任务，需要更强模型"
+    },
+    "agent-tester": {
+      "task_type_description": "测试用例创建、mock 模板填充",
+      "success_rate": 0.0,
+      "avg_tokens_used": 0,
+      "failure_pattern": "test_creation_100pct_failure_from_scratch",
+      "total_tasks_assigned": 0,
+      "successful_tasks": 0,
+      "last_assigned": null,
+      "notes": "从零创建测试文件 100% 失败，仅做增量补充可尝试"
+    },
+    "agent-burst-1": {
+      "task_type_description": "弹性——未分配固定角色",
+      "success_rate": 0.0,
+      "avg_tokens_used": 0,
+      "failure_pattern": "",
+      "total_tasks_assigned": 0,
+      "successful_tasks": 0,
+      "last_assigned": null,
+      "notes": ""
+    },
+    "agent-burst-2": {
+      "task_type_description": "弹性——未分配固定角色",
+      "success_rate": 0.0,
+      "avg_tokens_used": 0,
+      "failure_pattern": "",
+      "total_tasks_assigned": 0,
+      "successful_tasks": 0,
+      "last_assigned": null,
+      "notes": ""
+    },
+    "agent-burst-3": {
+      "task_type_description": "弹性——未分配固定角色",
+      "success_rate": 0.0,
+      "avg_tokens_used": 0,
+      "failure_pattern": "",
+      "total_tasks_assigned": 0,
+      "successful_tasks": 0,
+      "last_assigned": null,
+      "notes": ""
+    }
+  },
+  "coordination_rules": {
+    "success_rate_high_threshold": 0.5,
+    "success_rate_low_threshold": 0.3,
+    "delegate_preference_by_rate": {
+      "above_high": "prefer_delegation_for_all",
+      "between": "only_delegate_incremental_modifications",
+      "below_low": "only_delegate_simple_config_changes"
+    },
+    "exploration_policy": {
+      "untested_agents": "assign_low_risk_tasks_first",
+      "consistent_failures_3plus": "permanently_block_from_that_task_type"
+    },
+    "last_updated": null
+  },
+  "agent_selection_history": []
+}

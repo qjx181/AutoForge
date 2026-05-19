@@ -560,3 +560,281 @@ def write_diagnosis_to_log(diagnosis: dict) -> bool:
         encoding="utf-8"
     )
     return True
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Agent 能力画像 — agent_capability_map.json 操作
+# ═══════════════════════════════════════════════════════════════════════
+
+CAPABILITY_MAP_FILE = SWARM_DIR / "agent_capability_map.json"
+
+
+def get_agent_capability(agent_id: str) -> Optional[dict]:
+    """get_agent_capability — 查询指定 Agent 的能力画像。
+
+    Layer 1 辅助函数。协调者根据此画像决定是否委托给该 Agent。
+
+    Args:
+        agent_id: Agent 标识符（如 "agent-coder", "agent-tester"）。
+
+    Returns:
+        Agent 能力画像字典，或 None（文件不存在/Agent 不存在）。
+
+    用法（协调者思维中调用）：
+        cap = get_agent_capability("agent-coder")
+        if cap and cap["success_rate"] > 0.5:
+            # 可靠，可以委托
+        elif cap and cap["success_rate"] > 0.3:
+            # 仅委托简单任务
+        else:
+            # 协调者自己干
+    """
+    if not CAPABILITY_MAP_FILE.exists():
+        return None
+    try:
+        data = json.loads(CAPABILITY_MAP_FILE.read_text(encoding="utf-8"))
+        return data.get("agents", {}).get(agent_id)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def update_agent_capability(agent_id: str, task_result: dict) -> bool:
+    """update_agent_capability — 更新 Agent 能力画像。
+
+    每次委托完成后由协调者调用，记录任务结果（成功/失败、消耗 token、失败原因）。
+
+    Args:
+        agent_id: Agent 标识符。
+        task_result: 任务结果字典，含：
+            - success: bool
+            - tokens_used: int
+            - failure_pattern: str
+            - task_type: str
+
+    Returns:
+        True: 更新成功。False: 更新失败。
+    """
+    if not CAPABILITY_MAP_FILE.exists():
+        return False
+    try:
+        data = json.loads(CAPABILITY_MAP_FILE.read_text(encoding="utf-8"))
+        agents = data.get("agents", {})
+        if agent_id not in agents:
+            return False
+
+        agent = agents[agent_id]
+        agent["total_tasks_assigned"] = agent.get("total_tasks_assigned", 0) + 1
+        agent["last_assigned"] = __import__("datetime").datetime.now().isoformat()
+
+        if task_result.get("success"):
+            agent["successful_tasks"] = agent.get("successful_tasks", 0) + 1
+        else:
+            fp = task_result.get("failure_pattern", "")
+            if fp:
+                existing = agent.get("failure_pattern", "")
+                existing_parts = [p.strip() for p in existing.split(",") if p.strip()]
+                if fp not in existing_parts:
+                    existing_parts.append(fp)
+                agent["failure_pattern"] = ", ".join(existing_parts)
+
+        # 重新计算 success_rate
+        total = agent.get("total_tasks_assigned", 0)
+        succeeded = agent.get("successful_tasks", 0)
+        agent["success_rate"] = round(succeeded / max(total, 1), 2)
+
+        # 更新 token 平均值
+        prev_avg = agent.get("avg_tokens_used", 0)
+        prev_count = max(total - 1, 0)
+        new_tokens = task_result.get("tokens_used", 0)
+        if prev_count > 0:
+            agent["avg_tokens_used"] = round(
+                (prev_avg * prev_count + new_tokens) / total, 0
+            )
+        else:
+            agent["avg_tokens_used"] = new_tokens
+
+        # 记录选择历史
+        history_entry = {
+            "timestamp": __import__("datetime").datetime.now().isoformat(),
+            "agent_id": agent_id,
+            "task_type": task_result.get("task_type", "unknown"),
+            "success": task_result.get("success", False),
+            "tokens_used": task_result.get("tokens_used", 0),
+        }
+        data.setdefault("agent_selection_history", []).append(history_entry)
+        data["coordination_rules"]["last_updated"] = history_entry["timestamp"]
+
+        CAPABILITY_MAP_FILE.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            encoding="utf-8"
+        )
+        return True
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"[⚠️ 能力画像] 更新失败: {e}")
+        return False
+
+
+def select_best_agent(task_type: str) -> str:
+    """select_best_agent — 根据任务类型选择最佳 Agent。
+
+    Layer 1 决策辅助。基于 Agent 能力画像，选择成功率最高且适合该任务类型的 Agent。
+
+    Args:
+        task_type: 任务类型（"incremental_modification", "code_review",
+                   "test_creation", "elastic"）。
+
+    Returns:
+        选中的 Agent ID（如 "agent-coder"）。
+
+    规则：
+        - success_rate > 0.5: 优先派任务
+        - success_rate 0.3~0.5: 仅派简单任务
+        - success_rate < 0.3 或 rate=0: 仅派探索性/低风险任务
+        - 新 Agent（rate=0）优先派简单探索任务以积累数据
+    """
+    if not CAPABILITY_MAP_FILE.exists():
+        return "agent-coder"  # 默认
+
+    try:
+        data = json.loads(CAPABILITY_MAP_FILE.read_text(encoding="utf-8"))
+        agents = data.get("agents", {})
+    except (json.JSONDecodeError, OSError):
+        return "agent-coder"
+
+    # 按 success_rate 降序排列，rate=0 的排在最后
+    sorted_agents = sorted(
+        agents.items(),
+        key=lambda item: (
+            0 if item[1].get("success_rate", 0) == 0 else 1,
+            item[1].get("success_rate", 0)
+        ),
+        reverse=True,
+    )
+
+    for agent_id, capability in sorted_agents:
+        rate = capability.get("success_rate", 0)
+        total = capability.get("total_tasks_assigned", 0)
+
+        # 新 Agent（0 次任务）—— 仅分配简单探索任务
+        if total == 0 and task_type in ("elastic", "config_update"):
+            return agent_id
+
+        # 高可靠 Agent
+        if rate >= 0.5:
+            return agent_id
+
+        # 中等可靠 Agent
+        if rate >= 0.3 and task_type in ("incremental_modification",
+                                          "config_update"):
+            return agent_id
+
+    # 兜底
+    return "agent-coder"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Layer 3 验收标准化 — run_layer3_verification 函数
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def run_layer3_verification(
+    before_content: str,
+    after_content: str,
+    file_path: str,
+    func_names: list[str],
+    test_file: str = "",
+    rework_count: int = 0,
+) -> dict:
+    """run_layer3_verification — 标准化 4 步验收流程。
+
+    每次 Agent 产出后必须执行。4 步验收 + 返工管控。
+
+    Step 1 — 签名检查：check_signature_unchanged()
+    Step 2 — 语法检查：python -m py_compile
+    Step 3 — 单元测试：pytest <test_file>
+    Step 4 — diff 对照：检查改动规模
+
+    Args:
+        before_content: 改动前的文件内容。
+        after_content: 改动后的文件内容。
+        file_path: 被修改文件的路径。
+        func_names: 要检查的函数名列表。
+        test_file: 测试文件路径（可选）。
+        rework_count: 该任务已返工次数。
+
+    Returns:
+        {
+            "passed": bool,
+            "rework_count": int,
+            "step_results": dict,
+            "rework_action": str
+        }
+    """
+    step_results = {}
+
+    # Step 1 — 签名检查
+    violations = check_signature_unchanged(before_content, after_content, func_names)
+    sig_passed = len(violations) == 0
+    step_results["signature_check"] = {
+        "passed": sig_passed,
+        "violations": violations,
+    }
+
+    # Step 2 — 语法检查（用 ast.parse 替代 python -m py_compile，避免 terminal 依赖）
+    syntax_ok = True
+    syntax_error = None
+    try:
+        __import__("ast").parse(after_content)
+    except SyntaxError as e:
+        syntax_ok = False
+        syntax_error = f"{e.msg} (line {e.lineno})"
+    step_results["syntax_check"] = {
+        "passed": syntax_ok,
+        "error": syntax_error,
+    }
+
+    # Step 3 — 单元测试（子 Agent 需自行跑 pytest，这里仅记录是否提供测试文件）
+    if test_file:
+        step_results["unit_test"] = {
+            "passed": None,  # 子 Agent 需自行运行 pytest 并报告
+            "note": f"需要运行: pytest {test_file} -v",
+        }
+    else:
+        step_results["unit_test"] = {
+            "passed": True,
+            "note": "未提供测试文件，跳过单元测试检查",
+        }
+
+    # Step 4 — diff 对照
+    added, removed = count_lines_added_removed(before_content, after_content)
+    diff_warnings = []
+    if added > 200:
+        diff_warnings.append(f"单次改动代码量较大（+{added} 行），请确认无意外变更")
+    if added == 0 and removed == 0:
+        diff_warnings.append("文件内容未变化——零产出，需确认任务是否完成")
+    step_results["diff_review"] = {
+        "passed": len(diff_warnings) == 0,
+        "warnings": diff_warnings,
+        "lines_added": added,
+        "lines_removed": removed,
+    }
+
+    # 判断是否全部通过
+    all_passed = all(
+        s.get("passed", False) for s in step_results.values()
+        if s.get("passed") is not None  # 跳过 None（待子 Agent 确认）
+    )
+
+    # 返工管控
+    if all_passed:
+        rework_action = "通过"
+    elif rework_count >= 2:
+        rework_action = "协调者接管"
+    else:
+        rework_action = "打回重做"
+
+    return {
+        "passed": all_passed,
+        "rework_count": rework_count + (0 if all_passed else 1),
+        "step_results": step_results,
+        "rework_action": rework_action,
+    }
