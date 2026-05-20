@@ -743,19 +743,23 @@ async def start_optimization(body: dict):
 async def list_optimize_runs(limit: int = 20):
     """列出最近的优化运行记录"""
     runs = []
+
+    # 从 opt_runs 读取
     for f in sorted(OPT_RUNS_DIR.glob("*.json"), reverse=True):
         if f.name.endswith(".running"):
             continue
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
+            ent = data.get("deep_scan", {})
             runs.append({
                 "run_id": data.get("run_id", f.stem),
                 "target_dir": data.get("target_dir", ""),
+                "type": data.get("type", "scan"),
                 "status": data.get("status", "unknown"),
-                "overall_score": data.get("overall_score", None),
-                "total_issues": data.get("total_issues", None),
-                "critical_issues": data.get("critical_issues", 0),
-                "dry_run": data.get("dry_run", True),
+                "score": ent.get("score") if ent else (data.get("overall_score") or data.get("final_score")),
+                "total_issues": ent.get("issue_count") if ent else (data.get("total_issues") or 0),
+                "high": ent.get("by_severity", {}).get("high", 0) if ent else 0,
+                "fixes": data.get("deep_fixes", {}).get("succeeded", 0) if data.get("deep_fixes") else 0,
                 "started_at": data.get("started_at", ""),
                 "finished_at": data.get("finished_at", ""),
                 "error": data.get("error", None),
@@ -764,6 +768,38 @@ async def list_optimize_runs(limit: int = 20):
             continue
         if len(runs) >= limit:
             break
+
+    # 再从 agent_trigger 日志读取（补充进化引擎的结果）
+    log_dir = PROJECT_DIR / "logs"
+    if log_dir.exists():
+        for f in sorted(log_dir.glob("agent_trigger_*.json"), reverse=True):
+            try:
+                d = json.loads(f.read_text(encoding="utf-8"))
+                ent = d.get("deep_scan", {})
+                # 去重
+                if any(r.get("started_at","") == d.get("started_at","") for r in runs):
+                    continue
+                runs.append({
+                    "run_id": f.stem,
+                    "target_dir": d.get("target_dir", ""),
+                    "type": "evolve",
+                    "status": d.get("status", "completed"),
+                    "score": ent.get("score") if ent else (d.get("score_before") or d.get("overall_score")),
+                    "total_issues": ent.get("issue_count") if ent else (d.get("total_issues") or 0),
+                    "high": ent.get("by_severity", {}).get("high", 0) if ent else 0,
+                    "fixes": d.get("deep_fixes", {}).get("succeeded", 0) if d.get("deep_fixes") else 0,
+                    "started_at": d.get("started_at", ""),
+                    "finished_at": d.get("finished_at", ""),
+                    "error": d.get("error", None),
+                })
+            except Exception:
+                continue
+            if len(runs) >= limit:
+                break
+
+    # 按时间排序
+    runs.sort(key=lambda x: x.get("finished_at", x.get("started_at", "")), reverse=True)
+    return runs[:limit]
     # 加上正在运行的
     for f in OPT_RUNS_DIR.glob("*.running"):
         run_id = f.stem
@@ -1223,6 +1259,16 @@ async def start_agent_evolution(body: dict):
     except Exception as e:
         cron_msg = f"cron_warning: {e}"
 
+    # 标记正在运行
+    run_marker = PROJECT_DIR / "data" / ".current_run.json"
+    run_marker.parent.mkdir(parents=True, exist_ok=True)
+    run_marker.write_text(json.dumps({
+        "status": "running",
+        "target_dir": wsl_path,
+        "phase": "starting",
+        "started_at": datetime.datetime.now().isoformat(),
+    }), encoding="utf-8")
+
     # 立即触发即时进化
     if body.get("start_now", True):
         import threading
@@ -1231,15 +1277,38 @@ async def start_agent_evolution(body: dict):
             for p in [str(SRC_DIR), str(PROJECT_DIR)]:
                 if p not in _sys.path: _sys.path.insert(0, p)
             try:
+                def _progress(phase, data):
+                    try:
+                        marker = _json.loads(run_marker.read_text() if run_marker.exists() else '{}')
+                        marker["status"] = "running"
+                        marker["phase"] = phase
+                        if isinstance(data, dict):
+                            marker.update(data)
+                        run_marker.write_text(_json.dumps(marker), encoding="utf-8")
+                    except:
+                        pass
+
                 from src.analysis.evolution_engine import run_evolution_round
                 result = run_evolution_round(
                     target_dir=wsl_path, dimensions=None, max_fixes_per_round=20,
+                    progress_callback=_progress,
                 )
                 log_file = PROJECT_DIR / "logs" / f"agent_trigger_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
                 log_file.parent.mkdir(parents=True, exist_ok=True)
                 log_file.write_text(_json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+
+                # 标记完成
+                run_marker.write_text(_json.dumps({
+                    "status": "completed",
+                    "target_dir": wsl_path,
+                    "phase": "done",
+                    "finished_at": datetime.datetime.now().isoformat(),
+                }), encoding="utf-8")
             except Exception as e:
                 import traceback as _tb
+                run_marker.write_text(_json.dumps({
+                    "status": "failed", "phase": "error", "error": str(e),
+                }), encoding="utf-8")
                 (PROJECT_DIR / "logs" / "agent_error.log").write_text(
                     f"{datetime.datetime.now()}: {e}\n{_tb.format_exc()}", encoding="utf-8")
         t = threading.Thread(target=_run_now, daemon=True)
@@ -1267,17 +1336,70 @@ async def get_agent_status():
         for f in sorted(log_dir.glob("agent_trigger_*.json"), reverse=True)[:3]:
             try:
                 d = json.loads(f.read_text(encoding="utf-8"))
+                dims = d.get("dimensions", {})
+                dim_summary = {}
+                if dims:
+                    for dn, dr in list(dims.items())[:9]:
+                        dim_summary[dn] = {
+                            "score": dr.get("score", 0),
+                            "issues": dr.get("issue_count", 0),
+                            "label": dr.get("label", dn),
+                        }
+                deep = d.get("deep_scan", {})
+                if isinstance(deep, dict) and "score" in deep:
+                    dim_summary["_enterprise"] = {
+                        "score": deep.get("score", 0),
+                        "issues": deep.get("issue_count", 0),
+                        "label": "企业级深度",
+                        "by_severity": deep.get("by_severity", {}),
+                    }
+                deep_fixes = d.get("deep_fixes", {})
+                if deep_fixes and deep_fixes.get("succeeded", 0) > 0:
+                    dim_summary["_enterprise"]["deep_fixes"] = {
+                        "succeeded": deep_fixes.get("succeeded", 0),
+                        "failed": deep_fixes.get("failed", 0),
+                        "details": deep_fixes.get("details", [])[:5],
+                    }
                 recent.append({
                     "file": f.name,
                     "time": d.get("finished_at", d.get("started_at", "")),
                     "score_before": d.get("score_before"),
                     "score_after": d.get("score_after"),
                     "fixes_succeeded": d.get("fixes", {}).get("succeeded", 0),
+                    "total_issues": d.get("total_issues", 0),
+                    "critical_issues": d.get("critical_issues", 0),
+                    "dimensions": dim_summary,
                 })
             except Exception:
                 pass
 
-    return {"target": target, "recent_runs": recent, "cronjob_schedule": "每30分钟"}
+    enterprise = {}
+    if recent and recent[0].get("dimensions", {}).get("_enterprise"):
+        ent = recent[0]["dimensions"]["_enterprise"]
+        enterprise = {
+            "score": ent.get("score", 0),
+            "issues": ent.get("issues", 0),
+            "by_severity": ent.get("by_severity", {}),
+            "fixes": ent.get("deep_fixes", {}),
+        }
+    # 检查是否有正在运行的进化
+    running = None
+    run_marker = PROJECT_DIR / "data" / ".current_run.json"
+    if run_marker.exists():
+        try:
+            marker = json.loads(run_marker.read_text(encoding="utf-8"))
+            if marker.get("status") == "running":
+                running = marker
+        except:
+            pass
+
+    return {
+        "target": target,
+        "enterprise": enterprise,
+        "recent_runs": recent,
+        "currently_running": running,
+        "cronjob_schedule": "每30分钟",
+    }
 
 
 # ── 前端 ────────────────────────────────────────────────────────────────

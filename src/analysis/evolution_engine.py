@@ -303,6 +303,75 @@ def run_evolution_round(
         "total_issues": total_issues,
         "critical_issues": critical,
     }
+    report["dimensions"] = scan_result.get("dimensions", {})
+    report["summary"] = scan_result.get("summary", "")
+
+    # ── 深度企业级扫描 ──
+    _progress("deep_scan", {"message": "企业级深度扫描中..."})
+    try:
+        from src.analysis.deep_enterprise_scanner import scan_deep
+        deep_result = scan_deep(target_dir)
+        report["deep_scan"] = deep_result
+        _progress("deep_scanned", {
+            "deep_score": deep_result.get("score", 0),
+            "deep_issues": deep_result.get("issue_count", 0),
+            "deep_critical": deep_result.get("by_severity", {}).get("critical", 0),
+            "message": f"深度扫描评分 {deep_result.get('score',0)}/100，发现 {deep_result.get('issue_count',0)} 个问题",
+        })
+    except Exception as e:
+        report["deep_scan"] = {"error": str(e), "score": 0, "issues": []}
+        _progress("deep_scan_error", {"message": f"深度扫描失败: {e}"})
+
+    # ── 深度修复（企业级） ──
+    deep_issues = report.get("deep_scan", {}).get("issues", [])
+    if deep_issues:
+        _progress("deep_fixing", {"total": len(deep_issues), "message": f"尝试修复深层问题...共 {len(deep_issues)} 个"})
+        try:
+            from src.fixers.enterprise_fixer import try_fix_deep, DEEP_FIXERS
+            fixable_types = {k for k, v in DEEP_FIXERS.items() if v is not None}
+
+            deep_fixes = {"attempted": 0, "succeeded": 0, "failed": 0, "details": []}
+            # 按修复能力排序：可自动修复的优先
+            sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+            sorted_issues = sorted(
+                [i for i in deep_issues if i.get("type") in fixable_types],
+                key=lambda x: sev_order.get(x.get("severity", "low"), 99),
+            )
+
+            for issue in sorted_issues[:20]:  # 每轮最多20个
+                deep_fixes["attempted"] += 1
+                result = try_fix_deep(issue, Path(target_dir))
+                deep_fixes["details"].append({
+                    "issue_type": issue.get("type", ""),
+                    "severity": issue.get("severity", ""),
+                    "file": issue.get("file", ""),
+                    "line": issue.get("line", 0),
+                    "fix_result": result,
+                })
+                if result.get("success"):
+                    deep_fixes["succeeded"] += 1
+                else:
+                    deep_fixes["failed"] += 1
+
+                _progress("deep_fixing", {
+                    "attempted": deep_fixes["attempted"],
+                    "succeeded": deep_fixes["succeeded"],
+                    "failed": deep_fixes["failed"],
+                    "total": len(sorted_issues),
+                    "message": f"深层修复: {deep_fixes['succeeded']}成功 / {deep_fixes['failed']}失败 / {deep_fixes['attempted']}尝试",
+                })
+
+            report["deep_fixes"] = deep_fixes
+            _progress("deep_fixed", {
+                "succeeded": deep_fixes["succeeded"],
+                "message": f"深层修复完成: 成功 {deep_fixes['succeeded']} 个",
+            })
+        except Exception as e:
+            import traceback
+            report["deep_fix_error"] = str(e)
+            _progress("deep_fix_error", {"message": f"深层修复异常: {e}"})
+    else:
+        _progress("deep_skip", {"message": "无深层问题可修复"})
 
     _progress("scanned", {
         "score": score_before,

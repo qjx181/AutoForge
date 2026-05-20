@@ -554,11 +554,105 @@ async function loadAgentStatus() {
     const data = await res.json();
     const el = document.getElementById('agent-content');
     if(!el) return;
+
+    const dimColors = {
+      security:'#fb7185', performance:'#fb923c', asyncification:'#22d3ee',
+      quality:'#34d399', testing:'#a78bfa', architecture:'#fbbf24',
+      documentation:'#94a3b8', configuration:'#f472b6', deadcode:'#64748b'
+    };
+    const dimIcons = {
+      security:'🛡️', performance:'⚡', asyncification:'🔄',
+      quality:'📝', testing:'🧪', architecture:'🏗️',
+      documentation:'📖', configuration:'⚙️', deadcode:'🗑️'
+    };
+
+    // Build enterprise score header
+    let entHtml = '';
+    if(data.enterprise) {
+      const e = data.enterprise;
+      const bySev = e.by_severity || {};
+      let badgeHtml = '';
+      for(const [sev, color, label] of [['critical','#fb7185','Critical'],['high','#fbbf24','High'],['medium','#22d3ee','Medium'],['low','#64748b','Low']]) {
+        if(bySev[sev]) badgeHtml += `<span style="background:#1e293b;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;color:${color};margin-right:0.3rem">${label} ${bySev[sev]}</span>`;
+      }
+      const fixes = e.fixes || {};
+      const fixBadge = fixes.succeeded ? `<span style="background:rgba(16,185,129,0.15);padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;color:#34d399;margin-right:0.3rem">✅ 修复 ${fixes.succeeded}</span>` : '';
+      const failBadge = fixes.failed ? `<span style="background:rgba(225,29,72,0.15);padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;color:#fb7185;margin-right:0.3rem">❌ ${fixes.failed}</span>` : '';
+      const scoreColor = e.score >= 80 ? '#34d399' : e.score >= 50 ? '#fbbf24' : '#fb7185';
+
+    // Check if running
+    const running = data.currently_running;
+    let runningHtml = '';
+    if(running) {
+      const phase = running.phase || 'running';
+      const phaseLabels = {starting:'🚀 启动中',scanning:'🔍 扫描中',deep_scan:'🔬 深层分析',deep_fixing:'🔧 深度修复中',rescanning:'📊 重新扫描',fixing:'🔧 修复中',done:'✅ 完成',error:'❌ 出错'};
+      const msg = running.message || '';
+      runningHtml = `
+      <div style="margin-top:0.5rem;padding:0.5rem;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:0.5rem;font-size:0.75rem">
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="width:10px;height:10px;border-radius:50%;background:#a78bfa;animation:pulse 1.2s infinite;display:inline-block"></span>
+          <span style="font-weight:600">${phaseLabels[phase]||'⏳ '+phase}</span>
+          <span style="color:#64748b;font-size:0.65rem;margin-left:auto">扫描中...</span>
+        </div>
+        <div style="margin-top:0.3rem;color:#94a3b8;font-size:0.65rem">${msg}</div>
+      </div>`;
+    }
+
+    // Start building the card
+    entHtml = `
+      <div style="margin-top:0.5rem;padding:0.6rem;background:rgba(251,113,133,0.08);border:1px solid rgba(251,113,133,0.2);border-radius:0.5rem">
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="font-size:1.5rem;font-weight:700;color:${scoreColor}">${e.score}</span>
+          <div>
+            <div style="font-size:0.75rem;font-weight:600">企业级质量评分</div>
+            <div style="font-size:0.65rem;color:#64748b">${e.issues} 个问题</div>
+          </div>
+          <div style="margin-left:auto">${badgeHtml}</div>
+        </div>
+        ${fixBadge || failBadge ? `<div style="margin-top:0.4rem;font-size:0.7rem;color:#94a3b8">${fixBadge}${failBadge}</div>` : ''}
+      </div>`;
+    }
+
+    // Build dimension bars
+    let dimHtml = '';
+    if(data.recent_runs && data.recent_runs.length > 0) {
+      const run = data.recent_runs[0];
+      const dims = run.dimensions || {};
+      const dimEntries = Object.entries(dims).filter(([dn]) => dn !== '_enterprise');
+      // Keep surface dims data but only show enterprise
+    }
+
+    // Build runs table
+    let runsHtml = '';
+    if(data.recent_runs && data.recent_runs.length > 0) {
+      runsHtml = '<div style="margin-top:0.5rem;font-size:0.65rem;color:#64748b">最近运行</div>';
+      data.recent_runs.forEach(r => {
+        const dt = (r.time||'').slice(5,19).replace('T',' ');
+        const deepScore = (r.dimensions && r.dimensions._enterprise && r.dimensions._enterprise.score) || 0;
+        const deepIssues = (r.dimensions && r.dimensions._enterprise && r.dimensions._enterprise.issues) || 0;
+        const deepHigh = (r.dimensions && r.dimensions._enterprise && r.dimensions._enterprise.by_severity && r.dimensions._enterprise.by_severity.high) || 0;
+        const sc = `${deepScore}/100`;
+        runsHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid #1e293b;font-size:0.7rem">
+          <span style="color:#94a3b8">${dt}</span>
+          <span style="color:${deepScore>=80?'#34d399':deepScore>=50?'#fbbf24':'#fb7185'}">${sc} <span style="color:#64748b">${deepHigh>0?'High '+deepHigh:''}</span></span>
+          <span style="color:#64748b">${deepIssues} 问题</span>
+        </div>`;
+      });
+    }
+
     el.innerHTML = `<div>目标: ${data.target || '未设置'}</div>
       <div>cronjob: 每30分钟</div>
-      ${data.recent_runs && data.recent_runs.length > 0 ? `<div style="margin-top:0.5rem">最近运行:</div>${data.recent_runs.map(r =>
-        `<div style="color:#94a3b8">${(r.time||'').slice(0,19)} 评分 ${r.score_before}→${r.score_after} 修复${r.fixes_succeeded}</div>`
-      ).join('')}` : '<div style="color:#64748b;margin-top:0.3rem">尚未有运行记录</div>'}`;
+      ${runningHtml}
+      ${entHtml}
+      ${data.recent_runs && data.recent_runs.length > 0 ? `
+      <div style="margin-top:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+        <span style="background:#1e293b;padding:0.2rem 0.5rem;border-radius:0.3rem;font-size:0.7rem;color:#34d399">评分 ${data.enterprise.score||'?'}</span>
+        <span style="background:#1e293b;padding:0.2rem 0.5rem;border-radius:0.3rem;font-size:0.7rem;color:#fbbf24">问题 ${data.enterprise.issues||0}</span>
+        <span style="background:#1e293b;padding:0.2rem 0.5rem;border-radius:0.3rem;font-size:0.7rem;color:#fb7185">High ${data.enterprise.by_severity.high||0}</span>
+        <span style="background:#1e293b;padding:0.2rem 0.5rem;border-radius:0.3rem;font-size:0.7rem;color:#22d3ee">修复 ${(data.enterprise.fixes&&data.enterprise.fixes.succeeded)||0}</span>
+      </div>` : ''}
+      ${dimHtml}
+      ${runsHtml}`;
   } catch(e) {
     const el = document.getElementById('agent-content');
     if(el) el.innerHTML = '<div style="color:#fb7185">无法获取状态: ' + e.message + '</div>';
@@ -581,6 +675,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(loadAgentStatus, 1000);
   // 每10秒自动刷新
   setInterval(loadAgentStatus, 10000);
+  // 历史也自动刷新
+  setInterval(loadHistory, 15000);
 });
 
 function phaseLabel(p) {
@@ -721,18 +817,19 @@ async function loadHistory() {
     el.innerHTML = runs.map(r => {
       const st = r.status === 'running' ? 'running' : r.status === 'completed' ? 'completed' : 'failed';
       const type = r.type === 'auto' ? '<span class="h-type">监控</span>' : r.type === 'evolve' ? '<span class="h-type" style="background:#ea580c;color:#fff">进化</span>' : '<span class="h-type">扫描</span>';
-      const score = r.final_score !== null && r.final_score !== undefined
-        ? `<span class="h-item-score">${r.final_score}/100</span>`
-        : r.overall_score !== null && r.overall_score !== undefined
-          ? `<span class="h-item-score">${r.overall_score}/100</span>` : '';
+      const score = r.score !== null && r.score !== undefined
+        ? `<span class="h-item-score" style="${r.score<60?'color:#fb7185':r.score<80?'color:#fbbf24':'color:#34d399'}">${r.score}/100</span>` : '';
+      const highBadge = r.high ? `<span style="color:#fb7185;font-size:0.6rem">H${r.high}</span>` : '';
+      const fixBadge = r.fixes ? `<span style="color:#34d399;font-size:0.6rem">✅${r.fixes}</span>` : '';
       return `<div class="history-item ${r.run_id === currentRunId ? 'active' : ''}" onclick="loadHistoryRun('${r.run_id}')">
-        <div><span class="h-status ${st}"></span>✅ ${st} ${type}</div>
-        <div class="h-item-path">${r.target_dir || '?'}</div>
-        <div style="display:flex;justify-content:space-between">
+        <div><span class="h-status ${st}"></span>${st==='completed'?'✅':st==='running'?'⏳':'❌'} ${st} ${type}</div>
+        <div class="h-item-path">${(r.target_dir||'?').split('/').slice(-2).join('/')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
           ${score}
-          <span class="h-item-time">${r.total_issues||r.total_rounds||'--'} ${r.type==='auto'?'轮':'issues'}</span>
+          <span>${highBadge} ${fixBadge}</span>
+          <span class="h-item-time">${r.total_issues||'--'} 问题</span>
         </div>
-        <div class="h-item-time">${(r.finished_at||r.started_at||'').slice(0,19)}</div>
+        <div class="h-item-time">${(r.finished_at||r.started_at||'').slice(5,19).replace('T',' ')}</div>
       </div>`;
     }).join('');
   } catch(e) {}
