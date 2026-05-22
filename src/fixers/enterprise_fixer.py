@@ -44,26 +44,8 @@ def _check_syntax(code: str) -> bool:
 # ═══════════════════════════════════════════════════════════════════════
 
 
-def fix_swallowed_exception(filepath: Path, line_num: int) -> dict:
-    """修复空 except 块：加入 logging.exception()"""
-    code = _read_file(filepath)
-    if not code:
-        return {"success": False, "error": "无法读取文件"}
-
-    lines = code.split("\n")
-    if line_num < 1 or line_num > len(lines):
-        return {"success": False, "error": f"行号 {line_num} 超出范围"}
-
-    # 找到这个 except 块的结束位置（下一个同缩进的非空行或文件末尾）
-    except_line = lines[line_num - 1]
-    except_indent = len(except_line) - len(except_line.lstrip())
-
-    # 确认这是 except 行
-    stripped = except_line.strip()
-    if not stripped.startswith("except"):
-        return {"success": False, "error": f"行 {line_num} 不是 except 语句: {stripped[:40]}"}
-
-    # 查找这个 except 块之后的第一个同缩进或更小缩进的行
+def _find_except_block_end(lines: list, line_num: int, except_indent: int) -> int:
+    """查找 except 块的结束行号。"""
     block_end = line_num
     for i in range(line_num, len(lines)):
         if i == line_num:
@@ -77,37 +59,70 @@ def fix_swallowed_exception(filepath: Path, line_num: int) -> dict:
             break
     else:
         block_end = len(lines)
+    return block_end
 
-    # 检查 block 内是否为空（或只有 pass）
+
+def _check_block_empty(lines: list, line_num: int, block_end: int) -> bool:
+    """检查 except 块是否为空（或只含 pass）。"""
     block_lines = [l.strip() for l in lines[line_num:block_end]]
-    has_only_pass = all(l == "" or l == "pass" or l.startswith("#") for l in block_lines)
+    return all(l == "" or l == "pass" or l.startswith("#") for l in block_lines)
 
-    if not has_only_pass:
-        return {"success": False, "reason": "except 块已有代码，不需要修复"}
 
-    # 检查是否已有 import logging
-    has_logging = any(l.strip().startswith("import logging") or l.strip().startswith("from logging")
-                      for l in lines)
-
-    # 插入 logging.exception() + 移除 pass
-    insert_indent = " " * (except_indent + 4)
-    existing_code = "\n".join(lines[line_num - 1:block_end])
-    replacement_code = existing_code.replace("pass", f"{insert_indent}logging.exception('异常捕获: ')")
-    if "pass" not in existing_code:
-        replacement_code = existing_code.rstrip() + f"\n{insert_indent}logging.exception('异常捕获: ')"
-
-    # 执行替换
-    new_lines = lines[:line_num - 1] + replacement_code.split("\n") + lines[block_end:]
-    new_code = "\n".join(new_lines)
-
-    # 如果没有 import logging，添加
+def _ensure_logging_import(lines: list) -> tuple:
+    """确保文件中有 import logging，返回 (更新后的lines, 是否有logging)。"""
+    has_logging = any(
+        l.strip().startswith("import logging") or l.strip().startswith("from logging")
+        for l in lines
+    )
     if not has_logging:
         insert_pos = 0
-        for i, l in enumerate(new_lines):
+        for i, l in enumerate(lines):
             if l.strip().startswith("import ") or l.strip().startswith("from "):
                 insert_pos = i + 1
-        new_lines.insert(insert_pos, "import logging")
-        new_code = "\n".join(new_lines)
+        lines.insert(insert_pos, "import logging")
+    return lines, has_logging
+
+
+def _build_replacement_code(lines: list, line_num: int, block_end: int,
+                            except_indent: int) -> str:
+    """构建替换后的 except 块代码（加入 logging.exception）。"""
+    insert_indent = " " * (except_indent + 4)
+    existing_code = "\n".join(lines[line_num - 1:block_end])
+    replacement = existing_code.replace("pass", f"{insert_indent}logging.exception('异常捕获: ')")
+    if "pass" not in existing_code:
+        replacement = existing_code.rstrip() + f"\n{insert_indent}logging.exception('异常捕获: ')"
+    return replacement
+
+
+def fix_swallowed_exception(filepath: Path, line_num: int) -> dict:
+    """修复空 except 块：加入 logging.exception()"""
+    code = _read_file(filepath)
+    if not code:
+        return {"success": False, "error": "无法读取文件"}
+
+    lines = code.split("\n")
+    if line_num < 1 or line_num > len(lines):
+        return {"success": False, "error": f"行号 {line_num} 超出范围"}
+
+    # 分析 except 行
+    except_line = lines[line_num - 1]
+    except_indent = len(except_line) - len(except_line.lstrip())
+    stripped = except_line.strip()
+    if not stripped.startswith("except"):
+        return {"success": False, "error": f"行 {line_num} 不是 except 语句: {stripped[:40]}"}
+
+    # 定位并检查块
+    block_end = _find_except_block_end(lines, line_num, except_indent)
+    if not _check_block_empty(lines, line_num, block_end):
+        return {"success": False, "reason": "except 块已有代码，不需要修复"}
+
+    # 构建替换代码
+    replacement_code = _build_replacement_code(lines, line_num, block_end, except_indent)
+    new_lines = lines[:line_num - 1] + replacement_code.split("\n") + lines[block_end:]
+
+    # 确保 import logging
+    new_lines, _ = _ensure_logging_import(new_lines)
+    new_code = "\n".join(new_lines)
 
     if not _check_syntax(new_code):
         return {"success": False, "error": "修复后语法错误"}

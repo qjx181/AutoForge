@@ -1,45 +1,13 @@
 {
-  "generated_at": "2026-05-22 18:01:05",
+  "generated_at": "2026-05-22 20:01:00",
   "target_dir": "/mnt/f/项目三：多Agent",
-  "total": 12,
+  "total": 5,
   "issues": [
     {
       "type": "high_cyclomatic_complexity",
       "severity": "high",
-      "file": "src/agents/delegate_optimizer.py",
-      "line": 46,
-      "description": "函数 scan_codebase_for_issues 圈复杂度 19，超过建议值 15",
-      "suggestion": "拆分为多个小函数，每个函数职责单一"
-    },
-    {
-      "type": "high_cyclomatic_complexity",
-      "severity": "high",
-      "file": "src/agents/delegate_optimizer.py",
-      "line": 415,
-      "description": "函数 diagnose_failures 圈复杂度 18，超过建议值 15",
-      "suggestion": "拆分为多个小函数，每个函数职责单一"
-    },
-    {
-      "type": "high_cyclomatic_complexity",
-      "severity": "high",
       "file": "src/api/api_service.py",
-      "line": 123,
-      "description": "函数 _parse_tasks_from_todo 圈复杂度 17，超过建议值 15",
-      "suggestion": "拆分为多个小函数，每个函数职责单一"
-    },
-    {
-      "type": "high_cyclomatic_complexity",
-      "severity": "high",
-      "file": "src/api/api_service.py",
-      "line": 743,
-      "description": "函数 list_optimize_runs 圈复杂度 21，超过建议值 15",
-      "suggestion": "拆分为多个小函数，每个函数职责单一"
-    },
-    {
-      "type": "high_cyclomatic_complexity",
-      "severity": "high",
-      "file": "src/api/api_service.py",
-      "line": 867,
+      "line": 932,
       "description": "函数 _auto_optimize_loop 圈复杂度 21，超过建议值 15",
       "suggestion": "拆分为多个小函数，每个函数职责单一"
     },
@@ -47,15 +15,7 @@
       "type": "high_cyclomatic_complexity",
       "severity": "high",
       "file": "src/api/api_service.py",
-      "line": 1023,
-      "description": "函数 start_evolution 圈复杂度 19，超过建议值 15",
-      "suggestion": "拆分为多个小函数，每个函数职责单一"
-    },
-    {
-      "type": "high_cyclomatic_complexity",
-      "severity": "high",
-      "file": "src/api/api_service.py",
-      "line": 1293,
+      "line": 1374,
       "description": "函数 get_agent_status 圈复杂度 17，超过建议值 15",
       "suggestion": "拆分为多个小函数，每个函数职责单一"
     },
@@ -64,29 +24,24 @@
       "severity": "high",
       "file": "src/core/self_evolve_round.py",
       "line": 70,
-      "description": "函数 _get_config 圈复杂度 20，超过建议值 15",
+      "description": "函数 _parse_yaml_top_level 圈复杂度 17，超过建议值 15",
       "suggestion": "拆分为多个小函数，每个函数职责单一"
     },
     {
       "type": "high_cyclomatic_complexity",
       "severity": "high",
-      "file": "src/core/self_evolve_round.py",
-      "line": 869,
-      "description": "函数 check_and_heal_heartbeats 圈复杂度 21，超过建议值 15",
+      "file": "src/fixers/enterprise_fixer.py",
+      "line": 47,
+      "description": "函数 fix_swallowed_exception 圈复杂度 20，超过建议值 15",
       "suggestion": "拆分为多个小函数，每个函数职责单一"
     },
     {
       "type": "high_cyclomatic_complexity",
       "severity": "high",
-      "file": "src/core/self_evolve_round.py",
-      "line": 1089,
-      "description": "函数 main 圈复杂度 64，超过建议值 15",
+      "file": "src/infra/swarm_metrics.py",
+      "line": 598,
+      "description": "函数 generate_text_report 圈复杂度 16，超过建议值 15",
       "suggestion": "拆分为多个小函数，每个函数职责单一"
     }
-  ],
-  "fixed_count": 10,
-  "fixed_types": [
-    "high_cyclomatic_complexity (extracted into sub-functions)"
-  ],
-  "status": "fixed_by_coordinator"
+  ]
 }

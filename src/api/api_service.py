@@ -929,8 +929,118 @@ def _extract_dimension_scores(scan_result: dict) -> dict:
     return dim_scores
 
 
+def _json_safe(obj):
+    if hasattr(obj, '__dict__'):
+        return _json_safe(obj.__dict__)
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(i) for i in obj]
+    if isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    if isinstance(obj, (datetime.datetime,)):
+        return obj.isoformat()
+    if isinstance(obj, Path):
+        return str(obj)
+    try:
+        json.dumps(obj)
+        return obj
+    except Exception:
+        return str(obj)
+
+
+def _scan_and_report_round(target_dir: str, dimensions: list[str],
+                           run_id: str, round_num: int) -> dict:
+    """执行一轮全维度扫描，返回结果字典。"""
+    from src.analysis.optimizer_core import run_full_pipeline
+    _update_auto_progress(run_id, {
+        "round": round_num,
+        "phase": "scanning",
+        "message": f"第 {round_num} 轮：全维度扫描中...",
+    })
+    scan_result = run_full_pipeline(target_dir, dimensions=dimensions)
+    scan_result = _json_safe(scan_result)
+    overall_score = scan_result.get("overall_score", 0)
+    critical = scan_result.get("critical_issues", 0)
+    total = scan_result.get("total_issues", 0)
+    dim_scores = _extract_dimension_scores(scan_result)
+    _update_auto_progress(run_id, {
+        "round": round_num,
+        "phase": "scanned",
+        "score": overall_score,
+        "critical_remaining": critical,
+        "total_issues": total,
+        "dimension_scores": dim_scores,
+        "message": f"评分 {overall_score}/100，发现 {total} 个问题（Critical {critical} 个）",
+    })
+    return {"score": overall_score, "critical": critical, "total": total,
+            "dim_scores": dim_scores}
+
+
+def _check_convergence(score_history: list, run_id: str,
+                       overall_score: int, round_num: int) -> bool:
+    """检查是否收敛（连续3轮变化<3分）。返回 True 表示应结束。"""
+    if len(score_history) >= 3:
+        recent = score_history[-3:]
+        spread = max(recent) - min(recent)
+        if spread <= 3:
+            _update_auto_progress(run_id, {
+                "phase": "converged",
+                "message": f"分数收敛于 {overall_score}/100（连续3轮变化<3分），循环结束",
+                "final_score": overall_score,
+                "total_rounds": round_num,
+                "score_history": score_history,
+            })
+            return True
+    return False
+
+
+def _report_score_trend(score_history: list, run_id: str) -> None:
+    """根据分数变化趋势给出反馈。"""
+    if len(score_history) < 2:
+        return
+    delta = score_history[-1] - score_history[-2]
+    if delta > 0:
+        _update_auto_progress(run_id, {
+            "score_delta": f"+{delta}",
+            "message": f"评分上升 {delta} 分（{score_history[-2]}→{score_history[-1]}），继续监控...",
+        })
+    elif delta < 0:
+        _update_auto_progress(run_id, {
+            "score_delta": str(delta),
+            "message": f"评分下降 {delta} 分（{score_history[-2]}→{score_history[-1]}），继续监控...",
+        })
+
+
+def _finalize_auto_optimize(run_id: str, score_history: list,
+                            round_num: int, target_dir: str,
+                            dimensions: list[str]) -> None:
+    """完成优化循环，写入最终状态和运行记录。"""
+    final_score = score_history[-1] if score_history else 0
+    final_state = {
+        "status": "completed",
+        "phase": "done",
+        "final_score": final_score,
+        "total_rounds": round_num,
+        "score_history": score_history,
+        "message": f"持续优化完成！共 {round_num} 轮，最终评分 {final_score}/100",
+    }
+    _update_auto_progress(run_id, final_state)
+    _write_json(OPT_RUNS_DIR / f"{run_id}.json", {
+        "run_id": run_id,
+        "target_dir": target_dir,
+        "dimensions": dimensions,
+        "type": "auto",
+        "status": "completed",
+        "total_rounds": round_num,
+        "final_score": final_score,
+        "score_history": score_history,
+        "started_at": datetime.datetime.now().isoformat(),
+    })
+
+
 def _auto_optimize_loop(target_dir: str, dimensions: list[str], run_id: str) -> None:
-    """持续优化循环：扫描 → 修复 → 重扫 → 再修复 → 直到分数稳定
+    """持续优化循环：扫描 → 修复 → 重扫 → 再修复 → 直到分数稳定。
 
     3个阶段：
       Phase 1 — Bug修复：扫到 Critical/High 就修，修完重扫，直到无 Critical
@@ -938,7 +1048,6 @@ def _auto_optimize_loop(target_dir: str, dimensions: list[str], run_id: str) -> 
       Phase 3 — 收敛：分数连续3轮变化<3分 → 结束
     """
     import sys as _sys
-    import traceback as _tb
     import time as _time
 
     _SRC = PROJECT_DIR / "src"
@@ -948,7 +1057,6 @@ def _auto_optimize_loop(target_dir: str, dimensions: list[str], run_id: str) -> 
 
     MAX_ROUNDS = 15
     score_history = []
-    round_num = 0
 
     _update_auto_progress(run_id, {
         "status": "running",
@@ -960,107 +1068,17 @@ def _auto_optimize_loop(target_dir: str, dimensions: list[str], run_id: str) -> 
     })
 
     try:
-        from src.analysis.optimizer_core import run_full_pipeline
-
-        def _json_safe(obj):
-            if hasattr(obj, '__dict__'): return _json_safe(obj.__dict__)
-            if isinstance(obj, dict): return {k: _json_safe(v) for k, v in obj.items()}
-            if isinstance(obj, (list, tuple)): return [_json_safe(i) for i in obj]
-            if isinstance(obj, (str, int, float, bool, type(None))): return obj
-            if isinstance(obj, (datetime.datetime,)): return obj.isoformat()
-            if isinstance(obj, Path): return str(obj)
-            try: json.dumps(obj); return obj
-            except: return str(obj)
-
         for round_num in range(1, MAX_ROUNDS + 1):
-            # ═══ 全维度扫描 ═══
-            _update_auto_progress(run_id, {
-                "round": round_num,
-                "phase": "scanning",
-                "message": f"第 {round_num} 轮：全维度扫描中...",
-            })
+            result = _scan_and_report_round(target_dir, dimensions, run_id, round_num)
+            score_history.append(result["score"])
 
-            scan_result = run_full_pipeline(target_dir, dimensions=dimensions)
-            scan_result = _json_safe(scan_result)
+            if _check_convergence(score_history, run_id, result["score"], round_num):
+                break
 
-            overall_score = scan_result.get("overall_score", 0)
-            critical = scan_result.get("critical_issues", 0)
-            total = scan_result.get("total_issues", 0)
-            score_history.append(overall_score)
-
-            # 各维度分数
-            dim_scores = {}
-            for d_name, d_res in scan_result.get("dimensions", {}).items():
-                dim_scores[d_name] = {
-                    "score": d_res.get("score", 0),
-                    "issues": d_res.get("issue_count", 0),
-                }
-
-            _update_auto_progress(run_id, {
-                "round": round_num,
-                "phase": "scanned",
-                "score": overall_score,
-                "critical_remaining": critical,
-                "total_issues": total,
-                "score_history": score_history,
-                "dimension_scores": dim_scores,
-                "message": f"评分 {overall_score}/100，发现 {total} 个问题（Critical {critical} 个）",
-            })
-
-            # ═══ 收敛判断：连续3轮变化<3分 → 结束 ═══
-            if len(score_history) >= 3:
-                recent = score_history[-3:]
-                spread = max(recent) - min(recent)
-                if spread <= 3:
-                    _update_auto_progress(run_id, {
-                        "phase": "converged",
-                        "message": f"分数收敛于 {overall_score}/100（连续3轮变化<3分），循环结束",
-                        "final_score": overall_score,
-                        "total_rounds": round_num,
-                        "score_history": score_history,
-                    })
-                    break
-
-            # ═══ 分数上升时给予正向反馈 ═══
-            if len(score_history) >= 2:
-                delta = score_history[-1] - score_history[-2]
-                if delta > 0:
-                    _update_auto_progress(run_id, {
-                        "score_delta": f"+{delta}",
-                        "message": f"评分上升 {delta} 分（{score_history[-2]}→{overall_score}），继续监控...",
-                    })
-                elif delta < 0:
-                    _update_auto_progress(run_id, {
-                        "score_delta": str(delta),
-                        "message": f"评分下降 {delta} 分（{score_history[-2]}→{overall_score}），继续监控...",
-                    })
-
-            # 每轮休息（避免频繁扫描消耗CPU）
+            _report_score_trend(score_history, run_id)
             _time.sleep(1)
 
-        # ═══ 循环结束 ═══
-        final_state = {
-            "status": "completed",
-            "phase": "done",
-            "final_score": score_history[-1] if score_history else 0,
-            "total_rounds": round_num,
-            "score_history": score_history,
-            "message": f"持续优化完成！共 {round_num} 轮，最终评分 {score_history[-1] if score_history else 0}/100",
-        }
-        _update_auto_progress(run_id, final_state)
-
-        # 也写一份到 runs 列表
-        _write_json(OPT_RUNS_DIR / f"{run_id}.json", {
-            "run_id": run_id,
-            "target_dir": target_dir,
-            "dimensions": dimensions,
-            "type": "auto",
-            "status": "completed",
-            "total_rounds": round_num,
-            "final_score": score_history[-1] if score_history else 0,
-            "score_history": score_history,
-            "started_at": datetime.datetime.now().isoformat(),
-        })
+        _finalize_auto_optimize(run_id, score_history, round_num, target_dir, dimensions)
 
     except Exception as e:
         _update_auto_progress(run_id, {
@@ -1370,6 +1388,80 @@ async def start_agent_evolution(body: dict):
     }
 
 
+def _build_dim_summary_from_log(d: dict) -> dict:
+    """从单个日志条目构建维度摘要。"""
+    dims = d.get("dimensions", {})
+    dim_summary = {}
+    if dims:
+        for dn, dr in list(dims.items())[:9]:
+            dim_summary[dn] = {
+                "score": dr.get("score", 0),
+                "issues": dr.get("issue_count", 0),
+                "label": dr.get("label", dn),
+            }
+    deep = d.get("deep_scan", {})
+    if isinstance(deep, dict) and "score" in deep:
+        dim_summary["_enterprise"] = {
+            "score": deep.get("score", 0),
+            "issues": deep.get("issue_count", 0),
+            "label": "企业级深度",
+            "by_severity": deep.get("by_severity", {}),
+        }
+    deep_fixes = d.get("deep_fixes", {})
+    if deep_fixes and deep_fixes.get("succeeded", 0) > 0:
+        dim_summary["_enterprise"]["deep_fixes"] = {
+            "succeeded": deep_fixes.get("succeeded", 0),
+            "failed": deep_fixes.get("failed", 0),
+            "details": deep_fixes.get("details", [])[:30],
+        }
+    return dim_summary
+
+
+def _parse_log_file(f: Path) -> dict:
+    """解析单个日志文件为运行记录条目。"""
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+        dim_summary = _build_dim_summary_from_log(d)
+        return {
+            "file": f.name,
+            "time": d.get("finished_at", d.get("started_at", "")),
+            "score_before": d.get("score_before"),
+            "score_after": d.get("score_after"),
+            "fixes_succeeded": d.get("fixes", {}).get("succeeded", 0),
+            "total_issues": d.get("total_issues", 0),
+            "critical_issues": d.get("critical_issues", 0),
+            "dimensions": dim_summary,
+        }
+    except Exception:
+        return None
+
+
+def _load_recent_logs(log_dir: Path, max_count: int = 3) -> list:
+    """从日志目录加载最近的运行记录。"""
+    recent = []
+    if not log_dir.exists():
+        return recent
+    for f in sorted(log_dir.glob("agent_trigger_*.json"), reverse=True)[:max_count]:
+        entry = _parse_log_file(f)
+        if entry:
+            recent.append(entry)
+    return recent
+
+
+def _check_running_status() -> dict:
+    """检查是否有正在运行的自进化任务。"""
+    run_marker = PROJECT_DIR / "data" / ".current_run.json"
+    if not run_marker.exists():
+        return None
+    try:
+        marker = json.loads(run_marker.read_text(encoding="utf-8"))
+        if marker.get("status") in ("running", "continuous"):
+            return marker
+    except Exception:
+        pass
+    return None
+
+
 @app.get("/api/optimize/agent-status")
 async def get_agent_status():
     """获取多Agent自进化运行状态"""
@@ -1377,47 +1469,7 @@ async def get_agent_status():
     target = target_file.read_text(encoding="utf-8").strip() if target_file.exists() else None
 
     log_dir = PROJECT_DIR / "logs"
-    recent = []
-    if log_dir.exists():
-        for f in sorted(log_dir.glob("agent_trigger_*.json"), reverse=True)[:3]:
-            try:
-                d = json.loads(f.read_text(encoding="utf-8"))
-                dims = d.get("dimensions", {})
-                dim_summary = {}
-                if dims:
-                    for dn, dr in list(dims.items())[:9]:
-                        dim_summary[dn] = {
-                            "score": dr.get("score", 0),
-                            "issues": dr.get("issue_count", 0),
-                            "label": dr.get("label", dn),
-                        }
-                deep = d.get("deep_scan", {})
-                if isinstance(deep, dict) and "score" in deep:
-                    dim_summary["_enterprise"] = {
-                        "score": deep.get("score", 0),
-                        "issues": deep.get("issue_count", 0),
-                        "label": "企业级深度",
-                        "by_severity": deep.get("by_severity", {}),
-                    }
-                deep_fixes = d.get("deep_fixes", {})
-                if deep_fixes and deep_fixes.get("succeeded", 0) > 0:
-                    dim_summary["_enterprise"]["deep_fixes"] = {
-                        "succeeded": deep_fixes.get("succeeded", 0),
-                        "failed": deep_fixes.get("failed", 0),
-                        "details": deep_fixes.get("details", [])[:30],
-                    }
-                recent.append({
-                    "file": f.name,
-                    "time": d.get("finished_at", d.get("started_at", "")),
-                    "score_before": d.get("score_before"),
-                    "score_after": d.get("score_after"),
-                    "fixes_succeeded": d.get("fixes", {}).get("succeeded", 0),
-                    "total_issues": d.get("total_issues", 0),
-                    "critical_issues": d.get("critical_issues", 0),
-                    "dimensions": dim_summary,
-                })
-            except Exception:
-                pass
+    recent = _load_recent_logs(log_dir)
 
     enterprise = {}
     if recent and recent[0].get("dimensions", {}).get("_enterprise"):
@@ -1428,16 +1480,8 @@ async def get_agent_status():
             "by_severity": ent.get("by_severity", {}),
             "fixes": ent.get("deep_fixes", {}),
         }
-    # 检查是否有正在运行的进化
-    running = None
-    run_marker = PROJECT_DIR / "data" / ".current_run.json"
-    if run_marker.exists():
-        try:
-            marker = json.loads(run_marker.read_text(encoding="utf-8"))
-            if marker.get("status") in ("running", "continuous"):
-                running = marker
-        except:
-            pass
+
+    running = _check_running_status()
 
     return {
         "target": target,

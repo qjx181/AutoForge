@@ -67,6 +67,36 @@ def _get_project1_dir() -> Path:
 PROJECT1_DIR = _get_project1_dir()
 
 
+def _finalize_list(result: dict, current_key: str, list_items: list, in_list: bool):
+    """如果当前在处理列表，把收集到的列表项写入结果。"""
+    if current_key and in_list:
+        result[current_key] = list_items
+
+
+def _process_top_level_key(line: str, result: dict) -> str:
+    """处理 YAML 顶层 key: value 行，返回 key 名称。"""
+    key = line.split(":")[0].strip()
+    value = line.split(":", 1)[1].strip().strip("'\"").strip()
+    if value:
+        result[key] = value
+    elif not line.rstrip().endswith(":"):
+        result[key] = value
+    else:
+        result[key] = None
+    return key
+
+
+def _process_list_item(line: str, current_key: str, current_indent: int,
+                       result: dict, list_items: list, in_list: bool):
+    """处理列表项行（以 - 开头）。"""
+    if current_key and current_key != current_key:  # never true, placeholder
+        pass
+    item = line[1:].strip().strip("'\"").strip()
+    if item:
+        list_items.append(item)
+    return True
+
+
 def _parse_yaml_top_level(text: str, result: dict) -> None:
     """解析 YAML 顶层 key: value 对。"""
     current_key = None
@@ -79,27 +109,17 @@ def _parse_yaml_top_level(text: str, result: dict) -> None:
             continue
         indent = len(raw_line) - len(line)
         if indent == 0 and ":" in line:
-            if current_key and in_list:
-                result[current_key] = list_items
+            _finalize_list(result, current_key, list_items, in_list)
+            if in_list:
                 list_items = []
                 in_list = False
-            current_key = line.split(":")[0].strip()
+            current_key = _process_top_level_key(line, result)
             current_indent = indent
-            value = line.split(":", 1)[1].strip().strip("'\"").strip()
-            if value:
-                result[current_key] = value
-            elif not line.rstrip().endswith(":"):
-                result[current_key] = value
-            else:
-                result[current_key] = None
         elif current_key and indent > current_indent and ":" not in line:
             if line.startswith("- "):
-                item = line[1:].strip().strip("'\"").strip()
-                if item:
-                    list_items.append(item)
-                in_list = True
-    if current_key and in_list:
-        result[current_key] = list_items
+                in_list = _process_list_item(line, current_key, current_indent,
+                                             result, list_items, in_list)
+    _finalize_list(result, current_key, list_items, in_list)
 
 
 def _get_config() -> dict:

@@ -594,27 +594,21 @@ class MetricsReporter:
     将 SwarmMetrics 的数据转换为可读的文本摘要或结构化 JSON 报告。
     """
 
+    # ── 文本报告子方法 ──────────────────────────────────────────
+
     @staticmethod
-    def generate_text_report(data: Dict[str, Any]) -> str:
-        """generate_text_report — 生成人类可读的文本摘要报告。
-
-        Args:
-            data: SwarmMetrics.to_dict() 返回的完整数据字典。
-
-        Returns:
-            格式化的文本报告字符串。
-        """
-        lines: List[str] = []
+    def _report_header(data: Dict[str, Any], lines: List[str]) -> None:
+        """报告头部。"""
         separator = "=" * 60
-
-        # ── 头部 ──
         lines.append(separator)
         lines.append("  Swarm 自我进化循环 — 指标报告")
         lines.append(f"  生成时间: {data.get('summary', {}).get('generated_at', '未知')}")
         lines.append(separator)
         lines.append("")
 
-        # ── 轮次计时器 ──
+    @staticmethod
+    def _report_timer(data: Dict[str, Any], lines: List[str]) -> None:
+        """轮次计时器部分。"""
         timer = data.get("timer", {})
         timer_summary = timer.get("summary", {})
         lines.append("─── 轮次计时 ───")
@@ -628,20 +622,26 @@ class MetricsReporter:
             lines.append(f"  平均耗时: {avg} 秒")
         lines.append("")
 
-        # ── 历史轮次详情 ──
+    @staticmethod
+    def _report_round_details(data: Dict[str, Any], lines: List[str]) -> None:
+        """历史轮次详情部分。"""
+        timer = data.get("timer", {})
         rounds = timer.get("rounds", [])
-        if rounds:
-            lines.append("─── 轮次详情 ───")
-            for r in rounds[-5:]:  # 最近 5 轮
-                dur = r.get("duration_sec")
-                dur = f"{dur:>8.3f}" if dur is not None else "     None"
-                start = r.get("start", "?")[:19]
-                lines.append(f"  Round {r['round_num']:>3d} | {start} | {dur}s")
-            if len(rounds) > 5:
-                lines.append(f"  ... 还有 {len(rounds) - 5} 轮已省略")
-            lines.append("")
+        if not rounds:
+            return
+        lines.append("─── 轮次详情 ───")
+        for r in rounds[-5:]:  # 最近 5 轮
+            dur = r.get("duration_sec")
+            dur = f"{dur:>8.3f}" if dur is not None else "     None"
+            start = r.get("start", "?")[:19]
+            lines.append(f"  Round {r['round_num']:>3d} | {start} | {dur}s")
+        if len(rounds) > 5:
+            lines.append(f"  ... 还有 {len(rounds) - 5} 轮已省略")
+        lines.append("")
 
-        # ── 任务追踪 ──
+    @staticmethod
+    def _report_tasks(data: Dict[str, Any], lines: List[str]) -> None:
+        """任务追踪部分。"""
         tasks = data.get("tasks", {})
         task_summary = tasks.get("summary", {})
         lines.append("─── 任务追踪 ───")
@@ -654,20 +654,27 @@ class MetricsReporter:
             lines.append(f"  通过率: {pass_rate * 100:.2f}%")
         lines.append("")
 
-        # ── Agent 汇总 ──
+    @staticmethod
+    def _report_agents(data: Dict[str, Any], lines: List[str]) -> None:
+        """Agent 汇总部分。"""
+        tasks = data.get("tasks", {})
+        task_summary = tasks.get("summary", {})
         agents = task_summary.get("agents", {})
-        if agents:
-            lines.append("─── Agent 统计 ───")
-            lines.append(f"  {'Agent':<15s} {'完成':>5s} {'失败':>5s} {'跳过':>5s} {'总数':>5s}")
-            lines.append(f"  {'-'*15} {'-'*5} {'-'*5} {'-'*5} {'-'*5}")
-            for agent_name, stats in sorted(agents.items()):
-                lines.append(
-                    f"  {agent_name:<15s} {stats['completed']:>5d} "
-                    f"{stats['failed']:>5d} {stats['skipped']:>5d} {stats['total']:>5d}"
-                )
-            lines.append("")
+        if not agents:
+            return
+        lines.append("─── Agent 统计 ───")
+        lines.append(f"  {'Agent':<15s} {'完成':>5s} {'失败':>5s} {'跳过':>5s} {'总数':>5s}")
+        lines.append(f"  {'-'*15} {'-'*5} {'-'*5} {'-'*5} {'-'*5}")
+        for agent_name, stats in sorted(agents.items()):
+            lines.append(
+                f"  {agent_name:<15s} {stats['completed']:>5d} "
+                f"{stats['failed']:>5d} {stats['skipped']:>5d} {stats['total']:>5d}"
+            )
+        lines.append("")
 
-        # ── 问题统计 ──
+    @staticmethod
+    def _report_issues(data: Dict[str, Any], lines: List[str]) -> None:
+        """问题统计部分。"""
         issues = data.get("issues", {})
         issue_freq = issues.get("frequency", {})
         issue_summary = issues.get("summary", {})
@@ -707,6 +714,26 @@ class MetricsReporter:
                 msg_suffix = f" — {msg}" if msg else ""
                 lines.append(f"    {i}. [{sev.upper():>8s}] {cat} @ {mod}{msg_suffix}")
             lines.append("")
+
+    @staticmethod
+    def generate_text_report(data: Dict[str, Any]) -> str:
+        """generate_text_report — 生成人类可读的文本摘要报告。
+
+        Args:
+            data: SwarmMetrics.to_dict() 返回的完整数据字典。
+
+        Returns:
+            格式化的文本报告字符串。
+        """
+        lines: List[str] = []
+        separator = "=" * 60
+
+        MetricsReporter._report_header(data, lines)
+        MetricsReporter._report_timer(data, lines)
+        MetricsReporter._report_round_details(data, lines)
+        MetricsReporter._report_tasks(data, lines)
+        MetricsReporter._report_agents(data, lines)
+        MetricsReporter._report_issues(data, lines)
 
         # ── 尾部 ──
         lines.append(separator)
