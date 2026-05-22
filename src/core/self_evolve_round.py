@@ -1245,7 +1245,44 @@ def main():
         else:
             relog("ℹ️", "优化引擎跳过（无有效优化目标）")
 
-        # ── 4c. 失败模式学习 ──
+        # ── 4c. 🧠 子Agent深度修复任务生成 ──
+        # 找出不可自动修复的CRITICAL/HIGH问题，写入deep_fix_tasks.json
+        # 由cron prompt中的delegate_task派子Agent去修
+        if not (cost_tier and "跳过" in str(cost_tier)):
+            try:
+                from src.analysis.deep_enterprise_scanner import scan_deep
+                deep_result = scan_deep(str(optimization_targets[0])) if optimization_targets else None
+                if deep_result and deep_result.get("issues"):
+                    from src.fixers.enterprise_fixer import DEEP_FIXERS
+                    fixable_types = {k for k, v in DEEP_FIXERS.items() if v is not None}
+                    delegable_issues = []
+                    for iss in deep_result.get("issues", []):
+                        it = iss.get("type", "")
+                        sev = iss.get("severity", "low")
+                        if it not in fixable_types and sev in ("critical", "high"):
+                            delegable_issues.append(iss)
+                    if delegable_issues:
+                        swarms_tasks = SWARM_DIR / "data" / "deep_fix_tasks.json"
+                        swarms_tasks.write_text(
+                            json.dumps({
+                                "generated_at": timestamp,
+                                "target_dir": str(optimization_targets[0]),
+                                "total": len(delegable_issues),
+                                "issues": delegable_issues[:10],
+                            }, ensure_ascii=False, indent=2),
+                            encoding="utf-8"
+                        )
+                        relog("🧠", "深度修复任务已生成：%d 个问题等待子Agent修复 → data/deep_fix_tasks.json", len(delegable_issues))
+                    else:
+                        relog("✅", "无需要子Agent修复的深层问题")
+                else:
+                    relog("ℹ️", "深度扫描无结果，跳过子Agent任务生成")
+            except ImportError as e:
+                relog("⚠️", "deep_enterprise_scanner 不可用: %s", e)
+            except Exception as e:
+                relog("⚠️", "子Agent任务生成异常: %s", e)
+
+        # ── 4d. 失败模式学习 ──
         if not (cost_tier and "跳过" in str(cost_tier)):
             try:
                 sys.path.insert(0, str(SWARM_DIR))
