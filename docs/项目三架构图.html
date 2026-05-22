@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目三：多Agent 系统架构图</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #020617;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px;
+}
+.container { max-width: 1200px; width: 100%; }
+.header { text-align: center; margin-bottom: 30px; }
+.header h1 { font-size: 24px; font-weight: 700; color: #f1f5f9; }
+.header .subtitle { font-size: 12px; color: #64748b; margin-top: 6px; }
+.header .pulse-dot {
+  display: inline-block; width: 8px; height: 8px;
+  background: #34d399; border-radius: 50%;
+  animation: pulse 2s infinite; margin-right: 8px;
+}
+@keyframes pulse {
+  0% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,0.7); }
+  70% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(52,211,153,0); }
+  100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+}
+.diagram-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.diagram-card svg { display: block; margin: 0 auto; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+}
+.card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.card-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.card-dot.cyan { background: #22d3ee; }
+.card-dot.emerald { background: #34d399; }
+.card-dot.violet { background: #a78bfa; }
+.card-dot.rose { background: #fb7185; }
+.card-dot.amber { background: #fbbf24; }
+.card h3 { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+.card ul { list-style: none; }
+.card li { font-size: 10px; color: #94a3b8; padding: 3px 0; }
+.card li:before { content: "•"; margin-right: 6px; color: #475569; }
+.footer { text-align: center; font-size: 9px; color: #475569; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1><span class="pulse-dot"></span>项目三：多Agent — 自进化引擎架构</h1>
+    <div class="subtitle">Self-Evolving Multi-Agent Code Quality Engine · 可持续 · 可移植 · 可展示</div>
+  </div>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 1100 820" width="1100" height="820">
+      <defs>
+        <!-- Grid -->
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+        </pattern>
+        <!-- Arrow markers -->
+        <marker id="arrowWhite" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 Z" fill="#94a3b8"/>
+        </marker>
+        <marker id="arrowOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 Z" fill="#fb923c"/>
+        </marker>
+        <marker id="arrowRose" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 Z" fill="#fb7185"/>
+        </marker>
+        <!-- Gradients -->
+        <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#0f172a" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#020617" stop-opacity="0.9"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Background -->
+      <rect width="1100" height="820" fill="url(#bgGrad)"/>
+      <rect width="1100" height="820" fill="url(#grid)"/>
+
+      <!-- Title -->
+      <text x="550" y="30" text-anchor="middle" fill="#f1f5f9" font-size="14" font-weight="700">系统运行架构</text>
+
+      <!-- ===== LAYER 0: User/External ===== -->
+      <rect x="420" y="50" width="260" height="50" rx="8" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="550" y="78" text-anchor="middle" fill="#f1f5f9" font-size="12" font-weight="600">👤 用户 / 开发者</text>
+
+      <!-- Arrow: User → CLI -->
+      <line x1="550" y1="100" x2="550" y2="125" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowWhite)"/>
+
+      <!-- ===== LAYER 1: Entry Points ===== -->
+      <!-- CLI -->
+      <rect x="350" y="128" width="180" height="44" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="440" y="149" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="600">p3 CLI</text>
+      <text x="440" y="163" text-anchor="middle" fill="#64748b" font-size="8">p3.py / p3.sh</text>
+
+      <!-- Web Dashboard -->
+      <rect x="570" y="128" width="180" height="44" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="660" y="149" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="600">Web 仪表盘</text>
+      <text x="660" y="163" text-anchor="middle" fill="#64748b" font-size="8">FastAPI 暗色面板</text>
+
+      <!-- Cron Trigger -->
+      <rect x="200" y="128" width="130" height="44" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="265" y="149" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">⏰ Cronjob</text>
+      <text x="265" y="163" text-anchor="middle" fill="#64748b" font-size="8">每2小时</text>
+
+      <!-- Arrows to Core Loop -->
+      <line x1="440" y1="172" x2="440" y2="195" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowWhite)"/>
+      <line x1="660" y1="172" x2="660" y2="195" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowWhite)"/>
+      <line x1="265" y1="172" x2="420" y2="195" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowOrange)"/>
+
+      <!-- ===== LAYER 2: Core Loop ===== -->
+      <rect x="120" y="198" width="860" height="130" rx="10" fill="rgba(6,78,59,0.1)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="8,4"/>
+      <text x="550" y="215" text-anchor="middle" fill="#34d399" font-size="10" font-weight="600">🔄 核心循环 (self_evolve_round.py)</text>
+
+      <!-- Step boxes in the loop -->
+      <rect x="140" y="228" width="100" height="40" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+      <text x="190" y="248" text-anchor="middle" fill="#34d399" font-size="8" font-weight="600">PID 锁 + 自愈</text>
+      <text x="190" y="260" text-anchor="middle" fill="#64748b" font-size="7">进程锁 / 冲突检测</text>
+
+      <rect x="260" y="228" width="100" height="40" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+      <text x="310" y="248" text-anchor="middle" fill="#34d399" font-size="8" font-weight="600">成本熔断</text>
+      <text x="310" y="260" text-anchor="middle" fill="#64748b" font-size="7">绿/黄/红 三级</text>
+
+      <rect x="380" y="228" width="100" height="40" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+      <text x="430" y="248" text-anchor="middle" fill="#34d399" font-size="8" font-weight="600">Git 同步</text>
+      <text x="430" y="260" text-anchor="middle" fill="#64748b" font-size="7">pull + commit</text>
+
+      <rect x="500" y="228" width="100" height="40" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+      <text x="550" y="248" text-anchor="middle" fill="#34d399" font-size="8" font-weight="600">任务规划</text>
+      <text x="550" y="260" text-anchor="middle" fill="#64748b" font-size="7">并行任务分解</text>
+
+      <rect x="620" y="228" width="100" height="40" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+      <text x="670" y="248" text-anchor="middle" fill="#34d399" font-size="8" font-weight="600">执行委托</text>
+      <text x="670" y="260" text-anchor="middle" fill="#64748b" font-size="7">delegate_task</text>
+
+      <rect x="740" y="228" width="100" height="40" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+      <text x="790" y="248" text-anchor="middle" fill="#34d399" font-size="8" font-weight="600">状态更新</text>
+      <text x="790" y="260" text-anchor="middle" fill="#64748b" font-size="7">state.json</text>
+
+      <!-- Arrows between steps -->
+      <line x1="240" y1="248" x2="258" y2="248" stroke="#34d399" stroke-width="1" marker-end="url(#arrowWhite)"/>
+      <line x1="360" y1="248" x2="378" y2="248" stroke="#34d399" stroke-width="1" marker-end="url(#arrowWhite)"/>
+      <line x1="480" y1="248" x2="498" y2="248" stroke="#34d399" stroke-width="1" marker-end="url(#arrowWhite)"/>
+      <line x1="600" y1="248" x2="618" y2="248" stroke="#34d399" stroke-width="1" marker-end="url(#arrowWhite)"/>
+      <line x1="720" y1="248" x2="738" y2="248" stroke="#34d399" stroke-width="1" marker-end="url(#arrowWhite)"/>
+
+      <!-- Configuration input to loop -->
+      <rect x="860" y="228" width="105" height="40" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.2"/>
+      <text x="912" y="248" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">config.yaml</text>
+      <text x="912" y="260" text-anchor="middle" fill="#64748b" font-size="7">配置中心</text>
+      <line x1="860" y1="248" x2="842" y2="248" stroke="#a78bfa" stroke-width="1" marker-end="url(#arrowWhite)"/>
+
+      <!-- Arrow: Core Loop → Scan + Fix Layer -->
+      <line x1="550" y1="328" x2="550" y2="355" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowWhite)"/>
+
+      <!-- ===== LAYER 3: Scan & Fix ===== -->
+      <rect x="100" y="358" width="420" height="130" rx="10" fill="rgba(8,51,68,0.15)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="8,4"/>
+      <text x="310" y="375" text-anchor="middle" fill="#22d3ee" font-size="10" font-weight="600">🔍 扫描引擎</text>
+
+      <!-- Scan types -->
+      <rect x="115" y="388" width="120" height="36" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="175" y="405" text-anchor="middle" fill="#22d3ee" font-size="8" font-weight="600">深度企业扫描</text>
+      <text x="175" y="416" text-anchor="middle" fill="#64748b" font-size="7">9维质量门禁</text>
+
+      <rect x="250" y="388" width="120" height="36" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="310" y="405" text-anchor="middle" fill="#22d3ee" font-size="8" font-weight="600">代码审查</text>
+      <text x="310" y="416" text-anchor="middle" fill="#64748b" font-size="7">code_review.py</text>
+
+      <rect x="385" y="388" width="120" height="36" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="445" y="405" text-anchor="middle" fill="#22d3ee" font-size="8" font-weight="600">Bug 分析</text>
+      <text x="445" y="416" text-anchor="middle" fill="#64748b" font-size="7">bug_analysis_engine.py</text>
+
+      <!-- Fix layer -->
+      <rect x="580" y="358" width="420" height="130" rx="10" fill="rgba(136,19,55,0.15)" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="8,4"/>
+      <text x="790" y="375" text-anchor="middle" fill="#fb7185" font-size="10" font-weight="600">🔧 自动修复</text>
+
+      <rect x="595" y="388" width="120" height="36" rx="6" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1"/>
+      <text x="655" y="405" text-anchor="middle" fill="#fb7185" font-size="8" font-weight="600">enterprise_fixer</text>
+      <text x="655" y="416" text-anchor="middle" fill="#64748b" font-size="7">6类自动修复</text>
+
+      <rect x="730" y="388" width="120" height="36" rx="6" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1"/>
+      <text x="790" y="405" text-anchor="middle" fill="#fb7185" font-size="8" font-weight="600">execute_bug_fix</text>
+      <text x="790" y="416" text-anchor="middle" fill="#64748b" font-size="7">单Bug定点修复</text>
+
+      <rect x="865" y="388" width="120" height="36" rx="6" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1"/>
+      <text x="925" y="405" text-anchor="middle" fill="#fb7185" font-size="8" font-weight="600">pytest 验证</text>
+      <text x="925" y="416" text-anchor="middle" fill="#64748b" font-size="7">通过才提交</text>
+
+      <!-- Arrow: Scan → Fix -->
+      <line x1="520" y1="423" x2="593" y2="423" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowWhite)"/>
+
+      <!-- ===== LAYER 4: Delegation & Learning ===== -->
+      <line x1="310" y1="488" x2="310" y2="515" stroke="#22d3ee" stroke-width="1" marker-end="url(#arrowWhite)"/>
+      <line x1="790" y1="488" x2="550" y2="515" stroke="#fb7185" stroke-width="1" marker-end="url(#arrowWhite)"/>
+
+      <rect x="120" y="518" width="860" height="130" rx="10" fill="rgba(76,29,149,0.1)" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="8,4"/>
+      <text x="550" y="535" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="600">🧠 委托学习层</text>
+
+      <!-- Delegation agents -->
+      <rect x="140" y="550" width="150" height="42" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1"/>
+      <text x="215" y="570" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">委托优化器</text>
+      <text x="215" y="583" text-anchor="middle" fill="#64748b" font-size="7">分层委托决策</text>
+
+      <rect x="310" y="550" width="150" height="42" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1"/>
+      <text x="385" y="570" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">微委托协议</text>
+      <text x="385" y="583" text-anchor="middle" fill="#64748b" font-size="7">会话管理+重试</text>
+
+      <rect x="480" y="550" width="150" height="42" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1"/>
+      <text x="555" y="570" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">并行分发器</text>
+      <text x="555" y="583" text-anchor="middle" fill="#64748b" font-size="7">并行任务派发</text>
+
+      <!-- Learning -->
+      <rect x="650" y="550" width="150" height="42" rx="6" fill="rgba(136,19,55,0.3)" stroke="#fb7185" stroke-width="1"/>
+      <text x="725" y="570" text-anchor="middle" fill="#fb7185" font-size="8" font-weight="600">失败分析</text>
+      <text x="725" y="583" text-anchor="middle" fill="#64748b" font-size="7">生成修复规则</text>
+
+      <rect x="820" y="550" width="145" height="42" rx="6" fill="rgba(136,19,55,0.3)" stroke="#fb7185" stroke-width="1"/>
+      <text x="892" y="570" text-anchor="middle" fill="#fb7185" font-size="8" font-weight="600">经验学习</text>
+      <text x="892" y="583" text-anchor="middle" fill="#64748b" font-size="7">evolve_learn.py</text>
+
+      <!-- Arrows between delegation components -->
+      <line x1="290" y1="571" x2="308" y2="571" stroke="#a78bfa" stroke-width="1" marker-end="url(#arrowWhite)"/>
+      <line x1="460" y1="571" x2="478" y2="571" stroke="#a78bfa" stroke-width="1" marker-end="url(#arrowWhite)"/>
+
+      <!-- ===== LAYER 5: Target Project ===== -->
+      <line x1="550" y1="648" x2="550" y2="680" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowWhite)"/>
+
+      <rect x="300" y="683" width="500" height="50" rx="8" fill="rgba(30,41,59,0.5)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,3"/>
+      <text x="550" y="708" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">🎯 目标项目（任意目录）</text>
+      <text x="550" y="723" text-anchor="middle" fill="#64748b" font-size="8">由 PROJECT1_DIR / p3 setup 指定</text>
+
+      <!-- ===== LEGEND ===== -->
+      <rect x="100" y="760" width="900" height="45" rx="8" fill="rgba(15,23,42,0.95)" stroke="#1e293b" stroke-width="1"/>
+      <text x="130" y="788" fill="#64748b" font-size="9" font-weight="600">图例:</text>
+
+      <!-- Frontend -->
+      <rect x="200" y="773" width="12" height="12" rx="3" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="218" y="783" fill="#94a3b8" font-size="8">入口层</text>
+
+      <!-- Backend -->
+      <rect x="290" y="773" width="12" height="12" rx="3" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1"/>
+      <text x="308" y="783" fill="#94a3b8" font-size="8">核心循环</text>
+
+      <!-- Database -->
+      <rect x="380" y="773" width="12" height="12" rx="3" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1"/>
+      <text x="398" y="783" fill="#94a3b8" font-size="8">委托/学习</text>
+
+      <!-- Security -->
+      <rect x="480" y="773" width="12" height="12" rx="3" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1"/>
+      <text x="498" y="783" fill="#94a3b8" font-size="8">扫描/修复</text>
+
+      <!-- External -->
+      <rect x="580" y="773" width="12" height="12" rx="3" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1"/>
+      <text x="598" y="783" fill="#94a3b8" font-size="8">外部/用户</text>
+
+      <!-- Config -->
+      <rect x="680" y="773" width="12" height="12" rx="3" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="698" y="783" fill="#94a3b8" font-size="8">目标/配置</text>
+
+      <line x1="780" y1="779" x2="810" y2="779" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="818" y="783" fill="#94a3b8" font-size="8">cron触发</text>
+
+      <line x1="890" y1="779" x2="920" y2="779" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="928" y="783" fill="#94a3b8" font-size="8">数据流</text>
+    </svg>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot cyan"></div>
+        <h3>入口与交互</h3>
+      </div>
+      <ul>
+        <li>p3 CLI — 命令行操作界面</li>
+        <li>FastAPI Web 仪表盘 — 可视化面板</li>
+        <li>Cronjob — 每2小时自动触发</li>
+        <li>169个 agency-agents 技能供加载</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot emerald"></div>
+        <h3>核心引擎</h3>
+      </div>
+      <ul>
+        <li>PID锁 + 自愈 — 防止并发冲突</li>
+        <li>三级成本熔断（绿/黄/红）</li>
+        <li>Git双向同步（目标+自身）</li>
+        <li>并行任务规划 + 执行委托</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot violet"></div>
+        <h3>数据与持久化</h3>
+      </div>
+      <ul>
+        <li>state.json — 运行状态</li>
+        <li>cost_tracker.db — 成本追踪</li>
+        <li>self_evolve_log.json — 轮次日志</li>
+        <li>config.yaml — 全局配置</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Second row -->
+  <div class="grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot rose"></div>
+        <h3>扫描与修复</h3>
+      </div>
+      <ul>
+        <li>deep_enterprise_scanner — 9维质量门禁</li>
+        <li>code_review.py — 安全/性能/质量审查</li>
+        <li>enterprise_fixer — 6类自动修复</li>
+        <li>pytest 验证 — 通过才提交</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot amber"></div>
+        <h3>成本控制</h3>
+      </div>
+      <ul>
+        <li>日预算上限 $5.00</li>
+        <li>绿色: 正常调度</li>
+        <li>黄色: 跳过重型任务</li>
+        <li>红色: 只读模式</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot cyan"></div>
+        <h3>自进化能力</h3>
+      </div>
+      <ul>
+        <li>失败分析 → 生成修复规则</li>
+        <li>经验学习 → evolve_learn.py</li>
+        <li>技能审计 → 每双周清理无用技能</li>
+        <li>月度新源扫描 → GitHub trending</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    项目三：多Agent · 生成于 2026-05-21 · 当前 Round 46 · 技术架构图
+  </div>
+</div>
+</body>
+</html>

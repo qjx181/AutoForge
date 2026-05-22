@@ -20,6 +20,8 @@
 import json
 import re
 from pathlib import Path
+from typing import Any, Optional
+from typing import Any, Optional
 
 # ─── 审计与安全集成 ────────────────────────────────────────────────────
 try:
@@ -29,6 +31,7 @@ except ImportError:
         pass  # 审计模块不存在时静默降级
 
 try:
+    from safety_interlock import confirm_destructive_op, guard_delete, guard_git_push
 except ImportError:
     def confirm_destructive_op(*args, **kwargs):
         return True  # 安全模块不存在时默认允许
@@ -568,5 +571,3 @@ def _extract_task_description(todo_text: str, task_id: str) -> str:
                 if desc_lines:  # 只取描述行
                     break
     return " ".join(desc_lines) if desc_lines else task_id
-
-

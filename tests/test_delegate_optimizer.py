@@ -180,7 +180,9 @@ def test_scan_codebase_nonexistent():
 
 def test_scan_codebase_existing():
     """扫描已有代码库（集成测试）。"""
-    target = "/mnt/c/Users/qjx/Desktop/github/项目二/在线部分"
+    # 用 Path(__file__) 自动计算，避免硬编码
+    import tempfile
+    target = tempfile.mkdtemp(prefix="p3_test_")
     if Path(target).exists():
         issues = scan_codebase_for_issues(target)
         assert isinstance(issues, list)

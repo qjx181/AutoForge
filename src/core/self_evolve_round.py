@@ -1326,8 +1326,32 @@ def main():
         except Exception as e:
             relog("⚠️", "微委托规划失败: %s", e)
 
-        # ── 7. 更新 state.json ──
-        state = load_state()
+        # ── 10. 记录本轮成本到 cost_tracker_db ──
+        try:
+            from src.infra.cost_tracker_db import CostTrackerDB
+            cost_db = CostTrackerDB()
+            cost_db.record_cost(
+                provider="deepseek",
+                model="deepseek-v4-flash",
+                cost=0.50,  # 固定估算值，每轮约 $0.50
+                task_id=f"round_{current_round}",
+            )
+            dollar_spent = cost_db.get_today_spent()
+            state.setdefault("daily_budget", {})["dollar_spent_today"] = dollar_spent
+            state["daily_budget"]["dollar_limit"] = 5.0
+            if dollar_spent >= 4.5:
+                state["daily_budget"]["tier"] = "red"
+                state["daily_budget"]["readonly_mode"] = True
+            elif dollar_spent >= 2.0:
+                state["daily_budget"]["tier"] = "yellow"
+            else:
+                state["daily_budget"]["tier"] = "green"
+            relog("💰", "本轮成本 $0.50（累计今日 $%.2f / $5.00, %s级）", dollar_spent, state["daily_budget"]["tier"])
+        except Exception as exc:
+            relog("⚠️", "成本记录失败：%s", exc)
+
+        # ── 11. 更新 state.json ──
+        state["current_round"] = current_round
         state["step"] = "done"
         state["completed_at"] = timestamp
         if not state.get("started_at"):
