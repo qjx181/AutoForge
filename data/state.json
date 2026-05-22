@@ -1,10 +1,10 @@
 {
-  "current_round": 46,
+  "current_round": 47,
   "step": "done",
   "project_one_step": "done",
   "project_three_step": "completed",
   "started_at": "2026-05-19 15:55:00",
-  "completed_at": "2026-05-20 10:54:23",
+  "completed_at": "2026-05-22 17:01:41",
   "readonly_mode": false,
   "cronjob_resume_ready": true,
   "last_error": null,
@@ -81,7 +81,7 @@
     "tier_reason": "当日花费 $2.85，黄色模式（跳过 feature/refactor，infrastructure/debug 不受限）"
   },
   "failure_stats": {
-    "last_analysis": "2026-05-22 17:00:57",
+    "last_analysis": "2026-05-22 17:01:41",
     "weekly_patterns": {},
     "failure_injection_text": "",
     "total_completed": 36
@@ -193,7 +193,30 @@
     "delegate": [],
     "max_concurrent": 3,
     "has_work": true,
-    "planned_at": "2026-05-22T17:01:00",
+    "planned_at": "2026-05-22T17:02:07",
     "total_pending": 3
+  },
+  "last_optimization": {
+    "targets": [
+      "/mnt/f/项目三：多Agent"
+    ],
+    "dimensions": [
+      "security",
+      "performance",
+      "asyncification",
+      "quality",
+      "testing",
+      "architecture",
+      "documentation",
+      "configuration",
+      "deadcode"
+    ],
+    "total_findings": 9854,
+    "total_fixes_applied": 0,
+    "total_verifications_passed": 0,
+    "total_verifications_failed": 0,
+    "score_delta": 0,
+    "dry_run": false,
+    "at": "2026-05-22 17:01:41"
   }
 }

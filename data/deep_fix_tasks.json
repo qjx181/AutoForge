@@ -1,0 +1,87 @@
+{
+  "generated_at": "2026-05-22 17:01:41",
+  "target_dir": "/mnt/f/项目三：多Agent",
+  "total": 44,
+  "issues": [
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/agents/delegate_optimizer.py",
+      "line": 46,
+      "description": "函数 scan_codebase_for_issues 圈复杂度 19，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/agents/delegate_optimizer.py",
+      "line": 415,
+      "description": "函数 diagnose_failures 圈复杂度 18，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/analysis/bug_analysis_engine.py",
+      "line": 90,
+      "description": "函数 parse_python_traceback 圈复杂度 16，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/analysis/bug_analysis_engine.py",
+      "line": 547,
+      "description": "函数 execute_bug_fix 圈复杂度 20，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/analysis/code_review.py",
+      "line": 540,
+      "description": "函数 check_sync_wrapper_raises 圈复杂度 29，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/analysis/code_review.py",
+      "line": 637,
+      "description": "函数 check_asyncio_run_in_func 圈复杂度 20，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/analysis/code_review.py",
+      "line": 734,
+      "description": "函数 check_sync_calls_async_def 圈复杂度 23，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/analysis/code_review.py",
+      "line": 838,
+      "description": "函数 check_codebase_import_chain 圈复杂度 32，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "high_cyclomatic_complexity",
+      "severity": "high",
+      "file": "src/analysis/code_review.py",
+      "line": 990,
+      "description": "函数 check_unused_import 圈复杂度 17，超过建议值 15",
+      "suggestion": "拆分为多个小函数，每个函数职责单一"
+    },
+    {
+      "type": "command_injection_risk",
+      "severity": "critical",
+      "file": "src/analysis/code_review.py",
+      "line": 165,
+      "description": "os.system() 可能导致命令注入",
+      "suggestion": "使用 subprocess.run() 并传递参数列表而非字符串"
+    }
+  ]
+}
