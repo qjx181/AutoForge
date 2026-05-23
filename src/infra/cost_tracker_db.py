@@ -112,6 +112,10 @@ class CostTrackerDB:
             self._log_warning(f"get_daily_summary 失败: {e}")
             return {}
 
+    def get_today_spent(self) -> float:
+        """兼容别名 — 供 self_evolve_round.py 的 cost_db.get_today_spent() 调用。"""
+        return self.get_total_spent_today()
+
     def get_total_spent_today(self) -> float:
         """获取当日总花费。"""
         date_str = datetime.now().strftime("%Y-%m-%d")
