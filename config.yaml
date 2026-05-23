@@ -48,7 +48,8 @@ swarm:
   # optimization_confidence_threshold: 自动修复置信度阈值（0.0-1.0）
   # 类型: float
   # 默认: 0.75
-  optimization_confidence_threshold: 0.75 每轮迭代的间隔时间（分钟）
+  optimization_confidence_threshold: 0.75
+  # round_interval_minutes: 每轮迭代的间隔时间（分钟）
   # 控制 swarm 主循环两次执行之间的等待时间。值越小，迭代越频繁。
   # 类型: int，最小值: 1
   # 默认: 30（由 swarm_config.py 定义）

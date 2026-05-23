@@ -137,6 +137,18 @@ def fix_swallowed_exception(filepath: Path, line_num: int) -> dict:
 
 
 def fix_bare_except(filepath: Path, line_num: int) -> dict:
+    """修复裸 except（`except:` → `except Exception:`）。
+
+    裸 except 会捕获 KeyboardInterrupt 和 SystemExit 等系统异常，
+    应改为 except Exception 只捕获预期的异常类型。
+
+    Args:
+        filepath: 文件路径
+        line_num: except 语句所在行号
+
+    Returns:
+        {"success": bool, "action"|"reason"|"error": str}
+    """
     code = _read_file(filepath)
     if not code:
         return {"success": False, "error": "无法读取文件"}
