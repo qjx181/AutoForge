@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def _get_config() -> dict:
     """从 config.yaml 读取完整配置（无 yaml 依赖）。"""
@@ -58,7 +52,6 @@ def _get_config() -> dict:
         return {}
 
 
-# ─── 审计与安全集成 ────────────────────────────────────────────────────
 try:
     from src.infra.audit_trail import audit_log
 except ImportError:
@@ -71,14 +64,11 @@ except ImportError:
     def guard_git_push(*args, **kwargs):
         return True
 
-# ─── 核心文件路径 ──────────────────────────────────────────────────────
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 PID_FILE = SWARM_DIR / ".self_evolve_round.pid"
 TODO_FILE = SWARM_DIR / "docs" / "TODO.md"
 LOG_FILE = SWARM_DIR / "logs" / "self_evolve.log"
 
-# ─── 优化引擎配置 ─────────────────────────────────────────────────────────
-# 九维全覆盖（代码质量/测试/性能/架构/安全/文档/配置/异步化/死代码）
 OPT_DIMENSIONS = [
     "security",          # 安全：SQL注入/命令注入/密钥泄露/XSS
     "performance",       # 性能：N+1查询/sync阻塞/内存泄漏
@@ -90,7 +80,5 @@ OPT_DIMENSIONS = [
     "configuration",     # 配置：硬编码配置/不一致配置
     "deadcode",         # 死代码：未调用函数/不可达文件
 ]
-# 每轮最多执行优化数量
 MAX_OPTIMIZATIONS_PER_ROUND = 10
-# 自动修复置信度阈值
 OPT_CONFIDENCE_THRESHOLD = 0.75

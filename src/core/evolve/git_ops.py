@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,14 +35,9 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 from src.core.evolve.cost import GIT_TIMEOUT
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def _run_git(cmd: list[str], repo_dir: Path, timeout: int = GIT_TIMEOUT) -> subprocess.CompletedProcess:
     """执行 git 命令的辅助函数。"""
@@ -104,9 +98,6 @@ def run_git_commit_with_retry(repo_dir: Path, message: str, repo_name: str = "un
     return False
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 5. 冲突自愈
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def check_and_heal_conflicts():
@@ -127,6 +118,3 @@ def mark_conflict(conflict_files: list[str]):
     save_state(state)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 6. 分层委托诊断
-# ═══════════════════════════════════════════════════════════════════════

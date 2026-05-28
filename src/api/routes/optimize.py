@@ -56,7 +56,6 @@ async def start_optimization(body: dict):
         "started_at": datetime.datetime.now().isoformat(),
         "finished_at": None,
     })
-    # 锁文件标记运行中
     (OPT_RUNS_DIR / f"{run_id}.running").write_text("1")
 
     import threading
@@ -167,7 +166,6 @@ async def get_optimize_run(run_id: str):
         raise HTTPException(status_code=404, detail=f"运行记录 {run_id} 不存在")
     try:
         data = json.loads(result_file.read_text(encoding="utf-8"))
-        # 检查是否仍在运行
         running_file = OPT_RUNS_DIR / f"{run_id}.running"
         if running_file.exists():
             data["status"] = "running"
@@ -188,7 +186,6 @@ async def list_dimensions():
     }
 
 
-# ── 持续优化循环 ─────────────────────────────────────────────────────
 
 def _update_auto_progress(run_id: str, data: dict) -> None:
     """更新持续优化循环的进度文件"""
@@ -591,7 +588,6 @@ async def get_auto_progress(run_id: str):
     """获取持续优化循环的实时进度"""
     progress_file = OPT_RUNS_DIR / f"{run_id}.progress"
     if not progress_file.exists():
-        # 回退到 run 文件
         run_file = OPT_RUNS_DIR / f"{run_id}.json"
         if not run_file.exists():
             raise HTTPException(status_code=404, detail=f"运行记录 {run_id} 不存在")
@@ -602,7 +598,6 @@ async def get_auto_progress(run_id: str):
             return {"run_id": run_id, "status": "unknown", "error": "无法读取进度"}
     try:
         data = json.loads(progress_file.read_text(encoding="utf-8"))
-        # 检查是否还在运行
         running_file = OPT_RUNS_DIR / f"{run_id}.running"
         if not running_file.exists() and data.get("status") == "running":
             data["status"] = "completed"
@@ -624,7 +619,6 @@ async def optimizer_page():
     )
 
 
-# ── 多Agent自进化入口 ────────────────────────────────────────────────
 
 
 @router.post("/api/optimize/start-agent")
@@ -642,7 +636,6 @@ async def start_agent_evolution(body: dict):
     if not target_dir:
         raise HTTPException(status_code=400, detail="target_dir 是必填字段")
 
-    # 统一为 WSL 路径（先转换，再检查存在性）
     wsl_path = target_dir
     if ":" in target_dir and not target_dir.startswith("/"):
         drive = target_dir[0].lower()
@@ -655,12 +648,10 @@ async def start_agent_evolution(body: dict):
     if not target_path.is_dir():
         raise HTTPException(status_code=400, detail=f"不是目录: {wsl_path}")
 
-    # 写入目标路径文件
     target_file = PROJECT_DIR / "data" / "opt_target.txt"
     target_file.parent.mkdir(parents=True, exist_ok=True)
     target_file.write_text(wsl_path + "\n", encoding="utf-8")
 
-    # 恢复 cronjob（通过子进程调用 hermes CLI）
     cron_msg = "cronjob_resumed"
     try:
         import subprocess as _sp
@@ -674,7 +665,6 @@ async def start_agent_evolution(body: dict):
     except Exception as e:
         cron_msg = f"cron_warning: {e}"
 
-    # 标记持续运行
     run_marker = PROJECT_DIR / "data" / ".current_run.json"
     run_marker.parent.mkdir(parents=True, exist_ok=True)
     run_marker.write_text(json.dumps({
@@ -808,13 +798,11 @@ async def get_agent_status():
     }
 
 
-# ── 停止自进化 ────────────────────────────────────────────────────
 
 
 @router.post("/api/optimize/stop-agent")
 async def stop_agent():
     """停止多Agent自进化：直接暂停 cronjob"""
-    # 直接修改 cron jobs JSON 配置文件
     cron_file = Path.home() / ".hermes" / "cron" / "jobs.json"
     if cron_file.exists():
         try:
@@ -829,7 +817,6 @@ async def stop_agent():
         except Exception as e:
             pass
 
-    # 写停止标记
     run_marker = PROJECT_DIR / "data" / ".current_run.json"
     run_marker.write_text(json.dumps({
         "status": "stopped",
@@ -843,7 +830,6 @@ async def stop_agent():
     }
 
 
-# ── 前端 ────────────────────────────────────────────────────────────────
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -863,7 +849,6 @@ def _get_dashboard_html() -> HTMLResponse:
 
 
 
-# ── 入口 ────────────────────────────────────────────────────────────────
 
 def api_entrypoint():
     """启动 FastAPI 服务

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/quality_scanner.py — 维度一：代码质量 + 死代码 扫描器
 
 检测：
@@ -22,9 +21,6 @@ from pathlib import Path
 from ..project_analyzer import OptimizationBlueprint
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# AST 分析
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _find_unused_imports(code: str) -> list[dict]:
@@ -35,7 +31,6 @@ def _find_unused_imports(code: str) -> list[dict]:
     except SyntaxError:
         return issues
 
-    # 收集所有 import
     imported_names: set[str] = set()
     imported_modules: dict[str, int] = {}  # name → line
 
@@ -52,7 +47,6 @@ def _find_unused_imports(code: str) -> list[dict]:
                 imported_names.add(name)
                 imported_modules[name] = node.lineno
 
-    # 收集所有被引用的名字
     used_names: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Name):
@@ -61,7 +55,6 @@ def _find_unused_imports(code: str) -> list[dict]:
             if isinstance(node.value, ast.Name):
                 used_names.add(node.value.id)
 
-    # 找未使用
     for name, line in imported_modules.items():
         if name not in used_names and name not in ("sys", "os"):  # sys/os 可能是风格问题
             issues.append({
@@ -92,7 +85,6 @@ def _find_deep_nesting(code: str, max_depth: int = 4) -> list[dict]:
         indent = len(line) - len(line.lstrip())
         current_depth = indent // 4
 
-        # 嵌套语句
         nesting_kws = re.match(r"^\s*(if|elif|for|while|with|except|try|async\s+for|async\s+with)\b", stripped)
         dedent = stripped.startswith(("return", "break", "continue", "pass", "raise"))
 
@@ -121,7 +113,6 @@ def _find_hardcoded_values(code: str) -> list[dict]:
     issues = []
     lines = code.split("\n")
 
-    # 魔数：整数赋值语句中的非标准数字
     magic_pattern = re.compile(r"=\s*([2-9]\d{1,})\b")
     skip_pattern = re.compile(r"(timeout|port|size|max|min|count|limit|index|id|version|retries|delay|interval|maxsize|poolsize)", re.IGNORECASE)
 
@@ -129,7 +120,6 @@ def _find_hardcoded_values(code: str) -> list[dict]:
         stripped = line.strip()
         if stripped.startswith("#") or "import" in stripped:
             continue
-        # 跳过 if/for/while 条件中的数字
         if re.match(r"^\s*(if|elif|for|while)\b", stripped):
             continue
 
@@ -145,7 +135,6 @@ def _find_hardcoded_values(code: str) -> list[dict]:
                 "suggestion": f"MAX_{num_str} = {num_str} 或从配置读取",
             })
 
-    # 硬编码 URL
     url_pattern = re.compile(r"https?://[^\s\"']+")
     for i, line in enumerate(lines, 1):
         if "http://" in line or "https://" in line:
@@ -208,7 +197,6 @@ def _find_missing_error_handling(code: str) -> list[dict]:
                 func_name = node.func.attr
 
             if func_name in DANGEROUS_CALLS:
-                # 向上查是否有 try/except 包裹
                 issues.append({
                     "type": "missing_error_handling",
                     "severity": "high",
@@ -228,13 +216,11 @@ def _find_dead_code(code: str) -> list[dict]:
     except SyntaxError:
         return issues
 
-    # 收集所有定义的函数名
     defined: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             defined.add(node.name)
 
-    # 收集所有调用的名字
     called: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
@@ -243,7 +229,6 @@ def _find_dead_code(code: str) -> list[dict]:
             if isinstance(node.value, ast.Name):
                 called.add(node.value.id)
 
-    # 公开函数（非下划线开头）且未被调用且非 main
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             name = node.name
@@ -286,9 +271,6 @@ def _scan_file(filepath: Path) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 公开接口
-# ═══════════════════════════════════════════════════════════════════════
 
 DIMENSION = "quality"
 MAX_LINES_PER_FILE = 1000  # 单文件超过此行数则降级扫描（只分析前 MAX_LINES）
@@ -321,14 +303,12 @@ def scan(blueprint: OptimizationBlueprint) -> dict:
         all_issues.extend(issues)
         scored_files += 1
 
-        # 文件评分：每有 1 个严重问题扣 10 分
         sev_count = sum(1 for i in issues if i["severity"] in ("critical", "high"))
         file_score = max(0, 100 - sev_count * 10)
         total_score += file_score
 
     avg_score = total_score // max(scored_files, 1)
 
-    # 按严重级别排序
     SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     all_issues.sort(key=lambda x: SEV_ORDER.get(x.get("severity", "low"), 99))
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """code_review.py — PR 代码审查 Agent 模块
 
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
@@ -27,9 +26,6 @@ import re
 from pathlib import Path
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SecurityReviewer — 安全审查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class QualityReviewer:
@@ -58,7 +54,6 @@ class QualityReviewer:
         except SyntaxError:
             return issues
 
-        # 收集所有 import
         imports = {}  # {name: line_number}
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -73,7 +68,6 @@ class QualityReviewer:
         if not imports:
             return issues
 
-        # 收集所有名字引用
         used_names = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.Name):
@@ -81,9 +75,7 @@ class QualityReviewer:
             elif isinstance(node, ast.Attribute):
                 used_names.add(node.attr)
 
-        # 检测未使用的 import
         for name, lineno in imports.items():
-            # 跳过 __all__ 中的名字
             if name.startswith("_"):
                 continue
             if name not in used_names:
@@ -123,7 +115,6 @@ class QualityReviewer:
         for i, line in enumerate(lines, 1):
             stripped = line.strip()
 
-            # 跳过空行和注释
             if not stripped or stripped.startswith("#") or stripped.startswith('"""'):
                 if stripped.startswith('"""') or stripped.startswith("'''"):
                     in_multiline = not in_multiline
@@ -134,7 +125,6 @@ class QualityReviewer:
             indent = len(line) - len(line.lstrip())
             indent_level = indent // 4  # 假设 4 空格缩进
 
-            # 检测嵌套语句
             nesting_keywords = [
                 r"if\s", r"elif\s", r"else\s*:", r"for\s", r"while\s",
                 r"def\s", r"class\s", r"try\s*:", r"except\s", r"finally\s*:",
@@ -146,7 +136,6 @@ class QualityReviewer:
                     depth_stack.append((indent_level, i, kw[:10]))
                     break
 
-        # 分析嵌套深度
         for depth, line_num, keyword in depth_stack:
             if depth > max_depth:
                 issues.append({
@@ -173,13 +162,11 @@ class QualityReviewer:
         issues = []
         lines = code.split("\n")
 
-        # 硬编码魔数：赋值语句中的整数，排除 0, 1, -1, 常用的 timeout/port
         for i, line in enumerate(lines, 1):
             stripped = line.strip()
             if stripped.startswith("#") or stripped.startswith('"""') or "import " in stripped:
                 continue
 
-            # 硬编码数字
             magic_num = re.search(r"=\s*(\d{4,})\s*(?:#|$|\])", stripped)
             if magic_num:
                 val = int(magic_num.group(1))
@@ -193,7 +180,6 @@ class QualityReviewer:
                         "suggestion": "提取为命名常量：MAX_RETRIES = 3",
                     })
 
-            # 硬编码 URL（排除 localhost 和常见 CDN）
             url_match = re.search(r'["\'](https?://[^"\']+)["\']', stripped)
             if url_match:
                 url = url_match.group(1)
@@ -224,7 +210,6 @@ class QualityReviewer:
         """
         issues = []
 
-        # 检查常见需要异常处理的调用
         dangerous_calls = [
             (r"int\(|float\(|bool\(", "类型转换", "输入值非预期格式"),
             (r"open\(|\.read\(|\.write\(", "文件 I/O", "文件不存在或权限不足"),
@@ -238,7 +223,6 @@ class QualityReviewer:
         for pattern, op_name, reason in dangerous_calls:
             for m in re.finditer(pattern, code):
                 line = code[: m.start()].count("\n") + 1
-                # 检查该行是否在 try 块内（简单近似：行前 10 行内是否有 try:）
                 try_nearby = False
                 for j in range(max(0, line - 12), line - 1):
                     if re.match(r"\s*try\s*:", lines[j]) if j < len(lines) else False:
@@ -314,6 +298,3 @@ class QualityReviewer:
         return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# PRReviewer — 综合 PR 审查
-# ═══════════════════════════════════════════════════════════════════════

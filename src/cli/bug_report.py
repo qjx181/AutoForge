@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """bug_report.py — Bug 提交和查询 CLI
 
 命令行工具，用于向 bug 分析引擎提交错误日志、查询历史记录、自动生成修复。
@@ -20,7 +19,6 @@ import json
 import sys
 from pathlib import Path
 
-# 添加当前目录到路径，以便导入 bug_analysis_engine
 sys.path.insert(0, str(Path(__file__).parent.resolve()))
 from src.analysis.bug_analysis_engine import analyze_bug, _load_history, rank_possible_causes
 BUGS_DIR = Path(__file__).parent / "bugs"
@@ -58,7 +56,6 @@ def cmd_submit(text: str, source: str = "python") -> dict:
     result = analyze_bug(text, source)
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
-    # 如果 confidence >= 0.7，自动加入待处理列表
     if result["confidence"] >= 0.7:
         pending = _load_pending()
         pending.append(result)
@@ -125,7 +122,6 @@ def cmd_view(bug_id: str) -> None:
     for record in history:
         if record.get("id") == bug_id:
             print(json.dumps(record, indent=2, ensure_ascii=False))
-            # 同时显示排名原因
             causes = rank_possible_causes(record)
             if causes:
                 print("\n=== 可能的根因（按概率排序）===")
@@ -171,7 +167,6 @@ def cmd_fix(bug_id: str) -> None:
     if causes:
         print(f"\n推荐修复方案: {causes[0]['suggestion']}")
 
-    # 自动从待处理列表中移除
     pending = _load_pending()
     pending = [p for p in pending if p.get("id") != bug_id]
     _save_pending(pending)
@@ -190,13 +185,10 @@ def cmd_fix_all_pending() -> None:
         print(f"\n  {i}. ID={bug['id']} {desc}")
         print(f"     建议修复: {bug.get('suggested_fix', '无')}")
 
-    # 确认后应用（这里只输出，不自动执行）
     print(f"\n{'=' * 60}")
     print(f"共 {len(pending)} 个待处理 bug 的修复建议已输出。")
     print(f"使用 bug_report.py --fix <ID> 查看单条详情后手动执行。")
 
-    # 清理待处理列表（已经输出过建议了）
-    # _save_pending([])
 
 
 def cmd_stats() -> None:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """code_review.py — PR 代码审查 Agent 模块
 
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
@@ -27,9 +26,6 @@ import re
 from pathlib import Path
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SecurityReviewer — 安全审查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class PRReviewer:
@@ -71,14 +67,12 @@ class PRReviewer:
         all_issues.extend(self.performance.review_all(diff_text))
         all_issues.extend(self.quality.review_all(diff_text))
 
-        # 计算分数
         severity_scores = {"critical": -30, "high": -15, "medium": -5, "low": -2}
         score = 100
         for issue in all_issues:
             score += severity_scores.get(issue.get("severity", "low"), -2)
         score = max(0, min(100, score))
 
-        # 判定结论
         critical_count = sum(1 for i in all_issues if i["severity"] == "critical")
         high_count = sum(1 for i in all_issues if i["severity"] == "high")
 
@@ -93,7 +87,6 @@ class PRReviewer:
         else:
             verdict = "needs_changes"
 
-        # 生成总结
         total = len(all_issues)
         summary_parts = [
             f"## PR 审查报告",
@@ -190,6 +183,3 @@ class PRReviewer:
         return "\n".join(lines)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 便捷函数
-# ═══════════════════════════════════════════════════════════════════════

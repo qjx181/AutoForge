@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """optimizer/performance.py — 维度 3：性能分析扫描器
 
 检测：N+1 查询、同步 I/O 在异步函数中、内存泄漏、同步循环中的异步调用。
@@ -16,7 +15,6 @@ from pathlib import Path
 from typing import Optional
 
 
-# ── 顶层报告函数 ────────────────────────────────────────────────────────
 
 
 def scan(project_path: str | Path) -> dict:
@@ -55,7 +53,6 @@ def scan(project_path: str | Path) -> dict:
     }
 
 
-# ── 检查函数 ─────────────────────────────────────────────────────────────
 
 
 def _check_n_plus_one(code: str, file: Path) -> list[dict]:
@@ -71,7 +68,6 @@ def _check_n_plus_one(code: str, file: Path) -> list[dict]:
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.For, ast.While)):
-            # 检查循环体中是否有 DB 调用
             for child in ast.walk(node):
                 if isinstance(child, ast.Call):
                     call_name = _get_call_name(child)
@@ -136,7 +132,6 @@ def _check_memory_leak(code: str, file: Path) -> list[dict]:
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for child in ast.walk(node):
-                # 全局列表 append 但从未清理
                 if isinstance(child, ast.Call):
                     call_name = _get_call_name(child)
                     if call_name == "append":
@@ -158,9 +153,7 @@ def _check_inefficient_loops(code: str, file: Path) -> list[dict]:
     lines = code.split("\n")
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
-        # 在循环内重复 len() 调用同一对象
         if re.search(r"for\s+.*?\s+in\s+", stripped) and i < len(lines):
-            # 简单启发式：检查下几行是否有 len() 重复
             pass  # 简化版
     return issues
 
@@ -172,12 +165,10 @@ def _check_glob_usage(code: str, file: Path) -> list[dict]:
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
         if re.search(r"for\s+", stripped) and "glob" in code.lower():
-            # 简化检测
             pass
     return issues
 
 
-# ── 辅助 ─────────────────────────────────────────────────────────────────
 
 
 def _should_skip(path: Path) -> bool:

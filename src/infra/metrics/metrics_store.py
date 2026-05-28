@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """swarm_metrics.py — Swarm 自我进化循环的指标收集模块
 
 提供 Swarm 自我进化循环的完整指标收集能力，包含五个核心组件：
@@ -32,10 +31,8 @@ from typing import Any, Dict, List, Optional, Union
 from src.infra.swarm_utils import read_file_safe, write_file_safe, log_step
 from src.infra.swarm_logger import SwarmLogger
 
-# ── 默认日志记录器 ──────────────────────────────────────────────────
 _log = SwarmLogger(name="swarm_metrics", level="INFO", json_mode=False)
 
-# ── 严重级别排序权重 ────────────────────────────────────────────────
 SEVERITY_ORDER: List[str] = ["critical", "error", "warning", "info", "debug"]
 SEVERITY_WEIGHT: Dict[str, int] = {
     "critical": 50,
@@ -46,9 +43,6 @@ SEVERITY_WEIGHT: Dict[str, int] = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════
-# RoundTimer
-# ═══════════════════════════════════════════════════════════════════
 
 class MetricsStore:
     """MetricsStore — 指标数据持久化存储。
@@ -145,6 +139,3 @@ class MetricsStore:
         return results
 
 
-# ═══════════════════════════════════════════════════════════════════
-# MetricsReporter
-# ═══════════════════════════════════════════════════════════════════

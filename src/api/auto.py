@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """api_service.py — FastAPI 服务 + Web 仪表盘
 
 位于 src/api/ 目录，入口为 api_entrypoint()。
@@ -45,7 +44,6 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
-# ── 路径（向上两级，从 src/api/ 到项目根目录）────────────────────────────
 _PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 _SRC_ROOT = Path(__file__).parent.parent.resolve()
 if str(_SRC_ROOT) not in sys.path:
@@ -60,7 +58,6 @@ TODO_FILE = PROJECT_DIR / "TODO.md"
 LOGS_DIR = PROJECT_DIR / "logs"
 
 
-# ── 应用 ────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="项目三：多Agent — API 服务",
@@ -77,12 +74,10 @@ app.add_middleware(
 )
 
 
-# ── 启动时间 ─────────────────────────────────────────────────────────────
 
 START_TIME = datetime.datetime.now()
 
 
-# ── 辅助函数 ────────────────────────────────────────────────────────────
 
 
 def _read_json(path: Path) -> dict:
@@ -134,7 +129,6 @@ def _parse_task_from_match(task_match: re.Match) -> dict:
 
 def _update_task_from_line(current_task: dict, line: str) -> None:
     """根据行内容更新当前任务（描述/依赖/类别）。"""
-    # 使用映射减少 if/elif 链深度
     _UPDATERS = {
         "描述:": lambda l, t: t.update({"description": l.split("描述:", 1)[1].strip()}),
         "依赖:": lambda l, t: t.update({
@@ -167,7 +161,6 @@ def _parse_tasks_from_todo() -> list[dict]:
 
     current_task = None
     for line in lines:
-        # [ ] 或 [x] 标记
         task_match = __import__("re").match(
             r"^- \[([ x])\] 任务ID:\s*(\S+)", line
         )
@@ -184,7 +177,6 @@ def _parse_tasks_from_todo() -> list[dict]:
     return tasks
 
 
-# ── 路由 ────────────────────────────────────────────────────────────────
 
 
 

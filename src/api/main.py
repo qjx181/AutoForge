@@ -17,12 +17,10 @@ app.add_middleware(
 )
 
 
-# ── 启动时间 ─────────────────────────────────────────────────────────────
 
 START_TIME = datetime.datetime.now()
 
 
-# ── 辅助函数 ────────────────────────────────────────────────────────────
 
 
 def _read_json(path: Path) -> dict:
@@ -74,7 +72,6 @@ def _parse_task_from_match(task_match: re.Match) -> dict:
 
 def _update_task_from_line(current_task: dict, line: str) -> None:
     """根据行内容更新当前任务（描述/依赖/类别）。"""
-    # 使用映射减少 if/elif 链深度
     _UPDATERS = {
         "描述:": lambda l, t: t.update({"description": l.split("描述:", 1)[1].strip()}),
         "依赖:": lambda l, t: t.update({
@@ -107,7 +104,6 @@ def _parse_tasks_from_todo() -> list[dict]:
 
     current_task = None
     for line in lines:
-        # [ ] 或 [x] 标记
         task_match = __import__("re").match(
             r"^- \[([ x])\] 任务ID:\s*(\S+)", line
         )
@@ -124,7 +120,6 @@ def _parse_tasks_from_todo() -> list[dict]:
     return tasks
 
 
-# ── 路由 ────────────────────────────────────────────────────────────────
 
 
 

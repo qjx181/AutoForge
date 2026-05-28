@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """bug_analysis_engine.py — Bug 分析引擎
 
 从 Python Traceback、Java Stack Trace、CI/CD 日志中提取错误信息并分析根因。
@@ -21,7 +20,6 @@ import datetime
 from pathlib import Path
 
 
-# ── 持久化 ──────────────────────────────────────────────────────────────
 
 BUGS_DIR = Path(__file__).parent / "bugs"
 BUGS_DIR.mkdir(exist_ok=True)
@@ -69,8 +67,6 @@ def parse_python_traceback(traceback_text: str) -> dict:
     if not text:
         return result
 
-    # ── 提取异常类型和消息 ──
-    # 匹配最后一行: ValueError: invalid literal for int() with base 10: 'abc'
     last_line_match = re.search(
         r"^([A-Za-z_][A-Za-z0-9_.]*(?:\.[A-Za-z_][A-Za-z0-9_.]*)*):\s*(.*)",
         text.split("\n")[-1] if "\n" in text else text,
@@ -79,8 +75,6 @@ def parse_python_traceback(traceback_text: str) -> dict:
         result["error_type"] = last_line_match.group(1)
         result["message"] = last_line_match.group(2).strip()
 
-    # ── 提取调用链 ──
-    # 匹配标准 traceback 行: File "/path/to/file.py", line 42, in func_name
     frame_pattern = re.compile(
         r'File\s+"([^"]+)",\s*line\s+(\d+)(?:,\s*in\s+(\w+))?'
     )
@@ -107,13 +101,11 @@ def parse_python_traceback(traceback_text: str) -> dict:
     if current_frame:
         result["full_traceback"].append(current_frame)
 
-    # ── 从完整调用链中提取最终出错位置 ──
     if result["full_traceback"]:
         last_frame = result["full_traceback"][-1]
         result["file"] = last_frame["file"]
         result["line"] = last_frame["line"]
 
-    # ── 如果没匹配到 traceback 格式，尝试简单匹配 ──
     if result["error_type"] == "UNKNOWN":
         simple_err = re.search(
             r"(?:Error|Exception|Warning|Fault):\s*(.*)", text
@@ -164,8 +156,6 @@ def parse_java_stack_trace(stack_trace: str) -> dict:
     if not text:
         return result
 
-    # ── 提取异常类型和消息 ──
-    # java.lang.NullPointerException: Cannot invoke...
     first_line_match = re.match(
         r"^([A-Za-z_][A-Za-z0-9_.]*(?:\.[A-Za-z_][A-Za-z0-9_.]*)*)(?::\s*(.*))?$",
         text.split("\n")[0] if "\n" in text else text,
@@ -175,8 +165,6 @@ def parse_java_stack_trace(stack_trace: str) -> dict:
         result["class"] = first_line_match.group(1)
         result["message"] = (first_line_match.group(2) or "").strip()
 
-    # ── 提取堆栈帧 ──
-    # at com.example.MyService.process(MyService.java:42)
     frame_pattern = re.compile(
         r"\s+at\s+([\w.]+)\.(\w+)\(([^:]+)(?::(\d+))?\)"
     )
@@ -188,7 +176,6 @@ def parse_java_stack_trace(stack_trace: str) -> dict:
             result["line"] = int(frame_match.group(4)) if frame_match.group(4) else 0
             break
 
-    # ── Caused by 链 ──
     caused_by_match = re.search(r"Caused by:\s*(.*)", text, re.DOTALL)
     if caused_by_match:
         result["caused_by"] = caused_by_match.group(1).strip()[:500]
@@ -231,7 +218,6 @@ def parse_ci_log(log_text: str) -> dict:
     lines = text.split("\n")
     error_lines = []
 
-    # ── 阶段检测 ──
     stage_patterns = {
         "build": r"build|compil|make\b|cmake|mvn|gradle",
         "test": r"test\b|pytest|jest|mocha|testing|test suite",
@@ -242,13 +228,10 @@ def parse_ci_log(log_text: str) -> dict:
             result["stage"] = stage
             break
 
-    # ── 错误检测 ──
     for line in lines:
         stripped = line.strip()
-        # 标准 ERROR 标记
         if re.search(r"\b(ERROR|FAILED|FAILURE|FATAL|CRASH)\b", stripped, re.IGNORECASE):
             error_lines.append(line)
-            # 提取文件名
             file_matches = re.findall(r'[\w/]+\.\w+', line)
             for f in file_matches:
                 if f not in result["files_with_errors"]:
@@ -257,7 +240,6 @@ def parse_ci_log(log_text: str) -> dict:
     result["error_count"] = len(error_lines)
     result["summary"] = "\n".join(error_lines[:5])[:500]
 
-    # ── 错误类型判断 ──
     if re.search(r"FAILED|FAILURE|exit code \d+", text):
         result["error_type"] = "TEST_FAILURE"
     if re.search(r"syntax error|undefined reference|undeclared", text, re.IGNORECASE):
@@ -270,10 +252,8 @@ def parse_ci_log(log_text: str) -> dict:
     return result
 
 
-# ── 综合分析 ────────────────────────────────────────────────────────────
 
 
-# 已知模式的修复建议（安全关键词、行话翻译）
 FIX_SUGGESTIONS = {
     "ValueError": "检查输入类型转换，确保传入值可被正确解析。添加 try/except 防御。",
     "TypeError": "检查函数参数类型和数量，确认对象支持调用的方法。",

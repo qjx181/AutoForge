@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """project_analyzer.py — 项目结构自动检测
 
 作用：
@@ -24,9 +23,6 @@ from pathlib import Path
 from typing import Optional
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 数据结构
-# ═══════════════════════════════════════════════════════════════════════
 
 
 @dataclass
@@ -74,7 +70,6 @@ class OptimizationBlueprint:
     test: TestProfile
     structure: StructureProfile
 
-    # 各维度是否启用（根据项目结构自动推断）
     enabled_dimensions: dict[str, bool] = field(default_factory=dict)
 
     def is_enabled(self, dimension: str) -> bool:
@@ -98,11 +93,7 @@ class OptimizationBlueprint:
         }.get(lang, "")
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 核心函数
-# ═══════════════════════════════════════════════════════════════════════
 
-# ── 语言识别 ───────────────────────────────────────────────────────────
 
 LANGUAGE_SIGNATURES: dict[str, dict] = {
     "python": {
@@ -143,7 +134,6 @@ LANGUAGE_SIGNATURES: dict[str, dict] = {
     },
 }
 
-# ── 测试框架识别 ────────────────────────────────────────────────────────
 
 TEST_FRAMEWORKS: dict[str, dict] = {
     "python": {
@@ -172,7 +162,6 @@ def _scan_tree(root: Path, max_files: int = 5000) -> dict[str, int]:
     counts: dict[str, int] = {}
     found: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
-        # 跳过隐藏目录和常见大目录
         dirnames[:] = [d for d in dirnames if not d.startswith(".")
                        and d not in ("node_modules", "__pycache__", ".venv", "venv",
                                      "target", "dist", "build", ".git", "vendor",
@@ -196,7 +185,6 @@ def _detect_frameworks(root: Path, lang: str) -> list[str]:
     markers = LANGUAGE_SIGNATURES.get(lang, {}).get("markers", [])
     configs = LANGUAGE_SIGNATURES.get(lang, {}).get("configs", [])
 
-    # 特定框架检测
     py_files = {f.name for f in root.rglob("*.py") if f.is_file()}
 
     if lang == "python":
@@ -257,7 +245,6 @@ def _detect_test_profile(root: Path, lang: str) -> TestProfile:
     if lang not in TEST_FRAMEWORKS:
         return TestProfile(False, "none", None, "", None, None)
 
-    # 扫描测试目录
     test_dir_patterns = {
         "python": ["tests", "test", "testing"],
         "javascript": ["tests", "test", "__tests__"],
@@ -273,7 +260,6 @@ def _detect_test_profile(root: Path, lang: str) -> TestProfile:
             found_test_dir = str(root / td)
             break
 
-    # 检测测试框架
     framework_info = TEST_FRAMEWORKS[lang]
     found_framework = "unittest" if lang == "python" else "none"
 
@@ -282,7 +268,6 @@ def _detect_test_profile(root: Path, lang: str) -> TestProfile:
             if (root / marker).exists():
                 found_framework = "pytest"
                 break
-        # 也可以通过 conftest.py 检测
         if found_test_dir:
             for f in Path(found_test_dir).rglob("conftest.py"):
                 found_framework = "pytest"
@@ -295,7 +280,6 @@ def _detect_test_profile(root: Path, lang: str) -> TestProfile:
         if pkg.exists() and "jest" in pkg.read_text(errors="ignore"):
             found_framework = "jest"
 
-    # 检测覆盖率工具
     coverage_tool = None
     coverage_file = None
     for cf in ["coverage/", ".coverage", "htmlcov/", "lcov.info", "coverage.xml"]:
@@ -359,23 +343,14 @@ def _infer_enabled_dimensions(lang: str, language: LanguageProfile,
                                structure: StructureProfile) -> dict[str, bool]:
     """根据项目结构推断哪些优化维度应该启用。"""
     enabled = {
-        # 代码质量：总有代码文件就启用
         "quality": language.total_files > 0,
-        # 测试：检测到测试框架就启用
         "testing": test.has_tests,
-        # 性能：Python/Java/JS 等都启用
         "performance": language.primary in ("python", "javascript", "java", "typescript"),
-        # 架构：源码文件数超过阈值才分析
         "architecture": language.total_files >= 5,
-        # 安全：总有代码就启用
         "security": language.primary in ("python", "javascript", "typescript", "java"),
-        # 文档：检测到 docs 目录或 README 就启用
         "documentation": bool(structure.docs_dirs) or (root / "README.md").exists() if root else False,
-        # 配置：检测到配置文件就启用
         "configuration": bool(structure.config_files),
-        # 异步化：检测到 asyncio/async 模式就启用
         "asyncification": "asyncio" in language.frameworks or language.primary in ("python", "javascript", "typescript"),
-        # 死代码：总有代码文件就启用
         "deadcode": language.total_files >= 3,
     }
     return enabled
@@ -397,10 +372,8 @@ def analyze_project(path: str) -> OptimizationBlueprint:
 
     project_name = root.name
 
-    # 1. 扫描文件分布
     file_counts, all_source_files = _scan_tree(root)
 
-    # 2. 识别主要语言
     ext_to_lang = {
         ".py": "python", ".js": "javascript", ".jsx": "javascript",
         ".ts": "typescript", ".tsx": "typescript", ".java": "java",
@@ -415,10 +388,8 @@ def analyze_project(path: str) -> OptimizationBlueprint:
     primary = sorted_langs[0][0] if sorted_langs else "unknown"
     all_langs = [l for l, _ in sorted_langs if l != "other"]
 
-    # 3. 检测框架
     frameworks = _detect_frameworks(root, primary)
 
-    # 4. 检测包管理器
     pms = _detect_package_managers(root)
 
     language = LanguageProfile(
@@ -430,14 +401,11 @@ def analyze_project(path: str) -> OptimizationBlueprint:
         package_managers=pms,
     )
 
-    # 5. 测试画像
     test = _detect_test_profile(root, primary)
 
-    # 6. 目录结构
     structure = _detect_structure(root)
     structure.all_source_files = all_source_files
 
-    # 7. 推断维度开关
     enabled = _infer_enabled_dimensions(primary, language, test, structure)
 
     return OptimizationBlueprint(
@@ -450,9 +418,6 @@ def analyze_project(path: str) -> OptimizationBlueprint:
     )
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 便利函数
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def get_optimization_blueprint(path: str) -> OptimizationBlueprint:

@@ -29,24 +29,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-# ─── 路径 ──────────────────────────────────────────────────────────────
-# src/infra/ → 向上三级: infra → src → 项目根
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 AUDIT_DIR = SWARM_DIR / "logs"
 AUDIT_FILE = AUDIT_DIR / "audit.jsonl"
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 
-# ─── 配置（可通过环境变量覆盖） ──────────────────────────────────────────
 MAX_BYTES = int(os.environ.get("AUDIT_MAX_BYTES", str(10 * 1024 * 1024)))  # 10 MB
 BACKUP_COUNT = int(os.environ.get("AUDIT_BACKUP_COUNT", "3"))
 
-# ─── 敏感字段（内容中包含这些 key 的需脱敏） ────────────────────────────
 SENSITIVE_PATTERNS = [
     "api_key", "api_secret", "password", "token",
     "authorization", "bearer", "secret_key", "auth_key",
 ]
 
-# ─── 内部状态 ──────────────────────────────────────────────────────────
 _current_round: Optional[int] = None
 
 
@@ -66,7 +61,6 @@ def _get_round() -> int:
     return _current_round
 
 
-# ─── 内容摘要 ──────────────────────────────────────────────────────────
 
 
 def summarize(content: str, max_len: int = 80) -> str:
@@ -82,7 +76,6 @@ def summarize(content: str, max_len: int = 80) -> str:
     if not content:
         return ""
 
-    # 对于 JSON/YAML 内容，提取顶层 key
     stripped = content.strip()
     if stripped.startswith("{") or stripped.startswith("["):
         try:
@@ -93,9 +86,7 @@ def summarize(content: str, max_len: int = 80) -> str:
         except (json.JSONDecodeError, ValueError):
             pass
 
-    # 对于代码内容，提取第一行
     first_line = stripped.split("\n")[0].strip()
-    # 限制长度
     if len(first_line) > max_len:
         first_line = first_line[: max_len - 3] + "..."
 
@@ -115,7 +106,6 @@ def redact_sensitive(text: str) -> str:
     import re
     result = text
     for pattern in SENSITIVE_PATTERNS:
-        # 匹配 key=value 或 key: value 或 key:value
         result = re.sub(
             rf'({pattern}\s*[=:]\s*)["\']?([^"\' \n,;}}]{{8,}})["\']?',
             r"\1***",
@@ -125,7 +115,6 @@ def redact_sensitive(text: str) -> str:
     return result
 
 
-# ─── 日志轮转 ──────────────────────────────────────────────────────────
 
 
 def _rotate_if_needed():
@@ -137,7 +126,6 @@ def _rotate_if_needed():
     if size < MAX_BYTES:
         return
 
-    # 重命名现有文件
     for i in range(BACKUP_COUNT - 1, 0, -1):
         old = AUDIT_DIR / f"audit.jsonl.{i}"
         new = AUDIT_DIR / f"audit.jsonl.{i + 1}"
@@ -147,7 +135,6 @@ def _rotate_if_needed():
     AUDIT_FILE.rename(AUDIT_DIR / "audit.jsonl.1")
 
 
-# ─── 核心接口 ──────────────────────────────────────────────────────────
 
 
 def audit_log(
@@ -172,7 +159,6 @@ def audit_log(
         AUDIT_DIR.mkdir(parents=True, exist_ok=True)
         _rotate_if_needed()
 
-        # 脱敏
         safe_preview = redact_sensitive(content_preview[:200])
 
         record = {
@@ -186,7 +172,6 @@ def audit_log(
             "round": _get_round(),
         }
         if extra:
-            # extra 中的敏感值也需要脱敏
             safe_extra = {}
             for k, v in extra.items():
                 safe_extra[k] = redact_sensitive(str(v)) if isinstance(v, str) else v
@@ -197,7 +182,6 @@ def audit_log(
             f.write(line + "\n")
 
     except Exception:
-        # 审计日志写入失败不影响主逻辑
         pass
 
 
@@ -251,13 +235,11 @@ def print_summary(limit: int = 10):
         print(f"  {status} {ts} {op} {target} {summary}")
 
 
-# ═══════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     print(f"[audit] 测试模式")
     print(f"  Round: {_get_round()}")
     print(f"  审计文件: {AUDIT_FILE}")
 
-    # 写入一条测试记录
     audit_log("write_file", "config.yaml", "delegation_incentive:\n  enabled: true",
               source="test")
     audit_log("patch", "swarm_metrics.py", "import sqlite3",

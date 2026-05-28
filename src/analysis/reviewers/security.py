@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """code_review.py — PR 代码审查 Agent 模块
 
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
@@ -27,9 +26,6 @@ import re
 from pathlib import Path
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SecurityReviewer — 安全审查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class SecurityReviewer:
@@ -46,13 +42,11 @@ class SecurityReviewer:
     }
     """
 
-    # 常见密钥关键词（白名单排除测试密钥）
     SECRET_KEYWORDS = re.compile(
         r"(?i)(api_key|secret_key|api_secret|access_key|secret_access|"
         r"private_key|password|passwd|token|auth_token|"
         r"aws_secret|db_password|jwt_secret|openai_key|app_secret)",
     )
-    # 被视为测试/占位的值，跳过
     SKIP_VALUES = re.compile(
         r"(your_|example_|test_|changeme|placeholder|xxx|"
         r"sk-[A-Za-z0-9]{5,10}|'[^']{1,5}')",
@@ -75,7 +69,6 @@ class SecurityReviewer:
         """
         issues = []
 
-        # 模式1: f-string SQL → f"SELECT * FROM {user_input}"
         fstring_sql = re.finditer(
             r'(?:execute|executescript|cursor\.execute|\.sql)\s*\(\s*f["\']',
             code,
@@ -92,7 +85,6 @@ class SecurityReviewer:
                 "suggestion": "使用参数化查询：cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))",
             })
 
-        # 模式2: .format() SQL
         format_sql = re.finditer(
             r"(?:execute|cursor\.execute|\.sql)\s*\(\s*['\"].*?\{.*?\}.*?['\"]\s*\.\s*format\b",
             code,
@@ -108,7 +100,6 @@ class SecurityReviewer:
                 "suggestion": "使用参数化查询替代 .format()",
             })
 
-        # 模式3: % 格式化 SQL
         pct_sql = re.finditer(
             r"(?:execute|cursor\.execute|\.sql)\s*\(\s*['\"].*?%[sd].*?['\"]\s*%\s*\(",
             code,
@@ -124,7 +115,6 @@ class SecurityReviewer:
                 "suggestion": "使用参数化查询：cursor.execute('...', (param,))",
             })
 
-        # 模式4: SQL 字符串 + 变量拼接
         concat_sql = re.finditer(
             r"""['"](SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE)\b.*?['"]\s*\+""",
             code,
@@ -173,7 +163,6 @@ class SecurityReviewer:
         for pattern, desc, severity in patterns:
             for m in re.finditer(pattern, code):
                 line = code[: m.start()].count("\n") + 1
-                # 检查是否使用了变量（用户输入）
                 var_in_cmd = re.search(
                     r'["\'].*?\b(f|format|\%|{|\+|join)\b',
                     code.split("\n")[line - 1],
@@ -210,7 +199,6 @@ class SecurityReviewer:
         lines = code.split("\n")
         for i, line in enumerate(lines, 1):
             stripped = line.strip()
-            # 跳过注释和 import
             if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("/*"):
                 continue
             if "import " in stripped:
@@ -222,10 +210,8 @@ class SecurityReviewer:
                 value_match = re.search(r'=\s*["\'](.+?)["\']', stripped)
                 if value_match:
                     value = value_match.group(1)
-                    # 跳过测试/占位值
                     if SecurityReviewer.SKIP_VALUES.search(value):
                         continue
-                    # 真正的密钥
                     issues.append({
                         "type": "secret_leak",
                         "severity": "critical" if "password" in key.lower() or "secret" in key.lower() else "high",
@@ -263,7 +249,6 @@ class SecurityReviewer:
             for m in re.finditer(pattern, code):
                 line = code[: m.start()].count("\n") + 1
                 line_text = code.split("\n")[line - 1].strip()
-                # 跳过已知安全的模式
                 if "escaped" in line_text.lower() or "sanitize" in line_text.lower():
                     continue
                 issues.append({
@@ -296,6 +281,3 @@ class SecurityReviewer:
         return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# PerformanceReviewer — 性能审查
-# ═══════════════════════════════════════════════════════════════════════

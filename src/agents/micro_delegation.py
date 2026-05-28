@@ -25,7 +25,6 @@ from pathlib import Path
 from typing import Any, Optional
 from typing import Any, Optional
 
-# ─── 审计与安全集成 ────────────────────────────────────────────────────
 try:
     from src.infra.audit_trail import audit_log
 except ImportError:
@@ -42,19 +41,11 @@ except ImportError:
     def guard_git_push(*args, **kwargs):
         return True
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# src/agents/ → 向上两级: agents → src → 项目根（等效于 parent.parent）
-# 但 agents/micro_delegation.py 需要 parent.parent 才能到 src，再 parent 到根
-# Path(__file__) = src/agents/micro_delegation.py
-# .parent = src/agents/
-# .parent.parent = src/
-# .parent.parent.parent = 项目根
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 REGISTRY_FILE = SWARM_DIR / "data" / "delegable_tasks.json"
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 TODO_FILE = SWARM_DIR / "docs" / "TODO.md"
 
-# ─── 全局计数器 ────────────────────────────────────────────────────────
 _micro_counter = 0
 
 
@@ -65,9 +56,6 @@ def _next_micro_id() -> str:
     return f"micro-{_micro_counter:03d}"
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 1. 任务注册表
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def load_task_registry() -> dict:
@@ -97,12 +85,8 @@ def is_forbidden(task_description: str) -> tuple[bool, str]:
     return False, ""
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 2. 拆分器 — 把大任务拆成微任务
-# ═══════════════════════════════════════════════════════════════════════
 
 
-# ─── 预定义拆分模板 ──────────────────────────────────
 
 
 def _predefined_split(task_id: str, description: str) -> Optional[list[dict]]:
@@ -229,7 +213,6 @@ def _predefined_split(task_id: str, description: str) -> Optional[list[dict]]:
     return templates.get(task_id)
 
 
-# ─── 通用拆分模式 ──────────────────────────────────
 
 
 def _general_split(task_id: str, description: str) -> list[dict]:
@@ -240,7 +223,6 @@ def _general_split(task_id: str, description: str) -> list[dict]:
     """
     micros = []
 
-    # 模式1：提到创建文件
     if re.search(r"创建|新建|新增文件|create", description):
         micros.append({
             "task_type": "run_command",
@@ -252,7 +234,6 @@ def _general_split(task_id: str, description: str) -> list[dict]:
             "_note": "文件创建由协调者直接处理",
         })
 
-    # 模式2：提到添加配置
     if re.search(r"配置|config|yaml|参数", description):
         micros.append({
             "task_type": "add_config_field",
@@ -266,7 +247,6 @@ def _general_split(task_id: str, description: str) -> list[dict]:
             "expected_outcome": "config.yaml 新增占位配置项",
         })
 
-    # 模式3：提到导入
     imports = re.findall(r"导入\s*(\S+)|import\s*(\S+)", description)
     for imp in imports:
         module = imp[0] or imp[1]
@@ -313,7 +293,6 @@ def split_big_task(task_id: str, description: str = "",
             "verify_command": "grep ...",         # 验证命令
         }
     """
-    # 1. 检查是否命中禁区
     forbidden, reason = is_forbidden(description)
     if forbidden:
         return [{
@@ -325,7 +304,6 @@ def split_big_task(task_id: str, description: str = "",
             "_note": reason,
         }]
 
-    # 2. 尝试预设模板
     predefined = _predefined_split(task_id, description)
     if predefined:
         result = []
@@ -341,7 +319,6 @@ def split_big_task(task_id: str, description: str = "",
             })
         return result
 
-    # 3. 通用拆分
     general = _general_split(task_id, description)
     for g in general:
         if "id" not in g:
@@ -351,9 +328,6 @@ def split_big_task(task_id: str, description: str = "",
     return general
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 3. 构建器 — 为微任务生成委托 goal
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def build_micro_goal(micro_task: dict) -> str:
@@ -372,13 +346,11 @@ def build_micro_goal(micro_task: dict) -> str:
         goal_parts.append(f"描述：{task_def.get('description', '')}")
         goal_parts.append(f"允许使用的工具：{', '.join(task_def.get('allowed_tools', ['read_file', 'patch']))}")
 
-    # 注入参数
     param_lines = []
     for key, val in params.items():
         param_lines.append(f"  {key}: {val}")
     goal_parts.append("参数：\n" + "\n".join(param_lines))
 
-    # 为 replace_string 类型增加操作指引
     if task_type_id == "replace_string" and "old_string" in params and "new_string" in params:
         goal_parts.append("")
         goal_parts.append("【操作指令】")
@@ -388,7 +360,6 @@ def build_micro_goal(micro_task: dict) -> str:
         goal_parts.append(f"4. path = {params.get('file', 'config.yaml')}")
         goal_parts.append("5. 不要 write_file 覆盖整个文件")
 
-    # 注入 5 条硬约束
     goal_parts.append("")
     goal_parts.append("【硬约束——违反直接拒绝】")
     goal_parts.append("1. 只修改指定的文件，不改其他文件")
@@ -397,7 +368,6 @@ def build_micro_goal(micro_task: dict) -> str:
     goal_parts.append("4. 改动前必须 read_file 确认当前行号")
     goal_parts.append("5. 用 patch 精确替换，不要用 write_file 覆盖整文件")
 
-    # 验证要求
     expected = micro_task.get("expected_outcome", "无")
     goal_parts.append(f"")
     goal_parts.append(f"预期结果：{expected}")
@@ -408,9 +378,6 @@ def build_micro_goal(micro_task: dict) -> str:
     return "\n".join(goal_parts)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 4. 验证器 — 验证微任务执行结果
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def verify_micro_result(micro_task: dict, subagent_summary: str) -> dict:
@@ -430,7 +397,6 @@ def verify_micro_result(micro_task: dict, subagent_summary: str) -> dict:
     """
     micro_id = micro_task.get("id", "unknown")
 
-    # 检查子 Agent 是否明确声明成功
     summary_upper = (subagent_summary or "").upper().strip()
 
     if "SUCCESS" in summary_upper and "FAIL" not in summary_upper:
@@ -459,7 +425,6 @@ def verify_micro_result(micro_task: dict, subagent_summary: str) -> dict:
             "can_retry": True,
         }
 
-    # 子 Agent 没有明确输出结果——不确定
     audit_log("verify", f"micro:{micro_id}", f"UNCLEAR: {subagent_summary[:80]}",
               success=True, source="micro_delegation")
     return {
@@ -470,9 +435,6 @@ def verify_micro_result(micro_task: dict, subagent_summary: str) -> dict:
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 5. 聚合器 — 汇总微任务执行结果
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def aggregate_micro_results(results: list[dict]) -> dict:
@@ -509,9 +471,6 @@ def aggregate_micro_results(results: list[dict]) -> dict:
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 6. 集成辅助 — 被 self_evolve_round.py 调用
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def plan_micro_delegations() -> dict | None:
@@ -528,14 +487,11 @@ def plan_micro_delegations() -> dict | None:
     if not pending:
         return None
 
-    # 读取 TODO.md 获取描述文本
     todo_text = TODO_FILE.read_text() if TODO_FILE.exists() else ""
 
     micro_plan = {"tasks": {}}
     for task_id in pending:
-        # 从 TODO.md 提取任务描述
         desc = _extract_task_description(todo_text, task_id)
-        # 拆分
         micros = split_big_task(task_id, description=desc)
         micro_plan["tasks"][task_id] = {
             "description": desc[:100] if desc else task_id,
@@ -563,7 +519,6 @@ def _extract_task_description(todo_text: str, task_id: str) -> str:
             capturing = True
             continue
         if capturing:
-            # 遇到下一个任务ID或空行停止
             if re.match(r'^- \[ \] 任务ID:', line) or re.match(r'^- \[x\] 任务ID:', line):
                 break
             stripped = line.strip()

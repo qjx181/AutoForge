@@ -23,13 +23,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-# ─── 路径 ──────────────────────────────────────────────────────────────
-# src/infra/ → 向上三级: infra → src → 项目根
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 AUDIT_FILE = SWARM_DIR / "logs" / "audit.jsonl"
 
-# ─── 危险操作分类 ──────────────────────────────────────────────────────
 DANGEROUS_OPS = {
     "delete_file": {
         "level": "critical",
@@ -57,7 +54,6 @@ DANGEROUS_OPS = {
     },
 }
 
-# ─── 内部状态 ──────────────────────────────────────────────────────────
 _round_op_count: dict[str, int] = {}
 _current_round: Optional[int] = None
 
@@ -86,7 +82,6 @@ def _reset_count_if_new_round():
         _round_op_count["_round"] = r
 
 
-# ─── 路径匹配 ──────────────────────────────────────────────────────────
 
 
 def _matches_whitelist(path: str, patterns: list[str]) -> bool:
@@ -94,7 +89,6 @@ def _matches_whitelist(path: str, patterns: list[str]) -> bool:
     p = Path(path)
     for pattern in patterns:
         if pattern.endswith("/*"):
-            # 检查父目录
             if pattern[:-2] in str(p.parent):
                 return True
         elif p.match(pattern):
@@ -115,7 +109,6 @@ def _is_inside_dangerous_dir(path: str) -> bool:
     return False
 
 
-# ─── 核心接口 ──────────────────────────────────────────────────────────
 
 
 def confirm_destructive_op(
@@ -142,18 +135,15 @@ def confirm_destructive_op(
     if force_skip:
         return True
 
-    # 1. 操作类型检查
     op_def = DANGEROUS_OPS.get(op_type)
     if not op_def:
         _log_audit("reject", op_type, path_or_description, "未知操作类型")
         return False
 
-    # 2. 白名单检查
     if _matches_whitelist(path_or_description, op_def["whitelist_patterns"]):
         _log_audit("whitelist_pass", op_type, path_or_description, "白名单")
         return True
 
-    # 3. 轮次计数器
     _reset_count_if_new_round()
     current = _round_op_count.get(op_type, 0)
     if current >= op_def["max_per_round"]:
@@ -165,7 +155,6 @@ def confirm_destructive_op(
         print(f"[safety] ⛔ {msg}")
         return False
 
-    # 4. 输出警告信息
     print(f"\n⚠️  【安全确认】危险操作: {op_def['description']}")
     print(f"  级别: {op_def['level']}")
     print(f"  目标: {path_or_description}")
@@ -191,7 +180,6 @@ def confirm_destructive_op(
 
 def guard_delete(path: str, force_skip: bool = False) -> bool:
     """删除操作的专用守卫。"""
-    # 关键文件绝对不允许删除
     protected = [
         "config.yaml",
         ".gitignore",
@@ -217,7 +205,6 @@ def guard_git_push(force_skip: bool = False) -> bool:
     return confirm_destructive_op("git_push", "git push 到远程仓库", force_skip)
 
 
-# ─── 审计记录 ──────────────────────────────────────────────────────────
 
 
 def _log_audit(action: str, op_type: str, target: str, reason: str):
@@ -239,18 +226,15 @@ def _log_audit(action: str, op_type: str, target: str, reason: str):
         pass  # 审计日志写入失败不应该影响主逻辑
 
 
-# ═══════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     print(f"[safety] 测试模式")
     print(f"  Round: {_get_round()}")
 
-    # 测试 delete guard
     result = guard_delete("/tmp/test.py", force_skip=True)
     print(f"  guard_delete(/tmp/test.py): {'允许' if result else '拒绝'}")
 
     result = guard_delete("config.yaml", force_skip=True)
     print(f"  guard_delete(config.yaml): {'允许' if result else '拒绝'}")
 
-    # 测试 git push guard
     result = guard_git_push(force_skip=True)
     print(f"  guard_git_push: {'允许' if result else '拒绝'}")

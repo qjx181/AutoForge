@@ -26,19 +26,13 @@ import json
 from src.infra.logging_config import PrintToLogger
 print = PrintToLogger(__name__).info
 from pathlib import Path
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# 位于 src/agents/，向上三级到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 CAPABILITY_MAP = SWARM_DIR / "data" / "agent_capability_map.json"
 
-# ─── 默认并发上限 ──────────────────────────────────────────────────────
 DEFAULT_MAX_CONCURRENT = 3
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 核心函数
-# ═══════════════════════════════════════════════════════════════════════
 
 def dispatch_tasks(
     state: dict,
@@ -68,7 +62,6 @@ def dispatch_tasks(
             "stats": {"total": N, "coordinator": N, "delegate": N, "skipped": N}
         }
     """
-    # 尝试导入 delegate_optimizer
     try:
         OPTIMIZER_AVAILABLE = True
     except ImportError:
@@ -86,11 +79,9 @@ def dispatch_tasks(
     for task in todo_tasks:
         task_id = task.get("task_id", "unknown")
 
-        # 跳过已完成/进行中/永久失败的任务
         if task_id in completed or task_id in in_progress or task_id in permanently_failed:
             continue
 
-        # 检查依赖
         deps = task.get("depends", [])
         dep_blocked = False
         for dep in deps:
@@ -101,7 +92,6 @@ def dispatch_tasks(
         if dep_blocked:
             continue
 
-        # 决策：协调者干 vs 委托
         task_with_meta = {
             "task_id": task_id,
             "token_est": task.get("token_est", task.get("预估 token 量", 2000)),
@@ -119,7 +109,6 @@ def dispatch_tasks(
         else:
             coordinator_tasks.append(task)
 
-    # 生成分批计划
     all_executable = coordinator_tasks + delegate_tasks
     batches = _batch_tasks(delegate_tasks, max_concurrent)
 
@@ -141,21 +130,17 @@ def _infer_category(task: dict) -> str:
     """从任务描述推断类别（debug/test/feature/refactor）"""
     desc = (task.get("description", "") + " " + task.get("任务ID", "")).lower()
 
-    # 测试类
     if any(kw in desc for kw in ["test", "测试", "单元测试", "压力测试", "pytest"]):
         return "test"
 
-    # 调试/修复类
     if any(kw in desc for kw in ["async", "修复", "bug", "加固", "重试",
                                    "diagnos", "诊断", "参数", "调优",
                                    "清理", "删除", "import"]):
         return "debug"
 
-    # 重构类
     if any(kw in desc for kw in ["重构", "refactor", "重写", "接口重设计"]):
         return "refactor"
 
-    # 默认：功能类
     return "feature"
 
 
@@ -164,15 +149,12 @@ def _fallback_should_delegate(task: dict) -> tuple[bool, str]:
     category = task.get("category", "debug")
     token_est = task.get("token_est", 2000)
 
-    # 从零创建测试/框架类 — 不委托
     if category in ("test_creation",):
         return False, "回退策略：测试创建类不委托"
 
-    # 简单任务 — 委托
     if token_est < 1000 and category in ("debug", "config"):
         return True, "回退策略：简单任务委托"
 
-    # 复杂/新功能 — 不委托
     return False, "回退策略：复杂任务协调者直接处理"
 
 
@@ -185,9 +167,6 @@ def _batch_tasks(tasks: list[dict], max_concurrent: int) -> list[list[dict]]:
     return batches
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 并发控制辅助
-# ═══════════════════════════════════════════════════════════════════════
 
 def get_max_concurrent_from_config() -> int:
     """从 state.json 读取 max_concurrent_children 配置。"""
@@ -208,9 +187,6 @@ def estimate_round_tokens(tasks: list[dict]) -> int:
     return total
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 协调者工作分配
-# ═══════════════════════════════════════════════════════════════════════
 
 def get_coordinator_workload(coordinator_tasks: list[dict]) -> dict:
     """计算协调者本轮工作负载统计。
@@ -246,12 +222,6 @@ def log_dispatch_plan(plan: dict) -> None:
     )
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 模式 2：手动分批并行执行（由协调者通过 delegate_task 调用）
-# ═══════════════════════════════════════════════════════════════════════
-# 注意：实际的任务执行（write_file / delegate_task）由 Hermes Agent 的
-# prompt 驱动，本函数仅生成执行报告供 Agent 决策参考。
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def parallel_dispatch(
@@ -290,7 +260,6 @@ def parallel_dispatch(
 
     hints = []
 
-    # Batch 执行顺序提示
     for i, batch in enumerate(task_batches):
         batch_ids = [t.get("task_id", f"task-{j}") for j, t in enumerate(batch)]
         batch_types = [t.get("category", "unknown") for t in batch]
@@ -301,7 +270,6 @@ def parallel_dispatch(
             f"类型: {batch_types}，task_ids: {batch_ids}"
         )
 
-    # 协调者任务提示
     if coordinator_tasks:
         coord_ids = [t.get("task_id", "?") for t in coordinator_tasks]
         coord_types = [t.get("category", "?") for t in coordinator_tasks]
@@ -310,7 +278,6 @@ def parallel_dispatch(
             f"task_ids: {coord_ids}"
         )
 
-    # 总体提示
     hints.append(
         f"[总结] 本轮共 {total_tasks} 个任务，分 {total_batches} 批执行，"
         f"委托 {delegate_tasks} 个，协调者直执行 {len(coordinator_tasks)} 个，"

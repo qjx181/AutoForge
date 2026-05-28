@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/async_scanner.py — 维度八：异步化扫描器
 
 检测：
@@ -57,7 +56,6 @@ def _check_blocking_in_async(code: str, filepath: str) -> list[dict]:
             if not isinstance(child, ast.Call):
                 continue
 
-            # 检查 time.sleep
             if isinstance(child.func, ast.Attribute):
                 if isinstance(child.func.value, ast.Name) and child.func.value.id == "time":
                     if child.func.attr == "sleep" and is_async:
@@ -70,7 +68,6 @@ def _check_blocking_in_async(code: str, filepath: str) -> list[dict]:
                             "suggestion": "将 time.sleep 改为 asyncio.sleep",
                         })
 
-                # 检查 requests
                 if isinstance(child.func.value, ast.Name) and child.func.value.id == "requests":
                     if child.func.attr in BLOCKING_CALLS and is_async:
                         issues.append({
@@ -82,7 +79,6 @@ def _check_blocking_in_async(code: str, filepath: str) -> list[dict]:
                             "suggestion": "改用 httpx.AsyncClient 或 asyncio.to_thread(requests.get, ...)",
                         })
 
-                # 检查 open()
                 if child.func.attr == "open" and is_async:
                     issues.append({
                         "type": "sync_io_in_async",
@@ -104,7 +100,6 @@ def _check_asyncio_run_in_loop(code: str, filepath: str) -> list[dict]:
         if stripped.startswith("#"):
             continue
         if re.search(r'asyncio\.run\s*\(', stripped):
-            # 简单检查：如果函数名含 sync/_wrap 则是问题
             issues.append({
                 "type": "asyncio_run_in_loop",
                 "severity": "medium",

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """bug_analysis_engine.py — Bug 分析引擎
 
 从 Python Traceback、Java Stack Trace、CI/CD 日志中提取错误信息并分析根因。
@@ -21,7 +20,6 @@ import datetime
 from pathlib import Path
 
 
-# ── 持久化 ──────────────────────────────────────────────────────────────
 
 BUGS_DIR = Path(__file__).parent / "bugs"
 BUGS_DIR.mkdir(exist_ok=True)
@@ -62,7 +60,6 @@ def analyze_bug(
         - 对新框架的 traceback 有效吗？答：框架修改了异常格式时需要扩展正则
         - 怎么保证修复建议不削改其他代码？答：fix_type=patch 建议只增补 try/except，不改签名
     """
-    # 1. 解析
     if source_type == "java":
         parsed = parse_java_stack_trace(traceback_or_log)
     elif source_type == "ci":
@@ -70,13 +67,11 @@ def analyze_bug(
     else:
         parsed = parse_python_traceback(traceback_or_log)
 
-    # 2. 生成根因和修复建议
     error_type = parsed.get("error_type", "UNKNOWN")
     message = parsed.get("message", "")
     file_ = parsed.get("file", "")
     line = parsed.get("line", 0)
 
-    # 从消息中提取更具象的根因
     root_cause = f"{error_type}: {message[:100]}" if message else f"发生 {error_type}"
 
     if error_type in FIX_SUGGESTIONS:
@@ -84,14 +79,12 @@ def analyze_bug(
     else:
         suggested_fix = "请人工审查代码，定位具体错误位置。自动分析未覆盖此错误类型。"
 
-    # 3. 判断修复类型
     fix_type = "patch"
     if not file_:
         fix_type = "config_change"
     elif source_type == "ci":
         fix_type = "config_change"
 
-    # 4. 置信度
     confidence = 0.5
     if error_type in FIX_SUGGESTIONS:
         confidence = 0.7
@@ -186,4 +179,3 @@ def rank_possible_causes(error_info: dict) -> list[dict]:
     return causes
 
 
-# ── 便捷函数 ────────────────────────────────────────────────────────────

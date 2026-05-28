@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def _format_log(level: str, msg: str) -> str:
     """格式化单条日志（纯文本或 JSON）。"""
@@ -66,6 +60,3 @@ def relog(tag: str, *args) -> None:
         f.write(line + "\n")
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 0. PID 文件锁
-# ═══════════════════════════════════════════════════════════════════════

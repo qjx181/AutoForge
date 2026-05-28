@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """confidence_gate.py — 审批门控（置信度分级决策）
 
 设计动机（面试话术）：
@@ -31,15 +30,11 @@ from .adapters import FixResult, Issue
 
 logger = logging.getLogger(__name__)
 
-# ── 路径 ──────────────────────────────────────────────────────────────
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 QUEUE_FILE = SWARM_DIR / "data" / "approval_queue.json"
 HISTORY_FILE = SWARM_DIR / "data" / "approval_history.json"
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 置信度等级
-# ═══════════════════════════════════════════════════════════════════════
 
 class GateDecision(str, Enum):
     """门控决策结果。"""
@@ -71,8 +66,6 @@ class InboxItemStatus(str, Enum):
     EXPIRED = "expired"
 
 
-# ── 可配置的阈值 ──────────────────────────────────────────────────────
-# 默认阈值，可以通过 config.yaml 覆盖
 DEFAULT_AUTO_APPLY_THRESHOLD = 0.8    # >= 此值自动应用
 DEFAULT_REJECT_THRESHOLD = 0.5        # < 此值拒绝
 
@@ -126,9 +119,6 @@ def evaluate(fix_result: FixResult) -> GateDecision:
         return GateDecision.REJECTED
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 审批队列
-# ═══════════════════════════════════════════════════════════════════════
 
 def _generate_item_id(fix_result: FixResult) -> str:
     """根据修复结果生成唯一 ID。"""
@@ -181,7 +171,6 @@ def enqueue(fix_result: FixResult, issue: Issue) -> str:
     item_id = _generate_item_id(fix_result)
     queue = _load_queue()
 
-    # 去重
     if any(item["id"] == item_id for item in queue):
         logger.info("Item %s already in queue, skipping", item_id)
         return item_id
@@ -222,9 +211,7 @@ def approve(item_id: str, reviewer: str = "human", comment: str = "") -> bool:
             item["review_comment"] = comment
             _save_queue(queue)
 
-            # 写入历史
             _record_history(item, "approved", reviewer, comment)
-            # 触发审批回调（自动应用修复）
             _fire_approval_callbacks(item)
             logger.info("Approved: %s by %s", item_id, reviewer)
             return True
@@ -330,7 +317,6 @@ def reply(item_id: str, message: str, reviewer: str = "human") -> bool:
     return False
 
 
-# ── 默认 TTL（小时），可通过 config.yaml 覆盖 ──────────────────────
 DEFAULT_INBOX_TTL_HOURS = 72  # 3 天未审批自动过期
 
 
@@ -389,7 +375,6 @@ def expire_stale() -> int:
     return count
 
 
-# ── 审批回调（approve 后自动触发修复应用） ──────────────────────────
 _APPROVAL_CALLBACKS: list = []  # list[Callable[[dict], None]]
 
 
@@ -430,7 +415,6 @@ def _record_history(item: dict, action: str, reviewer: str, comment: str) -> Non
         "confidence": item.get("fix_result", {}).get("confidence", 0),
         "at": datetime.now().isoformat(),
     })
-    # 保留最近 500 条历史
     if len(history) > 500:
         history = history[-500:]
     _save_history(history)
@@ -442,9 +426,6 @@ def get_history(limit: int = 20) -> list[dict]:
     return history[-limit:]
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 端到端流程：evaluate → enqueue/auto_apply
-# ═══════════════════════════════════════════════════════════════════════
 
 def process_fix(fix_result: FixResult, issue: Issue, apply_fn=None) -> dict:
     """端到端处理一个修复结果：评估 → 自动应用或入队。
@@ -477,10 +458,8 @@ def process_fix(fix_result: FixResult, issue: Issue, apply_fn=None) -> dict:
                 applied = apply_fn(fix_result)
             except Exception as e:
                 logger.error("Auto-apply failed: %s", e)
-                # 降级到人工审批
                 item_id = enqueue(fix_result, issue)
                 return {"decision": "pending_review", "item_id": item_id, "applied": False}
-        # 记录到历史
         _record_history(
             {"id": _generate_item_id(fix_result)},
             "auto_applied" if applied else "auto_apply_noop",

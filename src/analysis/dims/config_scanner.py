@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/config_scanner.py — 维度七：配置扫描器
 
 检测：
@@ -26,11 +25,8 @@ DIMENSION = "configuration"
 
 def _check_hardcoded_config(code: str, filepath: str) -> list[dict]:
     issues = []
-    # 硬编码端口
     port_pattern = re.compile(r':\s*(?:8000|8080|3000|5000|5432|6379|27017|3306)\b')
-    # 硬编码 URL
     url_pattern = re.compile(r'["\']https?://(?!localhost|127\.0\.0\.1)[^\s"\']+["\']')
-    # 硬编码连接字符串
     conn_pattern = re.compile(r'(?:mongodb|postgresql|mysql|redis)://[^\s"\']+')
 
     for i, line in enumerate(code.split("\n"), 1):
@@ -77,7 +73,6 @@ def _check_env_files(root: Path) -> list[dict]:
             "suggestion": "创建 .env.example 包含所有必需环境变量（不含实际值）",
         })
 
-    # 检查 .gitignore
     gitignore = root / ".gitignore"
     if gitignore.exists() and (root / ".env").exists():
         gitignore_content = gitignore.read_text(encoding="utf-8", errors="ignore")

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """code_review.py — PR 代码审查 Agent 模块
 
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
@@ -27,9 +26,6 @@ import re
 from pathlib import Path
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SecurityReviewer — 安全审查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class AsyncSyncBoundaryChecker:
@@ -50,7 +46,6 @@ class AsyncSyncBoundaryChecker:
       - 能处理嵌套函数吗？答：AST 递归遍历，子函数也可检测
     """
 
-    # 入口函数白名单——这些函数中的 asyncio.run() 降级为警告
     _IGNORE_ENTRY_POINTS: set[str] = {"main", "setup", "manage", "cli", "run", "init"}
 
     @staticmethod
@@ -85,29 +80,22 @@ class AsyncSyncBoundaryChecker:
             return issues
 
         for node in ast.walk(tree):
-            # 只处理同步函数定义（非 async def）
             if not isinstance(node, ast.FunctionDef):
                 continue
             for dec in node.decorator_list:
                 if isinstance(dec, ast.Name) and dec.id in ("classmethod", "staticmethod"):
                     continue
 
-            # AST 中 async def 的函数 node 有 async 标记
-            # 在 Python 3.8+ 中，async def 的 FunctionDef 节点没有 async 属性直接标记
-            # 但 ast.FunctionDef 在 Python 3.8+ 有 lineno 和 col_offset
-            # 我们需要检查源代码中该函数定义是否以 "async def" 开头
             func_source_lines = code.split("\\n")
             func_def_line = func_source_lines[node.lineno - 1].strip() if node.lineno <= len(func_source_lines) else ""
             if func_def_line.startswith("async "):
                 continue  # async def 不算 sync 包装器
 
-            # 在 sync 函数体内搜索 asyncio.get_running_loop()
             has_get_running_loop = False
             has_is_running_check = False
             has_raise = False
 
             for child in ast.walk(node):
-                # asyncio.get_running_loop()
                 if isinstance(child, ast.Call):
                     func = child.func
                     if (isinstance(func, ast.Attribute)
@@ -116,14 +104,12 @@ class AsyncSyncBoundaryChecker:
                             and func.value.id == "asyncio"):
                         has_get_running_loop = True
 
-                # Raises 中的 RuntimeError
                 if isinstance(child, ast.Raise):
                     if child.exc and isinstance(child.exc, ast.Call):
                         exc_func = child.exc.func
                         if isinstance(exc_func, ast.Name) and exc_func.id == "RuntimeError":
                             has_raise = True
 
-                # loop.is_running()
                 if isinstance(child, ast.Call):
                     func = child.func
                     if (isinstance(func, ast.Attribute)
@@ -133,7 +119,6 @@ class AsyncSyncBoundaryChecker:
                             isinstance(func, ast.Attribute)
                             and func.attr == "is_running"
                     ):
-                        # Verify it's called on a loop variable by checking parent context
                         has_is_running_check = True
 
             if has_get_running_loop and has_raise:
@@ -188,22 +173,18 @@ class AsyncSyncBoundaryChecker:
 
             func_name = node.name
 
-            # 跳过 async def 函数
             func_source_line = lines[node.lineno - 1].strip() if node.lineno <= len(lines) else ""
             if func_source_line.startswith("async "):
                 continue
 
-            # 跳过入口函数白名单
             if func_name.lower() in AsyncSyncBoundaryChecker._IGNORE_ENTRY_POINTS:
                 continue
 
-            # 检查函数体内是否有 asyncio.run() 调用
             has_asyncio_run = False
             asyncio_run_line = 0
             for child in ast.walk(node):
                 if isinstance(child, ast.Call):
                     func = child.func
-                    # asyncio.run(coro)
                     if (isinstance(func, ast.Attribute)
                             and func.attr == "run"
                             and isinstance(func.value, ast.Name)
@@ -211,7 +192,6 @@ class AsyncSyncBoundaryChecker:
                         has_asyncio_run = True
                         asyncio_run_line = child.lineno
                         break
-                    # 局部 import asyncio 后的 asyncio.run()
                     if (isinstance(func, ast.Attribute)
                             and func.attr == "run"
                             and isinstance(func.value, ast.Name)
@@ -223,7 +203,6 @@ class AsyncSyncBoundaryChecker:
             if not has_asyncio_run:
                 continue
 
-            # 判断函数名含 _sync 或 _wrap_ 的包装器 → high
             is_wrapper = "_sync" in func_name or "_wrap_" in func_name or func_name.startswith("_sync_")
 
             severity = "high" if is_wrapper else "medium"
@@ -281,7 +260,6 @@ class AsyncSyncBoundaryChecker:
 
         lines = code.split("\\n")
 
-        # 第一步：收集所有 async def 函数名
         async_func_names: set[str] = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.AsyncFunctionDef):
@@ -290,7 +268,6 @@ class AsyncSyncBoundaryChecker:
         if not async_func_names:
             return issues
 
-        # 第二步：在 sync def 函数中搜索 asyncio.run(async_func(...))
         for node in ast.walk(tree):
             if not isinstance(node, ast.FunctionDef):
                 continue
@@ -303,12 +280,10 @@ class AsyncSyncBoundaryChecker:
             if func_name.lower() in cls._IGNORE_ENTRY_POINTS:
                 continue  # 跳过入口函数
 
-            # 在函数体中搜索 asyncio.run(...)
             for child in ast.walk(node):
                 if not isinstance(child, ast.Call):
                     continue
                 func = child.func
-                # 检查是否为 asyncio.run(...)
                 is_asyncio_run = (
                     isinstance(func, ast.Attribute)
                     and func.attr == "run"
@@ -318,13 +293,10 @@ class AsyncSyncBoundaryChecker:
                 if not is_asyncio_run:
                     continue
 
-                # 检查 asyncio.run() 的参数是否是一个函数调用
                 if child.args:
                     arg = child.args[0]  # asyncio.run(arg)
-                    # arg 可能是 ast.Call（直接调用）或 ast.Await（但 await 在 sync 中不可能）
                     if isinstance(arg, ast.Call):
                         called_func = arg.func
-                        # 检查调用的函数名是否是 async def
                         if isinstance(called_func, ast.Name):
                             called_name = called_func.id
                         elif isinstance(called_func, ast.Attribute):
@@ -379,7 +351,6 @@ class AsyncSyncBoundaryChecker:
         """
         issues: list[dict] = []
 
-        # 收集所有文件中定义的 sync 函数名
         sync_funcs_by_file: dict[str, set[str]] = {}
         file_asts: dict[str, ast.Module] = {}
 
@@ -408,8 +379,6 @@ class AsyncSyncBoundaryChecker:
             if sync_funcs:
                 sync_funcs_by_file[filepath] = sync_funcs
 
-        # 对每个文件，检查 import 语句是否导入了其他文件的 sync 函数
-        # 并且在本文件的 async 函数中被无 await 地调用
         for filepath, tree in file_asts.items():
             lines_for_file: list[str] = []
             try:
@@ -418,7 +387,6 @@ class AsyncSyncBoundaryChecker:
             except (FileNotFoundError, IOError, OSError):
                 continue
 
-            # 收集所有 import 语句
             imports: dict[str, str] = {}  # local_name → source
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom):
@@ -431,12 +399,10 @@ class AsyncSyncBoundaryChecker:
                         local_name = alias.asname or alias.name
                         imports[local_name] = alias.name
 
-            # 检查每个异步函数中是否有对导入的 sync 函数无 await 调用
             for node in ast.walk(tree):
                 if not isinstance(node, ast.AsyncFunctionDef):
                     continue
 
-                # 在 async 函数体中搜索 name(...) 调用（无 await）
                 for child in ast.walk(node):
                     if not isinstance(child, ast.Call):
                         continue
@@ -447,14 +413,11 @@ class AsyncSyncBoundaryChecker:
                     else:
                         continue
 
-                    # 检查这个被调用的名字是否来自 import
                     if called_name not in imports:
                         continue
 
                     source = imports[called_name]
-                    # 检查该函数是否是 sync 函数（跨文件匹配）
                     for src_file, sync_funcs in sync_funcs_by_file.items():
-                        # 简单匹配：import 源的最后一部分是函数名
                         imported_func = source.split(".")[-1]
                         if imported_func in sync_funcs:
                             issues.append({
@@ -492,6 +455,3 @@ class AsyncSyncBoundaryChecker:
         return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# QualityReviewer — 代码质量审查
-# ═══════════════════════════════════════════════════════════════════════

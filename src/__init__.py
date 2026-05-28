@@ -19,15 +19,11 @@ from pathlib import Path as _Path
 PROJECT_ROOT = _Path(__file__).parent.parent.resolve()
 SRC_DIR = _Path(__file__).parent.resolve()
 
-# 将项目根目录加入 sys.path（供旧代码的 `from X import` 使用）
 _root_str = str(PROJECT_ROOT)
 if _root_str not in _sys.path:
     _sys.path.insert(0, _root_str)
 
-# 将 src/ 目录加入 sys.path（供新代码的 `from src.X import` 使用）
 _src_str = str(SRC_DIR)
 if _src_str not in _sys.path:
     _sys.path.insert(0, _src_str)
 
-# ─── 公开顶层子模块的常用符号（可选，方便 from src import xxx）──────
-# 如果需要从 src 直接 import xx，请在子模块的 __init__.py 中暴露

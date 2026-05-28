@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def check_disk_space() -> dict:
     """检查磁盘空间，自动清理 7 天前的日志。"""
@@ -65,7 +59,6 @@ def check_disk_space() -> dict:
                             cleaned += 1
                 relog("🧹", "清理了 %d 个旧日志文件", cleaned)
 
-            # 再检查一次
             stat = os.statvfs(str(SWARM_DIR))
             free_gb = stat.f_bavail * stat.f_frsize / 1024 ** 3
             if free_gb < MIN_FREE_GB:
@@ -78,9 +71,6 @@ def check_disk_space() -> dict:
         return {"free_gb": -1, "paused": False}
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 3. 成本熔断检查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def check_cost_over_budget() -> Optional[str]:
@@ -90,7 +80,6 @@ def check_cost_over_budget() -> Optional[str]:
 
         dollar_spent = get_today_spent()
     except ImportError:
-        # 降级：从 state.json 读取
         state = load_state()
         budget = state.get("daily_budget", {})
         dollar_spent = budget.get("dollar_spent_today", 0)
@@ -107,7 +96,4 @@ def check_cost_over_budget() -> Optional[str]:
     return None
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 4. Git 工具
-# ═══════════════════════════════════════════════════════════════════════
 GIT_TIMEOUT = 60  # git 命令超时（秒）

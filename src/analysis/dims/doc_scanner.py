@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/doc_scanner.py — 维度六：文档扫描器
 
 检测：
@@ -52,7 +51,6 @@ def _check_readme(root: Path) -> list[dict]:
             "suggestion": "补充：项目简介、快速开始、安装步骤、示例代码",
         })
 
-    # 检查必要章节
     sections = ["安装", "安装步骤", "开始", "quick start", "install", "getting started"]
     has_intro = any(sec.lower() in content.lower() for sec in sections)
     if not has_intro:
@@ -86,7 +84,6 @@ def _check_module_docs(source_files: list[str]) -> list[dict]:
                 "suggestion": f"在 '{fp.name}' 顶部添加 '''模块说明'''",
             })
 
-        # 公开函数 docstring
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 if node.name.startswith("_") or node.name.startswith("test_"):

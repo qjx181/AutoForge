@@ -100,7 +100,6 @@ async def get_fix_result(bug_id: str):
     }
 
 
-# ── 优化引擎路由 ────────────────────────────────────────────────────────
 
 OPT_RUNS_DIR = PROJECT_DIR / "data" / "opt_runs"
 OPT_RUNS_DIR.mkdir(parents=True, exist_ok=True)
@@ -111,7 +110,6 @@ def _run_optimization_in_bg(target_dir: str, dimensions: list[str],
     """后台执行优化扫描，结果写回 JSON 文件"""
     import sys as _sys
     import traceback as _tb
-    # 确保 src/ 在 sys.path 中
     _SRC = PROJECT_DIR / "src"
     if str(_SRC) not in _sys.path:
         _sys.path.insert(0, str(_SRC))
@@ -121,7 +119,6 @@ def _run_optimization_in_bg(target_dir: str, dimensions: list[str],
         from src.analysis.optimizer_core import run_full_pipeline
         result = run_full_pipeline(target_dir, dimensions=dimensions)
 
-        # 深度递归清理所有不可 JSON 序列化的对象
         def _make_json_safe(obj):
             if hasattr(obj, '__dict__'):
                 return _make_json_safe(obj.__dict__)
@@ -143,14 +140,12 @@ def _run_optimization_in_bg(target_dir: str, dimensions: list[str],
 
         result = _make_json_safe(result)
 
-        # 补充路径信息
         result["target_dir"] = target_dir
         result["dry_run"] = dry_run
         result["run_id"] = run_id
         result["finished_at"] = datetime.datetime.now().isoformat()
         result["status"] = "completed"
 
-        # 写结果文件
         _write_json(OPT_RUNS_DIR / f"{run_id}.json", result)
     except Exception as e:
         _write_json(OPT_RUNS_DIR / f"{run_id}.json", {
@@ -164,7 +159,6 @@ def _run_optimization_in_bg(target_dir: str, dimensions: list[str],
             "finished_at": datetime.datetime.now().isoformat(),
         })
     finally:
-        # 清理运行中标记
         run_lock = OPT_RUNS_DIR / f"{run_id}.running"
         if run_lock.exists():
             run_lock.unlink()

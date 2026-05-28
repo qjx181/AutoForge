@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """api_service.py — FastAPI 服务 + Web 仪表盘
 
 位于 src/api/ 目录，入口为 api_entrypoint()。
@@ -45,7 +44,6 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
-# ── 路径（向上两级，从 src/api/ 到项目根目录）────────────────────────────
 _PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 _SRC_ROOT = Path(__file__).parent.parent.resolve()
 if str(_SRC_ROOT) not in sys.path:
@@ -60,7 +58,6 @@ TODO_FILE = PROJECT_DIR / "TODO.md"
 LOGS_DIR = PROJECT_DIR / "logs"
 
 
-# ── 应用 ────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="项目三：多Agent — API 服务",
@@ -77,12 +74,10 @@ app.add_middleware(
 )
 
 
-# ── 启动时间 ─────────────────────────────────────────────────────────────
 
 START_TIME = datetime.datetime.now()
 
 
-# ── 辅助函数 ────────────────────────────────────────────────────────────
 
 
 def _read_json(path: Path) -> dict:
@@ -134,7 +129,6 @@ def _parse_task_from_match(task_match: re.Match) -> dict:
 
 def _update_task_from_line(current_task: dict, line: str) -> None:
     """根据行内容更新当前任务（描述/依赖/类别）。"""
-    # 使用映射减少 if/elif 链深度
     _UPDATERS = {
         "描述:": lambda l, t: t.update({"description": l.split("描述:", 1)[1].strip()}),
         "依赖:": lambda l, t: t.update({
@@ -167,7 +161,6 @@ def _parse_tasks_from_todo() -> list[dict]:
 
     current_task = None
     for line in lines:
-        # [ ] 或 [x] 标记
         task_match = __import__("re").match(
             r"^- \[([ x])\] 任务ID:\s*(\S+)", line
         )
@@ -184,7 +177,6 @@ def _parse_tasks_from_todo() -> list[dict]:
     return tasks
 
 
-# ── 路由 ────────────────────────────────────────────────────────────────
 
 
 
@@ -361,7 +353,6 @@ async def get_auto_progress(run_id: str):
     """获取持续优化循环的实时进度"""
     progress_file = OPT_RUNS_DIR / f"{run_id}.progress"
     if not progress_file.exists():
-        # 回退到 run 文件
         run_file = OPT_RUNS_DIR / f"{run_id}.json"
         if not run_file.exists():
             raise HTTPException(status_code=404, detail=f"运行记录 {run_id} 不存在")
@@ -372,7 +363,6 @@ async def get_auto_progress(run_id: str):
             return {"run_id": run_id, "status": "unknown", "error": "无法读取进度"}
     try:
         data = json.loads(progress_file.read_text(encoding="utf-8"))
-        # 检查是否还在运行
         running_file = OPT_RUNS_DIR / f"{run_id}.running"
         if not running_file.exists() and data.get("status") == "running":
             data["status"] = "completed"
@@ -394,7 +384,6 @@ async def optimizer_page():
     )
 
 
-# ── 多Agent自进化入口 ────────────────────────────────────────────────
 
 
 @app.post("/api/optimize/start-agent")
@@ -412,7 +401,6 @@ async def start_agent_evolution(body: dict):
     if not target_dir:
         raise HTTPException(status_code=400, detail="target_dir 是必填字段")
 
-    # 统一为 WSL 路径（先转换，再检查存在性）
     wsl_path = target_dir
     if ":" in target_dir and not target_dir.startswith("/"):
         drive = target_dir[0].lower()
@@ -425,12 +413,10 @@ async def start_agent_evolution(body: dict):
     if not target_path.is_dir():
         raise HTTPException(status_code=400, detail=f"不是目录: {wsl_path}")
 
-    # 写入目标路径文件
     target_file = PROJECT_DIR / "data" / "opt_target.txt"
     target_file.parent.mkdir(parents=True, exist_ok=True)
     target_file.write_text(wsl_path + "\n", encoding="utf-8")
 
-    # 恢复 cronjob（通过子进程调用 hermes CLI）
     cron_msg = "cronjob_resumed"
     try:
         import subprocess as _sp
@@ -444,7 +430,6 @@ async def start_agent_evolution(body: dict):
     except Exception as e:
         cron_msg = f"cron_warning: {e}"
 
-    # 标记持续运行
     run_marker = PROJECT_DIR / "data" / ".current_run.json"
     run_marker.parent.mkdir(parents=True, exist_ok=True)
     run_marker.write_text(json.dumps({

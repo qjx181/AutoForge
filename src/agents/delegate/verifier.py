@@ -26,23 +26,17 @@ import os
 import re
 from pathlib import Path
 from typing import Optional
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# 位于 src/agents/，向上三级到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 TEMPLATES_DIR = SWARM_DIR / "templates"
 SELF_EVOLVE_LOG = SWARM_DIR / "data" / "self_evolve_log.json"
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 CAPABILITY_MAP_FILE = SWARM_DIR / "data" / "agent_capability_map.json"
 
-# ─── 决策阈值 ──────────────────────────────────────────────────────────
 COMPLEXITY_THRESHOLD = 1000  # token 量 < 1000 视为简单任务
 MIN_SUCCESS_RATE = 0.6       # 子 Agent 成功率 >= 0.6 才委托
 MAX_HISTORY_WINDOW = 10      # 只看近 10 轮数据
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 第 1 层 — 协调者决策支持
-# ═══════════════════════════════════════════════════════════════════════
 
 def run_layer3_verification(
     before_content: str,
@@ -79,7 +73,6 @@ def run_layer3_verification(
     """
     step_results = {}
 
-    # Step 1 — 签名检查
     violations = check_signature_unchanged(before_content, after_content, func_names)
     sig_passed = len(violations) == 0
     step_results["signature_check"] = {
@@ -87,7 +80,6 @@ def run_layer3_verification(
         "violations": violations,
     }
 
-    # Step 2 — 语法检查（用 ast.parse 替代 python -m py_compile，避免 terminal 依赖）
     syntax_ok = True
     syntax_error = None
     try:
@@ -100,7 +92,6 @@ def run_layer3_verification(
         "error": syntax_error,
     }
 
-    # Step 3 — 单元测试（子 Agent 需自行跑 pytest，这里仅记录是否提供测试文件）
     if test_file:
         step_results["unit_test"] = {
             "passed": None,  # 子 Agent 需自行运行 pytest 并报告
@@ -112,7 +103,6 @@ def run_layer3_verification(
             "note": "未提供测试文件，跳过单元测试检查",
         }
 
-    # Step 4 — diff 对照
     added, removed = count_lines_added_removed(before_content, after_content)
     diff_warnings = []
     if added > 200:
@@ -126,13 +116,11 @@ def run_layer3_verification(
         "lines_removed": removed,
     }
 
-    # 判断是否全部通过
     all_passed = all(
         s.get("passed", False) for s in step_results.values()
         if s.get("passed") is not None  # 跳过 None（待子 Agent 确认）
     )
 
-    # 返工管控
     if all_passed:
         rework_action = "通过"
     elif rework_count >= 2:

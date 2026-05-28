@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """adapters.py — Scanner/Fixer 标准化接口
 
 设计动机（面试话术）：
@@ -43,9 +42,6 @@ from src.core.adapters_pkg.fixer_registry import FixerRegistry
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 标准化数据结构
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class LegacyScannerWrapper(ScannerAdapter):
@@ -81,7 +77,6 @@ class LegacyScannerWrapper(ScannerAdapter):
         try:
             from src.analysis.project_analyzer import analyze_project
             blueprint = analyze_project(str(project_root))
-            # 启用当前维度（否则 scanner 会跳过）
             blueprint.enabled_dimensions[self._dimension] = True
             self._cached_blueprint = blueprint
             return blueprint
@@ -164,20 +159,6 @@ class LegacyFixerWrapper(FixerAdapter):
             )
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# Issue IR（中间表示）— 借鉴 HiveWard Skill IR 模式
-# ═══════════════════════════════════════════════════════════════════════
-#
-# 设计动机（面试话术）：
-#   "HiveWard 的 Skill Decomposer 不直接把技能变成蓝图节点，
-#    而是先构建成 Skill IR（中间数据结构），验证通过后再映射。
-#    我借鉴这个思路，在扫描器输出和修复器输入之间加了一层 Issue IR。
-#    扫描器产出的原始 Issue 先进入 IR 层做验证、去重、聚合、排序，
-#    然后再交给修复器。这样做的好处是：
-#    1) 不同扫描器的输出格式差异在 IR 层消除，修复器只看 IR
-#    2) 去重避免同一问题被多次修复（比如 security 和 enterprise 都报了同一行）
-#    3) 聚合让修复器一次看到'这个文件的所有问题'，可以做批量修复
-#    4) 验证确保必填字段完整，不会到修复器才发现缺字段"
 
 @dataclass
 class FixStrategy:
@@ -267,7 +248,6 @@ class IssueIR:
         相邻行阈值为 ±3 行，因为同一个 bug 可能被不同扫描器报告在略有
         偏差的行号上。
         """
-        # 用文件 + 类型 + 行号的"桶"作为指纹（行号除以3取整，允许±3行偏移）
         line_bucket = self.issue.line // 3 if self.issue.line > 0 else 0
         key = f"{self.issue.type}:{self.issue.file}:{line_bucket}"
         return hashlib.md5(key.encode()).hexdigest()[:16]
@@ -301,7 +281,6 @@ class IssueIR:
         if not self.issue.description:
             warnings.append("description is empty")
         self.validation_warnings = warnings
-        # 有 file 和 type 就算通过，其他是警告
         return bool(self.issue.file and self.issue.type and self.issue.type != "unknown")
 
     def to_dict(self) -> dict:
@@ -356,10 +335,8 @@ class IssueProcessor:
         Returns:
             处理后的 IssueIR 列表，按优先级排序
         """
-        # 1. 构建 IR
         ir_list = [IssueIR(issue=issue) for issue in issues]
 
-        # 2. 验证（过滤掉无效的）
         valid_ir = []
         for ir in ir_list:
             if ir.validate():
@@ -368,20 +345,16 @@ class IssueProcessor:
                 logger.warning("Issue IR validation failed: %s (%s)",
                                ir.issue.type, ir.validation_warnings)
 
-        # 3. 去重
         deduped = self._deduplicate(valid_ir)
 
-        # 4. 聚合（同文件的问题关联起来）
         self._aggregate(deduped)
 
-        # 5. 评估复杂度 + 规划修复策略 + 评估风险（借鉴 HiveWard Skill IR）
         for ir in deduped:
             ir.fix_complexity = self._assess_complexity(ir)
             ir.estimated_effort = self._estimate_effort(ir)
             ir.fix_strategy = self._plan_fix_strategy(ir)
             ir.risk_assessment = self._assess_risk(ir)
 
-        # 6. 按优先级排序
         deduped.sort(key=lambda ir: self._priority_key(ir))
 
         logger.info("IssueProcessor: %d raw → %d valid → %d deduped",
@@ -394,7 +367,6 @@ class IssueProcessor:
         for ir in ir_list:
             fp = ir.fingerprint
             if fp in seen:
-                # 保留严重度更高的
                 existing = seen[fp]
                 sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
                 if sev_order.get(ir.issue.severity, 9) < sev_order.get(existing.issue.severity, 9):
@@ -429,7 +401,6 @@ class IssueProcessor:
         """预估修复耗时（秒）。"""
         effort_map = {"simple": 30, "medium": 120, "complex": 600}
         base = effort_map.get(ir.fix_complexity, 120)
-        # 同文件有多个问题时，每个问题的边际修复时间递减
         related_bonus = len(ir.related_issues) * 10
         return max(base - related_bonus, 15)
 
@@ -443,7 +414,6 @@ class IssueProcessor:
         """
         issue_type = ir.issue.type
 
-        # 简单类型：正则/文本替换，单行，可并行
         simple_strategies = {
             "swallowed_exception": FixStrategy(
                 approach="pattern_replace", scope="multi_line",
@@ -477,7 +447,6 @@ class IssueProcessor:
         if issue_type in simple_strategies:
             return simple_strategies[issue_type]
 
-        # 复杂类型：AST 变换或人工审查，不可并行
         complex_types = {"sql_injection", "path_traversal", "xss", "race_condition"}
         if issue_type in complex_types:
             return FixStrategy(
@@ -489,7 +458,6 @@ class IssueProcessor:
                 estimated_lines_changed=10,
             )
 
-        # 中等类型：默认策略
         return FixStrategy(
             approach="pattern_replace", scope="single_line",
             estimated_lines_changed=2,
@@ -506,7 +474,6 @@ class IssueProcessor:
         issue_type = ir.issue.type
         severity = ir.issue.severity
 
-        # 安全类问题：高风险，需要人工确认
         security_types = {"sql_injection", "path_traversal", "xss", "hardcoded_secret"}
         if issue_type in security_types:
             return RiskAssessment(
@@ -517,7 +484,6 @@ class IssueProcessor:
                 mitigation_notes=["建议在 staging 环境验证", "需要安全团队 review"],
             )
 
-        # 资源管理类：中等风险
         resource_types = {"resource_not_managed", "race_condition"}
         if issue_type in resource_types:
             return RiskAssessment(
@@ -528,7 +494,6 @@ class IssueProcessor:
                 mitigation_notes=["建议添加资源泄漏监控"],
             )
 
-        # 简单修复：低风险
         simple_types = {"swallowed_exception", "bare_except", "print_used", "missing_return_type"}
         if issue_type in simple_types:
             return RiskAssessment(
@@ -537,7 +502,6 @@ class IssueProcessor:
                 needs_human_confirm=False,
             )
 
-        # 默认：中等风险
         return RiskAssessment(
             regression_risk="medium",
             blast_radius="local",
@@ -564,7 +528,6 @@ def build_default_scanner_registry() -> ScannerRegistry:
     """
     registry = ScannerRegistry()
 
-    # 9 维度扫描器（从 dims/ 导入）
     _SCANNER_MAP = [
         ("security", "security", "dims.sec_scanner"),
         ("performance", "performance", "dims.perf_scanner"),
@@ -589,7 +552,6 @@ def build_default_scanner_registry() -> ScannerRegistry:
         except ImportError as e:
             logger.warning("Scanner %s not available: %s", name, e)
 
-    # 企业级深度扫描器
     try:
         from src.analysis.deep_enterprise_scanner import scan_deep
         registry.register(LegacyScannerWrapper("enterprise", "enterprise", scan_deep, accepts_root=True))
@@ -609,7 +571,6 @@ def build_default_fixer_registry() -> FixerRegistry:
 
     try:
         from src.fixers.enterprise_fixer import try_fix_deep
-        # 用 try_fix_deep 做统一分发器（它内部根据 issue_type 路由到具体修复函数）
         _FIXER_TYPES = [
             "swallowed_exception", "bare_except", "print_used",
             "resource_not_managed", "missing_timeout_config", "missing_return_type",

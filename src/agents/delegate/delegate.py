@@ -26,23 +26,17 @@ import os
 import re
 from pathlib import Path
 from typing import Optional
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# 位于 src/agents/，向上三级到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 TEMPLATES_DIR = SWARM_DIR / "templates"
 SELF_EVOLVE_LOG = SWARM_DIR / "data" / "self_evolve_log.json"
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 CAPABILITY_MAP_FILE = SWARM_DIR / "data" / "agent_capability_map.json"
 
-# ─── 决策阈值 ──────────────────────────────────────────────────────────
 COMPLEXITY_THRESHOLD = 1000  # token 量 < 1000 视为简单任务
 MIN_SUCCESS_RATE = 0.6       # 子 Agent 成功率 >= 0.6 才委托
 MAX_HISTORY_WINDOW = 10      # 只看近 10 轮数据
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 第 1 层 — 协调者决策支持
-# ═══════════════════════════════════════════════════════════════════════
 
 def should_delegate(task: dict, state: dict, budget: dict) -> tuple[bool, str]:
     """should_delegate — 判断当前任务是否应该委托给子 Agent。
@@ -71,25 +65,18 @@ def should_delegate(task: dict, state: dict, budget: dict) -> tuple[bool, str]:
     category = task.get("category", "debug")
     task_id = task.get("task_id", "unknown")
 
-    # ── 已知失败模式：不委托 ──
-    # 从零创建测试文件：100% 失败率（历史验证）
     if category == "test_creation" or "test_" in task_id and "创建" in task.get("description", ""):
         return False, f"测试创建类任务 {task_id}：子 Agent 历史成功率 0%，协调者直接 write_file"
 
-    # ── 简单任务优先委托 ──
     if token_est < COMPLEXITY_THRESHOLD:
         success_rate = _compute_success_rate(state)
         if success_rate >= MIN_SUCCESS_RATE:
             return True, f"简单任务（{token_est} token），子 Agent 成功率 {success_rate:.0%}，委托"
-        # 成功率低，但仍然是简单任务——尝试委托（强制委托政策）
         return True, f"简单任务（{token_est} token），尝试委托以积累经验数据"
 
-    # ── 复杂任务 ──
-    # 架构/框架类任务：始终不委托
     if category in ("feature", "refactor", "architecture"):
         return False, f"架构/新功能任务 {task_id}：需要接口一致性保证，协调者直接执行"
 
-    # ── 预算感知决策 ──
     dollar_spent = budget.get("dollar_spent_today", 0)
     dollar_limit = budget.get("dollar_limit", 5.0)
     if dollar_limit > 0:
@@ -99,7 +86,6 @@ def should_delegate(task: dict, state: dict, budget: dict) -> tuple[bool, str]:
         if ratio > 0.5 and category in ("feature", "refactor"):
             return False, f"预算中等（已用 {ratio:.0%}），仅委托 debug/test 类任务"
 
-    # ── 默认：委托尝试 ──
     return True, "默认策略：委托子 Agent 执行"
 
 
@@ -116,9 +102,6 @@ def _compute_success_rate(state: dict) -> float:
     return len(completed) / max(total_delegated, 1)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 第 2 层 — 委托 prompt 构建器
-# ═══════════════════════════════════════════════════════════════════════
 
 FIVE_HARD_CONSTRAINTS = """\
 【5 条硬约束——违反任一条直接拒绝产出】
@@ -300,9 +283,6 @@ def count_lines_added_removed(before: str, after: str) -> tuple[int, int]:
     return (added, removed)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 成本激励机制
-# ═══════════════════════════════════════════════════════════════════════
 
 DELEGATION_INCENTIVE = {
     "coordinator_write_line_threshold": 50,  # 协调者自写超 50 行时警告
@@ -333,6 +313,3 @@ def log_coordinator_write_size(state: dict, file_path: str,
     return state
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 诊断工具（diagnose_subagent_failure 的子任务）
-# ═══════════════════════════════════════════════════════════════════════

@@ -43,13 +43,11 @@ async def create_task(task: dict):
     if not task_id:
         raise HTTPException(status_code=400, detail="task_id 是必填字段")
 
-    # 检查是否已存在
     existing = _parse_tasks_from_todo()
     for t in existing:
         if t["id"] == task_id:
             raise HTTPException(status_code=409, detail=f"任务 {task_id} 已存在")
 
-    # 追加到 TODO.md
     description = task.get("description", "")
     category = task.get("category", "debug")
     depends = task.get("depends", "")
@@ -88,14 +86,12 @@ async def delete_task(task_id: str):
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"读取失败: {e}")
 
-    # 精确匹配任务块
     import re
     pattern = re.compile(
         rf"^- \[([ x])\] 任务ID:\s*{re.escape(task_id)}.*?(?=^- \[|$)",
         re.DOTALL,
     )
     new_content = pattern.sub("", content).strip()
-    # 清理多余空行
     new_content = re.sub(r"\n{3,}", "\n\n", new_content)
 
     if new_content == content:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -38,13 +37,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def acquire_pid_file() -> bool:
     """获取 PID 文件锁（含僵尸自动清理 5 分钟超时）。"""
@@ -57,7 +51,6 @@ def acquire_pid_file() -> bool:
         pid_fd.flush()
         return True
     except (IOError, BlockingIOError):
-        # 检查是否僵尸（旧进程超过 5 分钟）
         if PID_FILE.exists():
             try:
                 old_pid = int(PID_FILE.read_text().strip())
@@ -66,7 +59,6 @@ def acquire_pid_file() -> bool:
                     relog("⚠️", "PID 文件锁被占用（pid=%d），跳过", old_pid)
                     return False
                 except OSError:
-                    # 进程不存在，清理僵尸锁
                     relog("🧟", "清理僵尸 PID 锁（pid=%d）", old_pid)
                     PID_FILE.unlink(missing_ok=True)
                     return acquire_pid_file()
@@ -85,9 +77,6 @@ def release_pid_file():
             pass
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 1. 公共工具 / state 读写
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def load_state() -> dict:
@@ -104,6 +93,3 @@ def save_state(state: dict):
     tmp.replace(STATE_FILE)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 2. 磁盘检查 + 日志清理
-# ═══════════════════════════════════════════════════════════════════════

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """code_review.py — PR 代码审查 Agent 模块
 
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
@@ -27,9 +26,6 @@ import re
 from pathlib import Path
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SecurityReviewer — 安全审查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class PerformanceReviewer:
@@ -63,25 +59,21 @@ class PerformanceReviewer:
             stripped = line.rstrip()
             indent = len(line) - len(line.lstrip())
 
-            # 检测循环开始
             if re.match(r"\s*(for|while)\s", stripped) and ":" in stripped:
                 in_loop = True
                 loop_start = i
                 loop_indent = indent
 
             if in_loop:
-                # 循环体结束：缩进回到循环级别或更低
                 if indent <= loop_indent and i > loop_start:
                     in_loop = False
                     continue
 
-                # 在循环体内检测 SQL 查询
                 if re.search(
                     r"(execute|\.query|\.get\b|\.filter\b|\.all\b|fetchone|fetchall)",
                     stripped,
                     re.IGNORECASE,
                 ):
-                    # 检查是否真的是 N+1（循环内的查询）
                     if re.search(
                         r"(for|while|list comp|generator|map\()",
                         stripped[:40],
@@ -117,7 +109,6 @@ class PerformanceReviewer:
         in_async_def = False
         async_indent = 0
 
-        # 已知的同步 I/O 模式
         sync_io_patterns = [
             (r"^import requests|^from requests", "requests 库（同步 HTTP）", "high"),
             (r"time\.sleep\s*\(", "time.sleep()（同步阻塞）", "high"),
@@ -139,14 +130,12 @@ class PerformanceReviewer:
                 continue
 
             if in_async_def:
-                # async def 块结束
                 if indent <= async_indent and i > 1 and stripped:
                     in_async_def = False
                     continue
 
                 for pattern, desc, severity in sync_io_patterns:
                     if re.search(pattern, stripped):
-                        # 排除 asyncio 相关调用
                         if "asyncio" in stripped:
                             continue
                         issues.append({
@@ -177,7 +166,6 @@ class PerformanceReviewer:
         issues = []
         lines = code.split("\n")
 
-        # 检查全局/类级别的可增长集合
         global_collections = []
         in_class = False
 
@@ -185,7 +173,6 @@ class PerformanceReviewer:
             stripped = line.lstrip()
             indent = len(line) - len(line.lstrip())
 
-            # 检测全局列表/字典
             m = re.match(r"(\w+)\s*=\s*\[\s*\]", stripped)
             if m and indent == 0:
                 global_collections.append((m.group(1), i, "list"))
@@ -196,9 +183,7 @@ class PerformanceReviewer:
             if m and indent == 0:
                 global_collections.append((m.group(1), i, "set"))
 
-        # 检查是否有 .append()/.add() 但无清理逻辑
         for name, decl_line, ctype in global_collections:
-            # 找到所有对该变量的修改
             appends = list(re.finditer(rf"\b{re.escape(name)}\.append\(|{re.escape(name)}\.add\(", code))
             pops = list(re.finditer(rf"\b{re.escape(name)}\.pop\(|{re.escape(name)}\.discard\(", code))
             del_ops = list(re.finditer(
@@ -217,7 +202,6 @@ class PerformanceReviewer:
                     "suggestion": f"为 {name} 设置上限（如使用 collections.deque(maxlen=1000)），或定期清理过期元素",
                 })
 
-        # 检查 @lru_cache 无 maxsize
         for m in re.finditer(r"@lru_cache\b(?!\s*\(\s*maxsize)", code):
             line = code[: m.start()].count("\n") + 1
             issues.append({
@@ -243,6 +227,3 @@ class PerformanceReviewer:
         return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# AsyncSyncBoundaryChecker — async/sync 边界检测
-# ═══════════════════════════════════════════════════════════════════════

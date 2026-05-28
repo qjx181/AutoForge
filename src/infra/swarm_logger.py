@@ -35,15 +35,10 @@ from typing import Any, Dict, Optional, Union
 from logging.handlers import RotatingFileHandler
 
 
-# ── 默认路径 ──────────────────────────────────────────────────
-# src/infra/ → 向上三级: infra → src → 项目根
 _ROOT = Path(__file__).parent.parent.parent
 DEFAULT_LOG_DIR = _ROOT / "logs"
 
 
-# ═══════════════════════════════════════════════════════════════
-# _JsonFormatter
-# ═══════════════════════════════════════════════════════════════
 class _JsonFormatter(logging.Formatter):
     """JSON 格式日志格式化器 —— 每条日志输出为一行 JSON。"""
 
@@ -60,7 +55,6 @@ class _JsonFormatter(logging.Formatter):
             "function": record.funcName,
             "line": record.lineno,
         }
-        # 合并通过 **extra 传入的额外字段
         extras = getattr(record, "_swarm_extra", None)
         if extras:
             entry["extra"] = extras
@@ -71,15 +65,11 @@ class _JsonFormatter(logging.Formatter):
             return json.dumps(entry, ensure_ascii=False, default=str)
 
 
-# ═══════════════════════════════════════════════════════════════
-# _TextFormatter
-# ═══════════════════════════════════════════════════════════════
 class _TextFormatter(logging.Formatter):
     """TEXT 格式日志格式化器 —— 人类可读的彩色文本输出。"""
 
     def format(self, record: logging.LogRecord) -> str:
         """format - 将 LogRecord 格式化为文本字符串。"""
-        # 若有 extra 字段，追加到消息尾部
         extras = getattr(record, "_swarm_extra", None)
         if extras:
             extra_str = " | ".join(f"{k}={v}" for k, v in extras.items())
@@ -96,9 +86,6 @@ class _TextFormatter(logging.Formatter):
         )
 
 
-# ═══════════════════════════════════════════════════════════════
-# SwarmLogger
-# ═══════════════════════════════════════════════════════════════
 class SwarmLogger:
     """SwarmLogger - 结构化日志记录器。
 
@@ -112,7 +99,6 @@ class SwarmLogger:
         level:     当前生效的日志级别（字符串形式，如 "INFO"）。
     """
 
-    # 字符串 → logging 级别常量映射
     LEVEL_MAP: Dict[str, int] = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
@@ -147,26 +133,21 @@ class SwarmLogger:
         self.json_mode = json_mode
         self._log_level: int = self._resolve_level(level)
 
-        # ── 创建内部 Logger ──
         self.logger = logging.getLogger(name)
         self.logger.setLevel(self._log_level)
         self.logger.handlers.clear()  # 避免重复添加
         self.logger.propagate = False
 
-        # ── 创建格式化器 ──
         self._json_formatter = _JsonFormatter()
         self._text_formatter = _TextFormatter()
 
-        # ── 控制台 Handler ──
         if console:
             self._setup_console_handler()
 
-        # ── 文件 Handler ──
         resolved_path = self._resolve_log_path(log_file)
         if resolved_path:
             self._setup_file_handler(resolved_path, max_bytes, backup_count)
 
-    # ── 私有方法 ─────────────────────────────────────────────
 
     def _resolve_level(self, level: Union[str, int]) -> int:
         """解析日志级别 —— 将字符串或 int 转换为 logging 常量。
@@ -206,7 +187,6 @@ class SwarmLogger:
             return None
         if log_file is not None:
             return os.path.abspath(log_file)
-        # 默认：logs/{name}.log
         os.makedirs(DEFAULT_LOG_DIR, exist_ok=True)
         return os.path.join(DEFAULT_LOG_DIR, f"{self.name}.log")
 
@@ -247,7 +227,6 @@ class SwarmLogger:
         handler.setFormatter(self._get_formatter())
         self.logger.addHandler(handler)
 
-    # ── 公共方法 ─────────────────────────────────────────────
 
     def debug(self, msg: str, **extra: Any) -> None:
         """记录 DEBUG 级别日志。
@@ -358,9 +337,6 @@ class SwarmLogger:
         self.logger.handlers.clear()
 
 
-# ═══════════════════════════════════════════════════════════════
-# CLI 入口
-# ═══════════════════════════════════════════════════════════════
 def main() -> None:
     """CLI 入口 —— 直接运行 ``python swarm_logger.py`` 测试各级别日志输出。"""
     import argparse
@@ -407,7 +383,6 @@ def main() -> None:
         console=not args.no_console,
     )
 
-    # ── 测试各级别日志 ──
     logger.debug("这是一条 DEBUG 日志（仅当级别 ≤ DEBUG 时可见）")
     logger.info("这是一条 INFO 日志")
     logger.warning("这是一条 WARNING 日志", component="auth")

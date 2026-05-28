@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/arch_scanner.py — 维度四：架构扫描器
 
 检测：
@@ -39,7 +38,6 @@ def _find_circular_imports(root: Path) -> list[dict]:
 
         rel_path = py_file.relative_to(root)
         module_parts = list(rel_path.parts)[:-1]  # 去掉 .py
-        # 简化：只用文件名作为模块名
         module_name = py_file.stem
 
         imported = set()
@@ -58,7 +56,6 @@ def _find_circular_imports(root: Path) -> list[dict]:
 
         imports[module_name] = imported
 
-    # 检测循环
     for mod, deps in imports.items():
         for dep in deps:
             if dep in imports and mod in imports.get(dep, set()):
@@ -85,7 +82,6 @@ def _find_missing_init(source_files: list[str]) -> list[dict]:
         if root.parent != root:
             root = root.parent
 
-    # 找所有目录
     all_dirs = set()
     for f in source_files:
         p = Path(f)
@@ -93,11 +89,9 @@ def _find_missing_init(source_files: list[str]) -> list[dict]:
             if parent.name and not parent.name.startswith("."):
                 all_dirs.add(parent)
 
-    # Python 项目：检查含 .py 文件的目录是否缺少 __init__.py
     for d in all_dirs:
         py_files = list(d.glob("*.py"))
         if py_files and not (d / "__init__.py").exists():
-            # 排除根目录
             if d != root:
                 issues.append({
                     "type": "missing_init",

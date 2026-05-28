@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/sec_scanner.py — 维度五：安全扫描器
 
 检测：

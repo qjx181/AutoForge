@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """swarm_metrics.py — Swarm 自我进化循环的指标收集模块
 
 提供 Swarm 自我进化循环的完整指标收集能力，包含五个核心组件：
@@ -32,10 +31,8 @@ from typing import Any, Dict, List, Optional, Union
 from src.infra.swarm_utils import read_file_safe, write_file_safe, log_step
 from src.infra.swarm_logger import SwarmLogger
 
-# ── 默认日志记录器 ──────────────────────────────────────────────────
 _log = SwarmLogger(name="swarm_metrics", level="INFO", json_mode=False)
 
-# ── 严重级别排序权重 ────────────────────────────────────────────────
 SEVERITY_ORDER: List[str] = ["critical", "error", "warning", "info", "debug"]
 SEVERITY_WEIGHT: Dict[str, int] = {
     "critical": 50,
@@ -46,9 +43,6 @@ SEVERITY_WEIGHT: Dict[str, int] = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════
-# RoundTimer
-# ═══════════════════════════════════════════════════════════════════
 
 class SwarmMetrics:
     """SwarmMetrics — Swarm 自我进化循环指标收集器。
@@ -84,7 +78,6 @@ class SwarmMetrics:
         """
         self._meta[key] = value
 
-    # ── 轮次计时委托 ──────────────────────────────────────────
 
     def start_round(self, round_num: int) -> None:
         """start_round — 开始一轮计时。
@@ -106,7 +99,6 @@ class SwarmMetrics:
         """current_round — 获取当前正在计时的轮次编号。"""
         return self.timer.current_round()
 
-    # ── 任务记录委托 ──────────────────────────────────────────
 
     def record_task(
         self,
@@ -136,7 +128,6 @@ class SwarmMetrics:
             details=details,
         )
 
-    # ── 问题记录委托 ──────────────────────────────────────────
 
     def record_issue(
         self,
@@ -167,7 +158,6 @@ class SwarmMetrics:
             details=details,
         )
 
-    # ── 报告生成 ──────────────────────────────────────────────
 
     def generate_report(self, fmt: str = "text") -> str:
         """generate_report — 生成指标报告。
@@ -189,7 +179,6 @@ class SwarmMetrics:
         else:
             raise ValueError(f"fmt 必须是 'text' 或 'json'，收到 {fmt!r}。")
 
-    # ── 持久化存储 ──────────────────────────────────────────────
 
     def save(self, path: Union[str, os.PathLike]) -> bool:
         """save — 将完整指标数据保存为 JSON 文件。
@@ -221,19 +210,16 @@ class SwarmMetrics:
         instance = cls()
         instance._meta = data.get("meta", {})
 
-        # 恢复轮次计时器
         timer_data = data.get("timer", {})
         if timer_data.get("rounds"):
             instance.timer.rounds = list(timer_data["rounds"])
         if timer_data.get("current"):
             instance.timer._current = dict(timer_data["current"])
 
-        # 恢复任务追踪器
         tasks_data = data.get("tasks", {})
         if tasks_data.get("tasks"):
             instance.tasks.tasks = list(tasks_data["tasks"])
 
-        # 恢复问题统计器
         issues_data = data.get("issues", {})
         if issues_data.get("issues"):
             instance.issues.issues = list(issues_data["issues"])
@@ -260,6 +246,3 @@ class SwarmMetrics:
         }
 
 
-# ═══════════════════════════════════════════════════════════════════
-# CLI 入口
-# ═══════════════════════════════════════════════════════════════════

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def run_delegation_diagnosis():
     """从 self_evolve_log.json 分析委托成功率，写入 state.json。
@@ -75,10 +69,8 @@ def run_delegation_diagnosis():
                 if result == "success":
                     success_delegated += 1
 
-                # 分析 waste 字段中的失败模式
                 waste = entry.get("waste", "")
                 if "delegate" in waste.lower():
-                    # 提取失败模式关键词
                     for pattern in ["environment", "mock_import", "zero_file", "import", "dependency"]:
                         if pattern in waste.lower():
                             failure_patterns[pattern] = failure_patterns.get(pattern, 0) + 1
@@ -100,9 +92,6 @@ def run_delegation_diagnosis():
         relog("⚠️", "委托诊断失败: %s", e)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 6b. 强制委托检查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def check_forced_delegation():
@@ -119,7 +108,6 @@ def check_forced_delegation():
         log_data = json.loads(log_path.read_text())
         entries = log_data if isinstance(log_data, list) else log_data.get("entries", [])
 
-        # 统计最近 5 轮中委托次数
         recent = entries[-5:]
         delegate_count = sum(
             1 for e in recent
@@ -137,6 +125,3 @@ def check_forced_delegation():
         relog("⚠️", "强制委托检查失败: %s", e)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 7. ⬆️ 并行任务规划（新） — 集成 parallel_dispatcher
-# ═══════════════════════════════════════════════════════════════════════

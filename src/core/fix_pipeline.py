@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """fix_pipeline.py — 集成管道：扫描 → 修复 → 审批 → 经验积累
 
 设计动机（面试话术）：
@@ -40,9 +39,6 @@ from .experience_store import (
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 管道执行结果
-# ═══════════════════════════════════════════════════════════════════════
 
 class PipelineResult:
     """管道执行结果汇总。"""
@@ -85,9 +81,6 @@ class PipelineResult:
         )
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 管道状态机（借鉴 HiveWard Run State Machine）
-# ═══════════════════════════════════════════════════════════════════════
 
 class PipelineRunState:
     """管道运行状态机（借鉴 HiveWard Run State Machine）。
@@ -179,9 +172,6 @@ class PipelineCancelled(Exception):
     pass
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 管道核心（拆分子函数以降低圈复杂度）
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _run_scan_phase(
@@ -220,13 +210,11 @@ def _run_single_fix(
         result.details.append({"issue": issue.to_dict(), "decision": "no_fixer"})
         return
 
-    # 读取修复前的文件内容（用于回滚）
     target_file = project_root / issue.file
     original_content = None
     if target_file.exists():
         original_content = target_file.read_text(encoding="utf-8")
 
-    # 注入经验上下文
     past_experiences = get_relevant_experiences(issue.type, issue.file)
     failure_warnings = get_failure_warnings(issue.type)
     if past_experiences or failure_warnings:
@@ -236,7 +224,6 @@ def _run_single_fix(
         ]
         issue.context["failure_warnings"] = failure_warnings[:3]
 
-    # 执行修复
     try:
         fix_result = fixer.fix(issue, project_root)
     except Exception as e:
@@ -249,7 +236,6 @@ def _run_single_fix(
         )
         return
 
-    # ── 验证阶段（SWE-agent 模式）──
     verify_result: Optional[VerifyChainResult] = None
     if verifier and fix_result.success:
         verify_result = verifier.verify(
@@ -258,13 +244,11 @@ def _run_single_fix(
             fix_action=fix_result.action,
             project_root=project_root,
         )
-        # 用验证结果修正置信度
         fix_result.confidence = max(0.0, min(1.0,
             fix_result.confidence + verify_result.total_delta
         ))
         logger.info("Verification %s: %s", issue.type, verify_result.summary())
 
-        # 语法验证失败 → 回滚
         if verify_result.should_rollback and original_content is not None:
             target_file.write_text(original_content, encoding="utf-8")
             logger.warning("Rolled back fix for %s:%s due to verification failure", issue.file, issue.line)
@@ -284,7 +268,6 @@ def _run_single_fix(
             })
             return
 
-    # 用经验校准置信度
     original_conf = fix_result.confidence
     fix_result.confidence = get_calibrated_confidence(
         issue.type, fixer.name, fix_result.confidence
@@ -297,10 +280,8 @@ def _run_single_fix(
 
     result.fixes_attempted += 1
 
-    # 审批门控
     gate_result = process_fix(fix_result, issue, apply_fn=lambda fr: fr.success)
 
-    # 统计
     decision = gate_result["decision"]
     if decision == "auto_apply":
         result.auto_applied += 1
@@ -309,7 +290,6 @@ def _run_single_fix(
     else:
         result.rejected += 1
 
-    # 记录经验
     record_experience(
         issue_type=issue.type, file=issue.file, line=issue.line,
         fixer=fixer.name, action=fix_result.action,
@@ -354,12 +334,10 @@ def _run_parallel_fixes(
     from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
     import threading
 
-    # 按文件分组，同一文件的修复串行执行
     by_file: dict[str, list[IssueIR]] = {}
     for ir in ir_list:
         by_file.setdefault(ir.issue.file, []).append(ir)
 
-    # 文件级别的锁（防止同一文件并发写入）
     file_locks: dict[str, threading.Lock] = {}
     for file_path in by_file:
         file_locks[file_path] = threading.Lock()
@@ -372,14 +350,12 @@ def _run_parallel_fixes(
                 run_state.check_cancel()
             _run_single_fix(ir, fixers, project_root, verifier, result, run_state)
 
-    # 使用线程池执行
     with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
         futures = {}
         for ir in ir_list:
             future = executor.submit(fix_with_lock, ir)
             futures[future] = ir
 
-        # 等待所有任务完成，带超时
         for future in as_completed(futures, timeout=timeout_per_fix * len(ir_list)):
             ir = futures[future]
             try:
@@ -422,7 +398,6 @@ def _run_fix_phase(
     """
     result = PipelineResult()
 
-    # 将 IR 列表分成可并行和不可并行两组
     parallel_irs = []
     sequential_irs = []
     for ir in ir_list[:max_fixes]:
@@ -433,11 +408,9 @@ def _run_fix_phase(
 
     logger.info("Fix phase: %d parallel, %d sequential", len(parallel_irs), len(sequential_irs))
 
-    # 并行修复（使用线程池，max_concurrency=4）
     if parallel_irs:
         _run_parallel_fixes(parallel_irs, fixers, project_root, verifier, result, run_state, max_concurrency=4)
 
-    # 串行修复（高风险或不可并行的）
     for ir in sequential_irs:
         if run_state:
             run_state.check_cancel()
@@ -479,7 +452,6 @@ def run_pipeline(
        incremental 模式用 git diff 或 mtime 检测变更，只扫描变更文件，
        把大项目的扫描时间从分钟级降到秒级。"
     """
-    # 初始化状态机
     if run_state is None:
         import uuid
         run_state = PipelineRunState(run_id=str(uuid.uuid4())[:8])
@@ -489,7 +461,6 @@ def run_pipeline(
     result.started_at = datetime.now().isoformat()
 
     try:
-        # 1. 扫描
         scan_start = datetime.now()
         scanners = scanner_registry or build_default_scanner_registry()
         logger.info("Pipeline: scanning %s (incremental=%s)", project_root, incremental)
@@ -504,7 +475,6 @@ def run_pipeline(
         run_state.record_phase("scan", (datetime.now() - scan_start).total_seconds())
         logger.info("Pipeline: %d issues found", result.issues_found)
 
-        # 检查取消
         run_state.check_cancel()
 
         if dry_run or not all_issues:
@@ -512,7 +482,6 @@ def run_pipeline(
             run_state.succeed()
             return result
 
-        # 2. Issue IR 处理（验证 → 去重 → 聚合 → 排序）
         ir_start = datetime.now()
         processor = IssueProcessor()
         ir_list = processor.process(all_issues)
@@ -520,15 +489,12 @@ def run_pipeline(
         run_state.record_phase("ir_process", (datetime.now() - ir_start).total_seconds())
         logger.info("Pipeline: %d issues after IR processing (dedup+validate)", len(ir_list))
 
-        # 检查取消
         run_state.check_cancel()
 
-        # 3. 清理过期的 Inbox 项
         expired_count = expire_stale()
         if expired_count:
             logger.info("Pipeline: expired %d stale inbox items", expired_count)
 
-        # 4. 修复阶段（含自动验证）
         fix_start = datetime.now()
         fixers = fixer_registry or build_default_fixer_registry()
         verifier = build_default_verifier_chain(scanners)
@@ -557,9 +523,6 @@ def run_pipeline(
         raise
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 便捷函数（供 self_evolve_round.py 调用）
-# ═══════════════════════════════════════════════════════════════════════
 
 def run_scan_only(project_root: Path, dimensions: Optional[list[str]] = None) -> list[dict]:
     """只扫描不修复，返回 Issue 列表（dict 格式）。
@@ -600,16 +563,13 @@ def run_fix_for_issue(issue_dict: dict, project_root: Path) -> dict:
     if not fixer:
         return {"decision": "no_fixer", "item_id": None, "applied": False}
 
-    # 校准置信度
     fix_result = fixer.fix(issue, project_root)
     fix_result.confidence = get_calibrated_confidence(
         issue.type, fixer.name, fix_result.confidence
     )
 
-    # 门控
     gate_result = process_fix(fix_result, issue)
 
-    # 记录经验
     record_experience(
         issue_type=issue.type, file=issue.file, line=issue.line,
         fixer=fixer.name, action=fix_result.action,

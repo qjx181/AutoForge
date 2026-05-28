@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/test_scanner.py — 维度二：测试覆盖扫描器
 
 检测：
@@ -68,7 +67,6 @@ def _find_missing_tests(source_files: list[str], test_dir: str,
     issues = []
 
     if not test_dir or not Path(test_dir).exists():
-        # 整个项目无测试目录
         for f in source_files[:10]:  # 只报告前 10 个
             issues.append({
                 "type": "no_test_dir",
@@ -80,18 +78,15 @@ def _find_missing_tests(source_files: list[str], test_dir: str,
             })
         return issues
 
-    # 构建已测试模块映射
     tested_modules: set[str] = set()
     for tf in Path(test_dir).rglob("test_*.py"):
         test_funcs = _get_test_functions(tf)
         if test_funcs:
-            # 找对应的源模块
             module_name = tf.stem
             if module_name.startswith("test_"):
                 module_name = module_name[5:]
             tested_modules.add(module_name)
 
-    # 检查每个源模块
     for source_path in source_files:
         src = Path(source_path)
         module_name = src.stem
@@ -141,10 +136,8 @@ def _check_pytest_config(test_dir: str) -> list[dict]:
     issues = []
     root = Path(test_dir).anchor if Path(test_dir).exists() else Path.cwd()
 
-    # conftest.py
     has_conftest = any(Path(test_dir).rglob("conftest.py")) if Path(test_dir).exists() else False
 
-    # pytest.ini / setup.cfg
     has_config = (
         (Path(test_dir) / "pytest.ini").exists()
         or (Path(test_dir) / "setup.cfg").exists()
@@ -197,7 +190,6 @@ def scan(blueprint: OptimizationBlueprint) -> dict:
     for issue in all_issues:
         issue["dimension"] = DIMENSION
 
-    # 评分
     untested = sum(1 for i in all_issues if i["type"] in ("untested_module", "no_test_dir"))
     score = max(0, 100 - untested * 5)
 

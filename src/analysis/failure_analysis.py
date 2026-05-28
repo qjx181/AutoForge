@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 failure_analysis.py — 每周失败模式分析脚本
 
@@ -32,14 +31,11 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# 位于 src/analysis/，向上三级到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 STATE_PATH = SWARM_DIR / "data" / "state.json"
 REPORT_PATH = SWARM_DIR / "data" / "failure_report.json"
 SWARM_RULES_PATH = SWARM_DIR / "config" / "SWARM_RULES.md"
 
-# 内置关键词列表（可扩展）
 KEYWORDS = [
     "重构", "迁移", "改造", "重写",
     "添加单元测试", "添加测试", "增加测试",
@@ -86,7 +82,6 @@ def analyze() -> dict:
         "high_risk_keywords": [],
     }
 
-    # 1. 关键词失败率分析
     all_task_descs = defaultdict(int)
     failed_task_descs = defaultdict(int)
 
@@ -108,7 +103,6 @@ def analyze() -> dict:
 
     report["keyword_analysis"] = keyword_analysis
 
-    # 2. 错误类型分析
     error_type_counts = defaultdict(int)
     for task in failed_tasks:
         etype = task.get("error_type", "Unknown")
@@ -124,7 +118,6 @@ def analyze() -> dict:
         sorted(error_type_counts.items(), key=lambda x: -x[1])
     )
 
-    # 3. 类别成功率
     category_failed = {"debug": 0, "feature": 0, "test": 0}
     category_all = {"debug": 1, "feature": 1, "test": 1}
 
@@ -150,14 +143,12 @@ def analyze() -> dict:
         for cat in category_failed
     }
 
-    # 4. 高风险关键词（失败率 > 50% 的词）
     high_risk = [
         word for word, data in keyword_analysis.items()
         if data.get("failed_count", 0) >= 2
     ]
     report["high_risk_keywords"] = high_risk
 
-    # 5. 生成注入文本
     if high_risk:
         examples = []
         for word in high_risk:
@@ -180,9 +171,6 @@ def analyze() -> dict:
     return report
 
 
-# ═══════════════════════════════════════════════════════════════════
-# 自动修复规则生成（项6）
-# ═══════════════════════════════════════════════════════════════════
 
 def generate_fix_rules(report: dict) -> list:
     """generate_fix_rules — 从失败分析报告中提取高频失败模式，生成修复规则列表
@@ -221,7 +209,6 @@ def generate_fix_rules(report: dict) -> list:
     seen_patterns = set()
     max_rules = 10
 
-    # 1. 高失败率关键词 → 原子化规则
     for keyword in report.get("high_risk_keywords", []):
         if len(rules) >= max_rules:
             break
@@ -271,7 +258,6 @@ def generate_fix_rules(report: dict) -> list:
             }
             rules.append(rule)
 
-    # 2. 高频错误类型 → 预防规则
     state = load_state()
     error_patterns = state.get("error_patterns", [])
 
@@ -296,7 +282,6 @@ def generate_fix_rules(report: dict) -> list:
             }
             rules.append(rule)
 
-    # 3. 类别维度规则
     cat_rates = report.get("category_success_rate", {})
     for cat, data in cat_rates.items():
         if len(rules) >= max_rules:
@@ -386,7 +371,6 @@ def main():
 
     report = analyze()
 
-    # 写入报告
     REPORT_PATH.write_text(
         json.dumps(report, ensure_ascii=False, indent=2),
         encoding="utf-8",
@@ -416,7 +400,6 @@ def main():
     else:
         print("    (暂无高风险关键词，无需注入)")
 
-    # 6. 生成修复规则并写入 SWARM_RULES.md（项6）
     fix_rules = generate_fix_rules(report)
     write_auto_fixes_to_swarm_rules(fix_rules)
 

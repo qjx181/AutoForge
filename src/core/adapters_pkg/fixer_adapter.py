@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """adapters.py — Scanner/Fixer 标准化接口
 
 设计动机（面试话术）：
@@ -39,9 +38,6 @@ from src.core.adapters_pkg.fix_result import FixResult
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 标准化数据结构
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class FixerAdapter(ABC):
@@ -87,6 +83,3 @@ class FixerAdapter(ABC):
         return issue_type in self.supported_types
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 注册表
-# ═══════════════════════════════════════════════════════════════════════

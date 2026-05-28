@@ -26,23 +26,17 @@ import os
 import re
 from pathlib import Path
 from typing import Optional
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# 位于 src/agents/，向上三级到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 TEMPLATES_DIR = SWARM_DIR / "templates"
 SELF_EVOLVE_LOG = SWARM_DIR / "data" / "self_evolve_log.json"
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 CAPABILITY_MAP_FILE = SWARM_DIR / "data" / "agent_capability_map.json"
 
-# ─── 决策阈值 ──────────────────────────────────────────────────────────
 COMPLEXITY_THRESHOLD = 1000  # token 量 < 1000 视为简单任务
 MIN_SUCCESS_RATE = 0.6       # 子 Agent 成功率 >= 0.6 才委托
 MAX_HISTORY_WINDOW = 10      # 只看近 10 轮数据
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 第 1 层 — 协调者决策支持
-# ═══════════════════════════════════════════════════════════════════════
 
 def _scan_routes_for_sync_defs(routes_dir: Path, issues: list) -> None:
     """扫描 routes/ 中的 sync def 路由。"""
@@ -120,13 +114,10 @@ def scan_codebase_for_issues(project_dir: str) -> list[str]:
     if not root.exists():
         return [("WARN", "path", f"目录不存在: {project_dir}", "")]
 
-    # ── 扫描 routes/ 中的 sync def ──
     _scan_routes_for_sync_defs(root / "routes", issues)
 
-    # ── 扫描 services/ 中缺 async 的 I/O 操作 ──
     _scan_services_for_sync_io(root / "services", issues)
 
-    # ── 扫描 tests/ 目录覆盖率 ──
     _scan_test_coverage(root / "routes", root / "tests", issues)
 
     return issues

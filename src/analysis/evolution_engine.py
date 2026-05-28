@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """evolution_engine.py — 扫描+修复+验证+重扫 一体化进化引擎
 
 把 9 维扫描器 + 代码修复器 + 验证器 整合为一个闭环，
@@ -22,7 +21,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-# ── 自动路径 ──────────────────────────────────────────────────────────
 SWARM_DIR = Path(__file__).parent.parent.resolve()
 SRC_DIR = SWARM_DIR / "src"
 for p in [str(SRC_DIR), str(SWARM_DIR)]:
@@ -33,9 +31,6 @@ from src.analysis.optimizer_core import run_full_pipeline
 from src.analysis.dims import DIMENSION_NAMES
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 简易修复器 — 用规则+AST 做自动化代码修复
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _fix_unused_import(filepath: Path, line_num: int) -> dict:
@@ -46,7 +41,6 @@ def _fix_unused_import(filepath: Path, line_num: int) -> dict:
         if line_num < 1 or line_num > len(lines):
             return {"success": False, "error": f"行号 {line_num} 超出范围（共 {len(lines)} 行）"}
         old_line = lines[line_num - 1]
-        # 只删 import 行
         stripped = old_line.strip()
         if not (stripped.startswith("import ") or stripped.startswith("from ")):
             return {"success": False, "error": f"行 {line_num} 不是 import 语句: {stripped[:60]}"}
@@ -64,14 +58,11 @@ def _fix_missing_docstring(filepath: Path, line_num: int) -> dict:
         lines = code.split("\n")
         if line_num < 1 or line_num > len(lines):
             return {"success": False, "error": f"行号 {line_num} 超出范围"}
-        # 在 def 行的下一行插入简短的 docstring
         idx = line_num  # 0-indexed
-        # 检查是否有已经有的 docstring
         if idx < len(lines):
             next_line = lines[idx].strip()
             if next_line.startswith('"""') or next_line.startswith("'''") or next_line.startswith('"'):
                 return {"success": False, "error": "已有 docstring"}
-        # 从 def 行提取函数名
         func_match = re.search(r"def\s+(\w+)\s*\(", lines[line_num - 1])
         func_name = func_match.group(1) if func_match else "unknown"
         indent = " " * (len(lines[line_num - 1]) - len(lines[line_num - 1].lstrip()))
@@ -91,16 +82,13 @@ def _fix_hardcoded_value(filepath: Path, line_num: int, description: str) -> dic
         if line_num < 1 or line_num > len(lines):
             return {"success": False, "error": f"行号 {line_num} 超出范围"}
         line = lines[line_num - 1]
-        # 找到字符串字面量
         strings = re.findall(r'["\']([^"\']{4,})["\']', line)
         if not strings:
             return {"success": False, "error": "未找到字符串字面量"}
         val = strings[0]
-        # 生成常量名
         const_name = re.sub(r'[^a-zA-Z0-9_]', '_', val.upper())[:30]
         if const_name[0].isdigit():
             const_name = "_" + const_name
-        # 在文件顶部添加常量定义
         header = f"\n# ── 自动提取常量 ──\n{const_name} = {repr(val)}\n"
         insert_pos = 0
         for i, l in enumerate(lines):
@@ -126,7 +114,6 @@ def _fix_dead_file(filepath: Path) -> dict:
         if filepath.stat().st_size == 0:
             filepath.unlink()
             return {"success": True, "action": f"删除空文件: {filepath.name}"}
-        # 对于有明显死代码特征的文件，添加废弃标记
         content = filepath.read_text(encoding="utf-8", errors="ignore")
         if "# DEPRECATED" not in content:
             filepath.write_text(f"# DEPRECATED — 此文件可能不再使用\n# 自动标记于 {datetime.now().isoformat()[:10]}\n" + content, encoding="utf-8")
@@ -142,7 +129,6 @@ def _fix_missing_test(filepath: Path, module_path: str) -> dict:
         src_path = Path(module_path)
         if not src_path.exists():
             return {"success": False, "error": f"源文件不存在: {module_path}"}
-        # 确定测试文件路径
         tests_dir = src_path.parent.parent / "tests"
         if not tests_dir.exists():
             tests_dir.mkdir(parents=True, exist_ok=True)
@@ -150,14 +136,12 @@ def _fix_missing_test(filepath: Path, module_path: str) -> dict:
         if test_file.exists():
             if test_file.stat().st_size > 50:
                 return {"success": False, "error": f"测试文件已存在且有内容: {test_file}"}
-        # 提取所有函数名
         try:
             tree = ast.parse(src_path.read_text(encoding="utf-8"))
             funcs = [n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
             funcs = [f for f in funcs if not f.startswith("_")]
         except Exception:
             funcs = []
-        # 生成测试存根
         lines = [
             f'"""tests for {src_path.name}"""',
             "",
@@ -177,9 +161,6 @@ def _fix_missing_test(filepath: Path, module_path: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 修复调度器
-# ═══════════════════════════════════════════════════════════════════════
 
 FIX_REGISTRY = {
     "unused_import": _fix_unused_import,
@@ -198,18 +179,15 @@ def try_fix(issue: dict, project_root: Path) -> dict:
     if not file_path:
         return {"success": False, "reason": "无文件路径", "issue": issue_type}
 
-    # 死代码/空文件（无特定行号）
     if issue_type in ("empty_file",):
         fp = project_root / file_path if not Path(file_path).is_absolute() else Path(file_path)
         if fp.exists():
             return _fix_dead_file(fp)
         return {"success": False, "reason": "文件不存在", "issue": issue_type}
 
-    # 缺失测试
     if issue_type in ("missing_test", "no_test_for_module"):
         return _fix_missing_test(project_root / "dummy.py", file_path or str(project_root))
 
-    # 需要行号的修复
     fixer = FIX_REGISTRY.get(issue_type)
     if not fixer:
         return {"success": False, "reason": f"无修复规则: {issue_type}", "issue": issue_type}
@@ -224,9 +202,6 @@ def try_fix(issue: dict, project_root: Path) -> dict:
         return {"success": False, "error": str(e), "issue": issue_type}
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 验证器
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def verify_fix(file_path: str) -> dict:
@@ -243,9 +218,6 @@ def verify_fix(file_path: str) -> dict:
         return {"passed": False, "error": str(e)}
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 进化循环
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def run_evolution_round(
@@ -284,7 +256,6 @@ def run_evolution_round(
             except Exception:
                 pass
 
-    # ── Phase 1: 扫描 ──
     _progress("scanning", {"message": "全维度扫描中..."})
     try:
         scan_result = run_full_pipeline(target_dir, dimensions=dimensions)
@@ -308,7 +279,6 @@ def run_evolution_round(
     report["dimensions"] = scan_result.get("dimensions", {})
     report["summary"] = scan_result.get("summary", "")
 
-    # ── 深度企业级扫描 ──
     _progress("deep_scan", {"message": "企业级深度扫描中..."})
     try:
         from src.analysis.deep_enterprise_scanner import scan_deep
@@ -324,7 +294,6 @@ def run_evolution_round(
         report["deep_scan"] = {"error": str(e), "score": 0, "issues": []}
         _progress("deep_scan_error", {"message": f"深度扫描失败: {e}"})
 
-    # ── 深度修复（企业级 + 自学习） ──
     deep_issues = report.get("deep_scan", {}).get("issues", [])
     if deep_issues:
         _progress("deep_fixing", {"total": len(deep_issues), "message": f"尝试修复深层问题...共 {len(deep_issues)} 个"})
@@ -334,14 +303,12 @@ def run_evolution_round(
             fixable_types = {k for k, v in DEEP_FIXERS.items() if v is not None}
 
             deep_fixes = {"attempted": 0, "succeeded": 0, "failed": 0, "skipped_learned": 0, "details": []}
-            # 按修复能力排序：可自动修复的优先
             sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
             sorted_issues = sorted(
                 [i for i in deep_issues if i.get("type") in fixable_types],
                 key=lambda x: sev_order.get(x.get("severity", "low"), 99),
             )
 
-                        # 按文件分组：一次修完一个文件的所有问题
             from collections import defaultdict
             file_issues = defaultdict(list)
             for iss in sorted_issues:
@@ -387,7 +354,6 @@ def run_evolution_round(
                         "message": f"{file_path.split('/')[-1]}: 成功{deep_fixes['succeeded']}",
                     })
             report["deep_fixes"] = deep_fixes
-            # 附带学习统计
             from src.analysis.evolve_learn import get_stats
             report["learn_stats"] = get_stats()
             _progress("deep_fixed", {
@@ -408,13 +374,11 @@ def run_evolution_round(
         "message": f"评分 {score_before}/100，发现 {total_issues} 个问题（Critical {critical} 个）",
     })
 
-    # ── Phase 2: 修复 ──
     fixes_attempted = 0
     fixes_succeeded = 0
     fixes_failed = 0
     fix_details = []
 
-    # 收集所有可修复的问题
     fixable_issues = []
     for dim_name, dim_result in scan_result.get("dimensions", {}).items():
         for issue in dim_result.get("issues", []):
@@ -426,7 +390,6 @@ def run_evolution_round(
                     "_dim_label": DIMENSION_NAMES.get(dim_name, dim_name),
                 })
 
-    # 按严重级别排序：critical → high → medium → low
     sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     fixable_issues.sort(key=lambda x: sev_order.get(x.get("severity", "low"), 99))
 
@@ -448,13 +411,11 @@ def run_evolution_round(
             "fix_result": result,
         })
         if result.get("success"):
-            # 验证语法
             file_path = issue.get("file", "")
             if file_path:
                 fp = target_path / file_path if not Path(file_path).is_absolute() else Path(file_path)
                 ver = verify_fix(str(fp))
                 if not ver.get("passed"):
-                    # 回滚
                     fix_details[-1]["verification"] = ver
                     fix_details[-1]["fix_result"]["success"] = False
                     fix_details[-1]["fix_result"]["rolled_back"] = True
@@ -479,7 +440,6 @@ def run_evolution_round(
         "details": fix_details,
     }
 
-    # ── Phase 3: 重扫 ──
     _progress("rescanning", {"message": "修复完成，重新扫描..."})
     try:
         rescanned = run_full_pipeline(target_dir, dimensions=dimensions)
@@ -514,9 +474,6 @@ def run_evolution_round(
     return report
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# CLI 入口
-# ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     import argparse

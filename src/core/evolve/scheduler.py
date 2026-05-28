@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def _load_parallel_dispatcher():
     """尝试从工作目录加载 parallel_dispatcher 模块。"""
@@ -78,10 +72,8 @@ def _parse_todo_dependencies() -> dict[str, dict]:
     current_desc: str = ""
 
     for line in text.splitlines():
-        # 匹配任务ID
         m = re.match(r'^- \[ \] 任务ID:\s*(\S+)', line)
         if m:
-            # 保存前一个任务
             if current_id:
                 tasks[current_id] = {
                     "depends": current_dep,
@@ -95,28 +87,23 @@ def _parse_todo_dependencies() -> dict[str, dict]:
             continue
 
         if current_id:
-            # 解析描述
             dm = re.match(r'\s+描述:\s*(.+)', line)
             if dm:
                 current_desc = dm.group(1).strip()
                 continue
 
-            # 解析依赖
             dm = re.match(r'\s+依赖:\s*(.+)', line)
             if dm:
                 dep_text = dm.group(1).strip()
                 if dep_text and dep_text != "无" and not dep_text.startswith("无（"):
-                    # 可能含逗号分隔的多个依赖
                     current_dep = [d.strip() for d in dep_text.split(",") if d.strip()]
                 continue
 
-            # 解析 token 估算
             tm = re.match(r'\s+预估 token 量:\s*(\d+)', line)
             if tm:
                 current_token = int(tm.group(1))
                 continue
 
-    # 保存最后一个任务
     if current_id:
         tasks[current_id] = {
             "depends": current_dep,
@@ -160,11 +147,9 @@ def plan_parallel_tasks() -> dict | None:
             save_state(state)
         return None
 
-    # 从 TODO.md 解析依赖信息
     todo_tasks = _parse_todo_dependencies()
     relog("📋", "TODO.md 解析: %d 个任务定义", len(todo_tasks))
 
-    # 构建 parallel_dispatcher 需要的 todo_tasks 格式
     formulated_tasks: list[dict] = []
     for task_id in pending_ids:
         info = todo_tasks.get(task_id, {})
@@ -177,38 +162,30 @@ def plan_parallel_tasks() -> dict | None:
 
     relog("📋", "待规划任务: %d 项", len(formulated_tasks))
 
-    # 明确标记依赖信息到 control 变量，供 dispatch 使用
-    # 手动分组：无依赖的任务放一起
     independent = [t for t in formulated_tasks if not t["depends"]]
     dependent = [t for t in formulated_tasks if t["depends"]]
-    # 进一步按依赖分组
     dep_groups: dict[str, list[dict]] = {}
     for t in dependent:
         key = ",".join(sorted(t["depends"]))
         dep_groups.setdefault(key, []).append(t)
 
-    # 构建批次
     max_concurrent = 3
     batches: list[list[str]] = []
 
-    # 第 1 批：所有无依赖任务（最多 3 个并行）
     if independent:
         b1 = [t["task_id"] for t in independent[:max_concurrent]]
         batches.append(b1)
-        # 如果还有剩余，下一批
         remaining = [t["task_id"] for t in independent[max_concurrent:]]
         while remaining:
             batches.append(remaining[:max_concurrent])
             remaining = remaining[max_concurrent:]
 
-    # 后续批次：有依赖的
     for group_tasks in dep_groups.values():
         group_ids = [t["task_id"] for t in group_tasks]
         while group_ids:
             batches.append(group_ids[:max_concurrent])
             group_ids = group_ids[max_concurrent:]
 
-    # 打印计划概要
     relog("📋", "并行规划: %d 批, 并发上限 %d", len(batches), max_concurrent)
     for i, batch in enumerate(batches):
         relog("  🗂️  Batch %d: %s", i + 1, ", ".join(batch))
@@ -223,7 +200,6 @@ def plan_parallel_tasks() -> dict | None:
         "total_pending": len(formulated_tasks),
     }
 
-    # 写入 state.json
     state["parallel_plan"] = plan
     save_state(state)
     relog("✅", "并行规划已写入 state.json")
@@ -231,9 +207,6 @@ def plan_parallel_tasks() -> dict | None:
     return plan
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 7b. ⬆️ 心跳自愈检查 — PID 文件超时自动重启
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _get_heartbeat_config() -> dict:
@@ -354,7 +327,6 @@ def check_and_heal_heartbeats() -> int:
     else:
         relog("✅", "心跳检查: 所有 agent 状态正常")
 
-    # 记录重启事件到恢复日志
     if restarted > 0:
         recovery_log = SWARM_DIR / "logs" / "heartbeat_recovery.log"
         recovery_log.parent.mkdir(parents=True, exist_ok=True)
@@ -368,9 +340,6 @@ def check_and_heal_heartbeats() -> int:
     return restarted
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 7c. ⬆️ Git push 分支保护检查（git_autopush_safety）
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def check_git_push_safety(repo_dir: Path) -> tuple[bool, str]:
@@ -384,7 +353,6 @@ def check_git_push_safety(repo_dir: Path) -> tuple[bool, str]:
         (True, "reason") 如果安全，或 (False, "原因") 如果存在冲突/保护。
     """
     try:
-        # 检查项 1：分支名保护
         result = _run_git(["git", "rev-parse", "--abbrev-ref", "HEAD"], repo_dir, timeout=10)
         if result.returncode != 0:
             return False, "无法检测当前分支"
@@ -395,7 +363,6 @@ def check_git_push_safety(repo_dir: Path) -> tuple[bool, str]:
             if branch.startswith(prefix):
                 return False, f"受保护分支禁止自动 push: {branch}"
 
-        # 检查项 2：远程冲突
         fetch = _run_git(["git", "fetch", "origin"], repo_dir, timeout=30)
         if fetch.returncode != 0:
             return False, f"git fetch 失败: {fetch.stderr[:100]}"
@@ -428,7 +395,6 @@ def run_safe_git_push(repo_dir: Path, message: str, repo_name: str = "unknown") 
     先在本地 commit，然后检查分支保护，最后 push。
     push 失败不阻塞流程（国内网络容错）。
     """
-    # 先 commit
     try:
         status = _run_git(["git", "status", "--porcelain"], repo_dir, timeout=10)
         if not status.stdout.strip():
@@ -446,7 +412,6 @@ def run_safe_git_push(repo_dir: Path, message: str, repo_name: str = "unknown") 
                   source="self_evolve_round")
         return False
 
-    # 安全检查
     safe, reason = check_git_push_safety(repo_dir)
     if not safe:
         relog("⏭️", "%s push 跳过: %s", repo_name, reason)
@@ -454,13 +419,11 @@ def run_safe_git_push(repo_dir: Path, message: str, repo_name: str = "unknown") 
                   source="self_evolve_round")
         return False
 
-    # push 前二次确认
     if not guard_git_push():
         audit_log("push_skipped", str(repo_dir), f"{repo_name}: 用户拒绝确认",
                   success=False, source="self_evolve_round")
         return False
 
-    # push
     try:
         push = _run_git(["git", "push"], repo_dir, timeout=60)
         if push.returncode == 0:
@@ -480,9 +443,6 @@ def run_safe_git_push(repo_dir: Path, message: str, repo_name: str = "unknown") 
         return False
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 主函数
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _parse_cli_args() -> str:

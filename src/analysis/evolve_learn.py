@@ -11,7 +11,6 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 
-# ── 路径 ──────────────────────────────────────────────────────────────
 SWARM_DIR = Path(__file__).parent.parent.resolve()
 LEARN_FILE = SWARM_DIR / "data" / "evolve_learn.json"
 
@@ -45,7 +44,6 @@ def record_fix(issue_type: str, file_path: str, success: bool, error: str = ""):
     data["fix_history"].append(entry)
 
     if not success and error:
-        # 按类型+错误信息生成指纹，避免重复犯相同错误
         fingerprint = hashlib.md5(f"{issue_type}:{error[:100]}".encode()).hexdigest()[:12]
         existing = [f for f in data["failed_fixes"] if f["fingerprint"] == fingerprint]
 
@@ -61,7 +59,6 @@ def record_fix(issue_type: str, file_path: str, success: bool, error: str = ""):
                 "first_seen": datetime.now().isoformat(),
                 "last_seen": datetime.now().isoformat(),
             })
-        # 失败3次以上 → 加入跳过列表
         for f in data["failed_fixes"]:
             if f["count"] >= 3 and f["fingerprint"] not in data["skip_patterns"]:
                 data["skip_patterns"][f["fingerprint"]] = {
@@ -70,7 +67,6 @@ def record_fix(issue_type: str, file_path: str, success: bool, error: str = ""):
                     "skipped_at": datetime.now().isoformat(),
                 }
 
-    # 检查重复发生的成功修复 → 建议创建 skill
     success_history = [h for h in data["fix_history"] if h["success"]]
     type_counts = {}
     for h in success_history:

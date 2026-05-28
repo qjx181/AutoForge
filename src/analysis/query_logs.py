@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """query_logs.py — Swarm 系统 request_id 日志查询工具
 
 作用：
@@ -47,15 +46,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-# ─── 路径常量 ──────────────────────────────────────────────────────────
-# 项目根目录（脚本所在目录的上层或同层）
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_LOG_DIR = SCRIPT_DIR / "logs"
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 输出格式化（项9）
-# ═══════════════════════════════════════════════════════════════════════
 
 def format_text(entry: Dict[str, Any]) -> str:
     """format_text — 文本格式输出单条日志
@@ -75,7 +69,6 @@ def format_text(entry: Dict[str, Any]) -> str:
     level = entry.get("level", "INFO")
     message = entry.get("message", "")
 
-    # 截取时间戳的 HH:MM:SS 部分
     time_part = ""
     try:
         if ts:
@@ -84,7 +77,6 @@ def format_text(entry: Dict[str, Any]) -> str:
     except (ValueError, TypeError):
         time_part = ts
 
-    # 附加字段
     extras = []
     rid = entry.get("request_id")
     if rid:
@@ -112,9 +104,6 @@ def format_json(entry: Dict[str, Any]) -> str:
     return json.dumps(entry, ensure_ascii=False)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 日志扫描（项9）
-# ═══════════════════════════════════════════════════════════════════════
 
 def scan_logs(
     log_dir: Path,
@@ -155,10 +144,8 @@ def scan_logs(
 
     results: List[Dict[str, Any]] = []
 
-    # 日期目录列表
     date_dirs = []
     if date_filter:
-        # 只扫描指定日期目录
         dated = log_dir / date_filter
         if dated.exists() and dated.is_dir():
             date_dirs.append(dated)
@@ -166,7 +153,6 @@ def scan_logs(
             print(f"⚠️ 指定日期无日志目录: {date_filter}", file=sys.stderr)
             return []
     else:
-        # 扫描所有 YYYY-MM-DD 格式的日期目录
         for item in log_dir.iterdir():
             if item.is_dir() and _is_date_dir(item.name):
                 date_dirs.append(item)
@@ -180,7 +166,6 @@ def scan_logs(
             if not log_file.is_file() or not log_file.name.endswith(".log"):
                 continue
 
-            # request_id_filter 时：优化路径匹配
             if request_id_filter:
                 expected_name = f"request-{request_id_filter}.log"
                 if log_file.name != expected_name:
@@ -196,7 +181,6 @@ def scan_logs(
                     except json.JSONDecodeError:
                         continue
 
-                    # 应用过滤条件（全部 AND）
                     if request_id_filter:
                         rid = entry.get("request_id", "")
                         if rid != request_id_filter:
@@ -219,10 +203,8 @@ def scan_logs(
 
                     results.append(entry)
 
-    # 按 timestamp 排序（升序）
     results.sort(key=lambda e: e.get("timestamp", ""))
 
-    # last 截取最后 N 条
     if last is not None and last > 0 and len(results) > last:
         results = results[-last:]
 
@@ -248,9 +230,6 @@ def _is_date_dir(name: str) -> bool:
         return False
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 命令行入口
-# ═══════════════════════════════════════════════════════════════════════
 
 def build_parser() -> argparse.ArgumentParser:
     """build_parser — 构建命令行参数解析器

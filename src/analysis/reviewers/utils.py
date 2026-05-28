@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """code_review.py — PR 代码审查 Agent 模块
 
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
@@ -27,9 +26,6 @@ import re
 from pathlib import Path
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SecurityReviewer — 安全审查
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def check_python_file(path: str) -> dict:
@@ -88,7 +84,6 @@ def review_project(path: str) -> dict:
         return {"project": path, "error": "目录不存在"}
 
     py_files = list(root.rglob("*.py"))
-    # 排除 __pycache__ 和测试临时文件
     py_files = [f for f in py_files if "__pycache__" not in str(f) and not f.name.startswith("_")]
 
     file_reports = []
@@ -110,9 +105,6 @@ def review_project(path: str) -> dict:
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# GitHub Webhook 处理
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def handle_github_webhook(payload: dict) -> dict:
@@ -138,9 +130,6 @@ def handle_github_webhook(payload: dict) -> dict:
     pr_body = pr.get("body", "")
     pr_diff_url = pr.get("diff_url", "")
 
-    # GitHub webhook 不直接包含 diff 内容
-    # 需要另外调用 GitHub API 获取 diff
-    # 这里返回一个模拟结果，实际集成时需要配合 GitHub API 使用
 
     diff_text = f"PR #{pr_number}: {pr_title}\n\n{pr_body}"
     changed_files = [f.get("filename", "") for f in payload.get("pull_request", {}).get("files", [])]
@@ -160,11 +149,9 @@ def handle_github_webhook(payload: dict) -> dict:
 
 
 if __name__ == "__main__":
-    # 快速自测
     test_code = """import os
 import sys
 def get_user(user_id):
-    # SQL 注入
     query = f"SELECT * FROM users WHERE id = {user_id}"
     cursor.execute(query)
     return cursor.fetchone()

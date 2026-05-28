@@ -26,23 +26,17 @@ import os
 import re
 from pathlib import Path
 from typing import Optional
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# 位于 src/agents/，向上三级到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 TEMPLATES_DIR = SWARM_DIR / "templates"
 SELF_EVOLVE_LOG = SWARM_DIR / "data" / "self_evolve_log.json"
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 CAPABILITY_MAP_FILE = SWARM_DIR / "data" / "agent_capability_map.json"
 
-# ─── 决策阈值 ──────────────────────────────────────────────────────────
 COMPLEXITY_THRESHOLD = 1000  # token 量 < 1000 视为简单任务
 MIN_SUCCESS_RATE = 0.6       # 子 Agent 成功率 >= 0.6 才委托
 MAX_HISTORY_WINDOW = 10      # 只看近 10 轮数据
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 第 1 层 — 协调者决策支持
-# ═══════════════════════════════════════════════════════════════════════
 
 def _calc_basic_stats(rounds: list) -> dict:
     """计算基本统计量。"""
@@ -207,7 +201,6 @@ def write_diagnosis_to_log(diagnosis: dict) -> bool:
         return False
 
     if isinstance(data, list):
-        # 如果是数组格式，转为字典格式并附加 diagnosis
         data = {"rounds": data}
 
     data["diagnosis"] = diagnosis
@@ -220,11 +213,7 @@ def write_diagnosis_to_log(diagnosis: dict) -> bool:
     return True
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# Agent 能力画像 — agent_capability_map.json 操作
-# ═══════════════════════════════════════════════════════════════════════
 
-# CAPABILITY_MAP_FILE 已在上方常量区定义
 
 
 def get_agent_capability(agent_id: str) -> Optional[dict]:
@@ -295,12 +284,10 @@ def update_agent_capability(agent_id: str, task_result: dict) -> bool:
                     existing_parts.append(fp)
                 agent["failure_pattern"] = ", ".join(existing_parts)
 
-        # 重新计算 success_rate
         total = agent.get("total_tasks_assigned", 0)
         succeeded = agent.get("successful_tasks", 0)
         agent["success_rate"] = round(succeeded / max(total, 1), 2)
 
-        # 更新 token 平均值
         prev_avg = agent.get("avg_tokens_used", 0)
         prev_count = max(total - 1, 0)
         new_tokens = task_result.get("tokens_used", 0)
@@ -311,7 +298,6 @@ def update_agent_capability(agent_id: str, task_result: dict) -> bool:
         else:
             agent["avg_tokens_used"] = new_tokens
 
-        # 记录选择历史
         history_entry = {
             "timestamp": __import__("datetime").datetime.now().isoformat(),
             "agent_id": agent_id,
@@ -359,7 +345,6 @@ def select_best_agent(task_type: str) -> str:
     except (json.JSONDecodeError, OSError):
         return "agent-coder"
 
-    # 按 success_rate 降序排列，rate=0 的排在最后
     sorted_agents = sorted(
         agents.items(),
         key=lambda item: (
@@ -373,22 +358,15 @@ def select_best_agent(task_type: str) -> str:
         rate = capability.get("success_rate", 0)
         total = capability.get("total_tasks_assigned", 0)
 
-        # 新 Agent（0 次任务）—— 仅分配简单探索任务
         if total == 0 and task_type in ("elastic", "config_update"):
             return agent_id
 
-        # 高可靠 Agent
         if rate >= 0.5:
             return agent_id
 
-        # 中等可靠 Agent
         if rate >= 0.3 and task_type in ("incremental_modification",
                                           "config_update"):
             return agent_id
 
-    # 兜底
     return "agent-coder"
 
-# ═══════════════════════════════════════════════════════════════════════
-# Layer 3 验收标准化 — run_layer3_verification 函数
-# ═══════════════════════════════════════════════════════════════════════

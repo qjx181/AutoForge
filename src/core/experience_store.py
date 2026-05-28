@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """experience_store.py — 经验积累闭环
 
 设计动机（面试话术）：
@@ -30,38 +29,11 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# ── 路径 ──────────────────────────────────────────────────────────────
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 EXPERIENCE_FILE = SWARM_DIR / "data" / "experience_store.json"
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 数据结构
-# ═══════════════════════════════════════════════════════════════════════
 
-# 一条经验记录的结构：
-# {
-#   "id": "a1b2c3",
-#   "issue_type": "swallowed_exception",
-#   "file_pattern": "*.py",           # 问题出现的文件模式
-#   "fixer": "swallowed_exception_fixer",
-#   "action": "空except → logging.exception()",
-#   "confidence": 0.85,
-#   "success": true,
-#   "context": {                      # 修复时的上下文
-#     "file": "src/api/handler.py",
-#     "line": 42,
-#     "code_snippet": "except: pass",
-#     "project": "项目二",
-#   },
-#   "outcome": {                      # 修复后的效果
-#     "syntax_ok": true,
-#     "tests_passed": null,           # null = 未验证
-#     "reverted": false,
-#   },
-#   "at": "2026-05-27T10:30:00",
-#   "pattern_key": "swallowed_exception:empty_except",  # 模式指纹
-# }
 
 
 def _load() -> dict:
@@ -94,9 +66,6 @@ def _generate_id(issue_type: str, file: str, action: str) -> str:
     return hashlib.md5(key.encode()).hexdigest()[:10]
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 核心操作
-# ═══════════════════════════════════════════════════════════════════════
 
 def record_experience(
     issue_type: str,
@@ -138,7 +107,6 @@ def record_experience(
     """
     data = _load()
 
-    # 提取模式键（用于聚合同类经验）
     pattern_key = _extract_pattern_key(issue_type, code_snippet)
 
     exp_id = _generate_id(issue_type, file, action)
@@ -168,16 +136,12 @@ def record_experience(
 
     data["experiences"].append(experience)
 
-    # 更新模式统计
     _update_pattern_stats(data, pattern_key, success, confidence)
 
-    # 校准置信度
     _recalibrate_confidence(data, issue_type, fixer)
 
-    # 检查是否应建议创建 skill
     _check_skill_suggestion(data, pattern_key, issue_type)
 
-    # 清理旧记录（保留最近 1000 条）
     if len(data["experiences"]) > 1000:
         data["experiences"] = data["experiences"][-1000:]
 
@@ -191,11 +155,9 @@ def _extract_pattern_key(issue_type: str, code_snippet: str) -> str:
     相同类型 + 相似代码结构 = 同一个模式。
     这样后续可以聚合"这类问题用这种修复成功率最高"。
     """
-    # 简化：用 issue_type + 代码的关键结构特征
     if not code_snippet:
         return issue_type
 
-    # 提取代码的结构特征（忽略具体变量名）
     import re
     normalized = re.sub(r'\b\w+\b', 'W', code_snippet.strip())[:50]
     normalized = re.sub(r'\s+', ' ', normalized)
@@ -207,7 +169,6 @@ def _extract_file_pattern(file: str) -> str:
     from pathlib import PurePosixPath
     p = PurePosixPath(file)
     suffix = p.suffix or "*"
-    # 取最后两级目录
     parts = p.parts[-3:] if len(p.parts) >= 3 else p.parts
     return "/".join(parts[:-1]) + f"/*{suffix}" if len(parts) > 1 else f"*{suffix}"
 
@@ -230,7 +191,6 @@ def _update_pattern_stats(data: dict, pattern_key: str, success: bool, confidenc
         p["successes"] += 1
     else:
         p["failures"] += 1
-    # 滚动平均置信度
     p["avg_confidence"] = (
         (p["avg_confidence"] * (p["total"] - 1) + confidence) / p["total"]
     )
@@ -247,7 +207,6 @@ def _recalibrate_confidence(data: dict, issue_type: str, fixer: str) -> None:
       calibrated = original * (success_rate ^ 0.5)
       用平方根是为了不让低成功率过度惩罚（保留探索空间）
     """
-    # 收集此 fixer + issue_type 的所有经验
     relevant = [
         e for e in data["experiences"]
         if e["issue_type"] == issue_type and e["fixer"] == fixer
@@ -258,10 +217,8 @@ def _recalibrate_confidence(data: dict, issue_type: str, fixer: str) -> None:
     successes = sum(1 for e in relevant if e["success"])
     success_rate = successes / len(relevant)
 
-    # 原始置信度取最近一次
     original_conf = relevant[-1]["confidence"]
 
-    # 校准后的置信度
     calibrated = original_conf * (success_rate ** 0.5)
     calibrated = round(max(0.1, min(0.99, calibrated)), 3)
 
@@ -284,10 +241,8 @@ def _check_skill_suggestion(data: dict, pattern_key: str, issue_type: str) -> No
     if pattern.get("successes", 0) < 3:
         return
 
-    # 检查是否已建议过
     existing = [s for s in data["skill_suggestions"] if s["pattern_key"] == pattern_key]
     if existing:
-        # 更新计数
         existing[0]["success_count"] = pattern["successes"]
         existing[0]["last_updated"] = datetime.now().isoformat()
         return
@@ -308,9 +263,6 @@ def _check_skill_suggestion(data: dict, pattern_key: str, issue_type: str) -> No
     })
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 查询接口
-# ═══════════════════════════════════════════════════════════════════════
 
 def get_calibrated_confidence(issue_type: str, fixer: str, original: float) -> float:
     """获取校准后的置信度。
@@ -357,21 +309,17 @@ def get_relevant_experiences(issue_type: str, file: str = "", limit: int = 5) ->
     """
     data = _load()
 
-    # 按 issue_type 过滤
     relevant = [e for e in data["experiences"] if e["issue_type"] == issue_type]
     if not relevant:
         return []
 
-    # 按文件相似度加分
     def _relevance(exp: dict) -> float:
         score = 1.0 if exp["success"] else 0.5  # 成功经验权重更高
         if file and exp.get("context", {}).get("file", ""):
-            # 同目录加分
             exp_dir = str(Path(exp["context"]["file"]).parent)
             cur_dir = str(Path(file).parent)
             if exp_dir == cur_dir:
                 score += 0.5
-            # 同后缀加分
             if Path(exp["context"]["file"]).suffix == Path(file).suffix:
                 score += 0.3
         return score
@@ -394,7 +342,6 @@ def get_failure_warnings(issue_type: str) -> list[str]:
     if not failures:
         return []
 
-    # 去重，按错误信息聚合
     seen = set()
     warnings = []
     for e in failures:
@@ -414,7 +361,6 @@ def get_pattern_stats() -> dict:
     data = _load()
     patterns = data.get("patterns", {})
 
-    # 按成功率排序
     sorted_patterns = sorted(
         patterns.items(),
         key=lambda x: x[1].get("successes", 0) / max(x[1].get("total", 1), 1),

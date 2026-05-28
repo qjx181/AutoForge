@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """swarm_metrics.py — Swarm 自我进化循环的指标收集模块
 
 提供 Swarm 自我进化循环的完整指标收集能力，包含五个核心组件：
@@ -32,10 +31,8 @@ from typing import Any, Dict, List, Optional, Union
 from src.infra.swarm_utils import read_file_safe, write_file_safe, log_step
 from src.infra.swarm_logger import SwarmLogger
 
-# ── 默认日志记录器 ──────────────────────────────────────────────────
 _log = SwarmLogger(name="swarm_metrics", level="INFO", json_mode=False)
 
-# ── 严重级别排序权重 ────────────────────────────────────────────────
 SEVERITY_ORDER: List[str] = ["critical", "error", "warning", "info", "debug"]
 SEVERITY_WEIGHT: Dict[str, int] = {
     "critical": 50,
@@ -46,9 +43,6 @@ SEVERITY_WEIGHT: Dict[str, int] = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════
-# RoundTimer
-# ═══════════════════════════════════════════════════════════════════
 
 class MetricsReporter:
     """MetricsReporter — 指标报告生成器。
@@ -56,7 +50,6 @@ class MetricsReporter:
     将 SwarmMetrics 的数据转换为可读的文本摘要或结构化 JSON 报告。
     """
 
-    # ── 文本报告子方法 ──────────────────────────────────────────
 
     @staticmethod
     def _report_header(data: Dict[str, Any], lines: List[str]) -> None:
@@ -145,7 +138,6 @@ class MetricsReporter:
         lines.append(f"  加权得分: {issue_summary.get('weighted_score', 0)}")
         lines.append("")
 
-        # 按严重级别
         by_severity = issue_freq.get("by_severity", {})
         if any(v > 0 for v in by_severity.values()):
             lines.append("  按严重级别:")
@@ -155,7 +147,6 @@ class MetricsReporter:
                     lines.append(f"    {sev:<10s}: {count}")
             lines.append("")
 
-        # 按类别
         by_category = issue_freq.get("by_category", {})
         if by_category:
             lines.append("  按类别（Top 5）:")
@@ -164,7 +155,6 @@ class MetricsReporter:
                 lines.append(f"    {cat:<20s}: {count}")
             lines.append("")
 
-        # Top 问题
         top_issues = issue_summary.get("top_issues", [])
         if top_issues:
             lines.append("  最严重的问题:")
@@ -197,7 +187,6 @@ class MetricsReporter:
         MetricsReporter._report_agents(data, lines)
         MetricsReporter._report_issues(data, lines)
 
-        # ── 尾部 ──
         lines.append(separator)
         return "\n".join(lines)
 
@@ -239,6 +228,3 @@ class MetricsReporter:
             return json.dumps({"error": str(exc)})
 
 
-# ═══════════════════════════════════════════════════════════════════
-# SwarmMetrics
-# ═══════════════════════════════════════════════════════════════════

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/deadcode_scanner.py — 维度九：死代码扫描器
 
 检测：

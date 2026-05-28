@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """dims/perf_scanner.py — 维度三：性能扫描器
 
 检测：
@@ -23,7 +22,6 @@ from ..project_analyzer import OptimizationBlueprint
 DIMENSION = "performance"
 
 
-# ── AST 分析 ───────────────────────────────────────────────────────────
 
 
 def _check_n_plus_one(code: str, filepath: str) -> list[dict]:
@@ -40,7 +38,6 @@ def _check_n_plus_one(code: str, filepath: str) -> list[dict]:
         if not isinstance(node, (ast.For, ast.While, ast.AsyncFor)):
             continue
 
-        # 找循环体内的数据库调用
         db_calls = []
         for child in ast.walk(node):
             if isinstance(child, ast.Call):
@@ -86,7 +83,6 @@ def _check_memory_leak(code: str, filepath: str) -> list[dict]:
                         if any(m in target.id.lower() for m in ("cache", "buffer", "store", "log", "queue", "stack")):
                             global_containers.append(target.id)
 
-    # 检查是否有清理逻辑
     has_clear = ".clear()" in code or "del " in code
     if global_containers and not has_clear:
         issues.append({
@@ -109,7 +105,6 @@ def _check_missing_cache(code: str, filepath: str) -> list[dict]:
     except SyntaxError:
         return issues
 
-    # 找被装饰的函数
     decorated = set()
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -122,7 +117,6 @@ def _check_missing_cache(code: str, filepath: str) -> list[dict]:
                 if "lru_cache" in dec_name or "cache" in dec_name:
                     decorated.add(node.name)
 
-    # 找循环内调用（无缓存的重复计算）
     for node in ast.walk(tree):
         if not isinstance(node, (ast.For, ast.While)):
             continue
@@ -157,7 +151,6 @@ def _check_string_concat_in_loop(code: str, filepath: str) -> list[dict]:
         if not isinstance(node, (ast.For, ast.While)):
             continue
 
-        # 循环体内有 += 操作
         for child in ast.walk(node):
             if isinstance(child, ast.AugAssign) and isinstance(child.op, ast.Add):
                 if isinstance(child.target, ast.Str) or (isinstance(child.target, ast.Name)):

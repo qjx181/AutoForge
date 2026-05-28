@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """optimizer_core.py — 持续优化引擎核心编排器
 
 作用：
@@ -27,11 +26,9 @@ import sys
 from datetime import datetime
 from typing import Optional
 
-# ── 延迟导入避免循环依赖 ──────────────────────────────────────────────
 PROJECT_ANALYZER = None
 DIMS = None
 
-# ── 维度名称映射（中英双语，供外部导入）────────────────────────────────
 DIMENSION_NAMES = {
     "security": "安全",
     "performance": "性能",
@@ -54,9 +51,6 @@ def _lazy_imports():
         DIMS = _d
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 维度 → 扫描函数映射
-# ═══════════════════════════════════════════════════════════════════════
 
 DIMENSION_SCANNERS = {
     "security": "scan_security",
@@ -70,7 +64,6 @@ DIMENSION_SCANNERS = {
     "deadcode": "scan_deadcode",
 }
 
-# 维度权重（影响整体评分）
 DIMENSION_WEIGHTS = {
     "security": 2.0,        # 安全权重最高
     "performance": 1.5,
@@ -84,9 +77,6 @@ DIMENSION_WEIGHTS = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 核心函数
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def run_single_dimension(
@@ -181,17 +171,14 @@ def run_full_pipeline(
     t0 = time.perf_counter()
     timestamp = datetime.now().isoformat()
 
-    # 1. 项目结构分析（一次，全维度共享）
     blueprint = PROJECT_ANALYZER.analyze_project(project_path)
 
-    # 2. 确定要扫描的维度
     if dimensions is None:
         dimensions = [
             dim for dim, enabled in blueprint.enabled_dimensions.items()
             if enabled and dim in DIMENSION_SCANNERS
         ]
 
-    # 3. 按顺序执行所有维度扫描（Windows 单线程）
     dimension_results = {}
     for dim in DIMS.DIMENSION_ORDER:
         if dim not in dimensions:
@@ -199,7 +186,6 @@ def run_full_pipeline(
         result = run_single_dimension(project_path, dim, blueprint)
         dimension_results[dim] = result
 
-    # 4. 计算加权整体评分
     total_weight = 0.0
     weighted_score = 0.0
     for dim, result in dimension_results.items():
@@ -216,7 +202,6 @@ def run_full_pipeline(
     )
     total_time_ms = (time.perf_counter() - t0) * 1000
 
-    # 5. 生成摘要
     summary_lines = [
         f"=== 持续优化引擎 · {blueprint.project_name} ===",
         f"语言: {blueprint.language.primary} | 框架: {', '.join(blueprint.language.frameworks) or '无'}",
@@ -253,9 +238,6 @@ def run_full_pipeline(
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 兼容入口（供 self_evolve_round.py 原有调用）
-# ═══════════════════════════════════════════════════════════════════════
 
 def optimize_project(project_path: str) -> dict:
     """run_full_pipeline 的别名（向后兼容原有 bug_report.py 等调用）。"""
@@ -268,9 +250,6 @@ def get_project_report(project_path: str) -> str:
     return result.get("summary", "")
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# CLI 入口
-# ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     import argparse, json
@@ -286,7 +265,6 @@ if __name__ == "__main__":
     result = run_full_pipeline(args.project, dimensions=args.dimension)
 
     if args.json:
-        # 序列化时去掉不可 JSON 序列化的 blueprint
         output = {k: v for k, v in result.items() if k != "blueprint"}
         print(json.dumps(output, ensure_ascii=False, indent=2))
     else:

@@ -24,7 +24,6 @@ from .config_scanner import scan as scan_configuration
 from .async_scanner import scan as scan_asyncification
 from .deadcode_scanner import scan as scan_deadcode
 
-# 维度注册表（顺序固定，用于报告输出）
 DIMENSION_ORDER = [
     "security",
     "performance",
@@ -37,7 +36,6 @@ DIMENSION_ORDER = [
     "deadcode",
 ]
 
-# 维度名称映射（中英双语）
 DIMENSION_NAMES = {
     "security": "安全",
     "performance": "性能",

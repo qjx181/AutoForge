@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """incremental_scanner.py — 增量扫描：只扫描变更文件
 
 核心思想（面试话术）：
@@ -27,7 +26,6 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# 扫描状态文件路径
 SCAN_STATE_DIR = Path(__file__).parent.parent.parent.resolve() / "data"
 
 
@@ -56,9 +54,6 @@ def _save_state(project_root: Path, state: dict) -> None:
     sf.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 增量扫描器
-# ═══════════════════════════════════════════════════════════════════════
 
 class IncrementalScanner:
     """增量扫描器：检测变更文件，只扫描变更部分。
@@ -83,14 +78,12 @@ class IncrementalScanner:
         """
         extensions = extensions or {'.py'}
 
-        # 策略1: Git diff
         git_changes = self._git_changed_files()
         if git_changes is not None:
             result = [self._root / f for f in git_changes if Path(f).suffix in extensions]
             logger.info("Incremental (git): %d changed files", len(result))
             return result
 
-        # 策略2: Mtime 比较
         mtime_changes = self._mtime_changed_files(extensions)
         logger.info("Incremental (mtime): %d changed files", len(mtime_changes))
         return mtime_changes
@@ -102,20 +95,17 @@ class IncrementalScanner:
             变更文件的相对路径列表，如果不是 git 仓库则返回 None。
         """
         try:
-            # 检测是否是 git 仓库
             subprocess.run(
                 ["git", "rev-parse", "--git-dir"],
                 capture_output=True, cwd=str(self._root), timeout=5,
             )
 
-            # 获取未暂存 + 已暂存 + 未跟踪的文件
             result = subprocess.run(
                 ["git", "diff", "--name-only", "HEAD"],
                 capture_output=True, text=True, cwd=str(self._root), timeout=10,
             )
             changed = [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
 
-            # 加上未跟踪的文件
             result_untracked = subprocess.run(
                 ["git", "ls-files", "--others", "--exclude-standard"],
                 capture_output=True, text=True, cwd=str(self._root), timeout=10,
@@ -133,7 +123,6 @@ class IncrementalScanner:
         old_mtimes = state.get("file_mtimes", {})
 
         if not last_scan:
-            # 首次扫描，返回所有文件
             return self._all_files(extensions)
 
         changed = []
@@ -150,7 +139,6 @@ class IncrementalScanner:
             if rel not in old_mtimes or old_mtimes[rel] != mtime:
                 changed.append(f)
 
-        # 更新状态
         state["file_mtimes"] = new_mtimes
         state["last_scan_at"] = datetime.now().isoformat()
         _save_state(self._root, state)
@@ -162,7 +150,6 @@ class IncrementalScanner:
         result = []
         for ext in extensions:
             result.extend(self._root.rglob(f"*{ext}"))
-        # 排除常见的非源码目录
         excluded = {"__pycache__", ".git", "node_modules", ".venv", "venv", ".tox"}
         return [
             f for f in result
@@ -174,7 +161,6 @@ class IncrementalScanner:
         state = _load_state(self._root)
         state["last_scan_at"] = datetime.now().isoformat()
 
-        # 更新所有文件的 mtime
         mtimes = {}
         for f in self._all_files({'.py'}):
             rel = str(f.relative_to(self._root))
@@ -207,7 +193,6 @@ class IncrementalScanner:
         all_issues: list[Issue] = []
         for scanner in scanner_registry.all():
             try:
-                # 全量扫描后过滤（部分扫描器不支持单文件扫描）
                 issues = scanner.scan(self._root)
                 changed_str = {str(f) for f in changed}
                 filtered = [i for i in issues if i.file in changed_str]
@@ -217,7 +202,6 @@ class IncrementalScanner:
             except Exception as e:
                 logger.error("Incremental scanner %s failed: %s", scanner.name, e)
 
-        # 标记扫描完成
         self.mark_scan_complete()
         logger.info("Incremental scan: %d issues from %d changed files", len(all_issues), len(changed))
         return all_issues

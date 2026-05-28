@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """adapters.py — Scanner/Fixer 标准化接口
 
 设计动机（面试话术）：
@@ -36,9 +35,6 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 标准化数据结构
-# ═══════════════════════════════════════════════════════════════════════
 
 
 class Issue:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """deep_enterprise_scanner.py — 企业级深度扫描器
 
 在 9 维表面扫描之上，增加更深层的代码质量审计。
@@ -33,9 +32,6 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
-# ═══════════════════════════════════════════════════════════════════════
-# 1. 圈复杂度分析
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _calc_cyclomatic_complexity(node: ast.AST) -> int:
@@ -80,9 +76,6 @@ def _check_complexity(tree: ast.AST, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 2. 异常处理审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_exception_handling(tree: ast.AST, filepath: str) -> list[dict]:
@@ -90,7 +83,6 @@ def _check_exception_handling(tree: ast.AST, filepath: str) -> list[dict]:
     issues = []
     for node in ast.walk(tree):
         if isinstance(node, ast.ExceptHandler):
-            # 空 except
             if node.type is None:
                 issues.append({
                     "type": "bare_except",
@@ -100,10 +92,8 @@ def _check_exception_handling(tree: ast.AST, filepath: str) -> list[dict]:
                     "description": "裸 except（不指定异常类型）会捕获 SystemExit 和 KeyboardInterrupt",
                     "suggestion": "改为 except SpecificException:",
                 })
-            # except Exception as e: pass
             elif node.name and isinstance(node.body[-1], ast.Pass) if node.body else False:
                 pass  # 这个是 pass，单独检查
-            # 空体 except
             if not node.body or (len(node.body) == 1 and isinstance(node.body[0], ast.Pass)):
                 if node.type and isinstance(node.type, ast.Name):
                     issues.append({
@@ -114,7 +104,6 @@ def _check_exception_handling(tree: ast.AST, filepath: str) -> list[dict]:
                         "description": f"异常 {node.type.id} 被吞没（空的 except 块）",
                         "suggestion": "至少记录日志：logging.exception()",
                     })
-        # try 过于宽泛
         if isinstance(node, ast.Try):
             handler_names = []
             for h in node.handlers:
@@ -132,9 +121,6 @@ def _check_exception_handling(tree: ast.AST, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 3. 类型安全审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_type_safety(tree: ast.AST, filepath: str) -> list[dict]:
@@ -142,9 +128,7 @@ def _check_type_safety(tree: ast.AST, filepath: str) -> list[dict]:
     issues = []
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            # 检查返回类型
             if not node.returns:
-                # 不检查 __init__, __str__, 属性方法 和 私有方法
                 if not node.name.startswith('__') and not node.name.startswith('_'):
                     issues.append({
                         "type": "missing_return_type",
@@ -154,7 +138,6 @@ def _check_type_safety(tree: ast.AST, filepath: str) -> list[dict]:
                         "description": f"函数 {node.name} 缺少返回类型注解",
                         "suggestion": "添加 -> ReturnType 类型注解",
                     })
-            # 检查参数类型
             for arg in node.args.args:
                 if arg.arg == 'self' or arg.arg == 'cls':
                     continue
@@ -170,9 +153,6 @@ def _check_type_safety(tree: ast.AST, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 4. 资源管理审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_resource_management(code: str, filepath: str) -> list[dict]:
@@ -199,9 +179,6 @@ def _check_resource_management(code: str, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 5. 日志规范审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_logging(code: str, filepath: str) -> list[dict]:
@@ -210,9 +187,7 @@ def _check_logging(code: str, filepath: str) -> list[dict]:
     has_logging = 'import logging' in code or 'from logging' in code
     for i, line in enumerate(code.split('\n'), 1):
         stripped = line.strip()
-        # print() 在生产代码中应避免
         if re.match(r'^print\s*\(', stripped) and not stripped.startswith('#'):
-            # 排除 CLI 工具和测试文件
             if 'test_' not in filepath and 'cli' not in filepath:
                 issues.append({
                     "type": "print_used",
@@ -225,9 +200,6 @@ def _check_logging(code: str, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 6. 异步健壮性审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_async_robustness(tree: ast.AST, code: str, filepath: str) -> list[dict]:
@@ -240,7 +212,6 @@ def _check_async_robustness(tree: ast.AST, code: str, filepath: str) -> list[dic
             func_lines = set(range(node.lineno, node.end_lineno + 1)) if node.end_lineno else set()
             func_code = '\n'.join(lines[node.lineno - 1:node.end_lineno])
 
-            # time.sleep() 在 async 函数中
             if 'time.sleep(' in func_code:
                 issues.append({
                     "type": "sync_sleep_in_async",
@@ -251,7 +222,6 @@ def _check_async_robustness(tree: ast.AST, code: str, filepath: str) -> list[dic
                     "suggestion": "使用 await asyncio.sleep() 替代",
                 })
 
-            # requests.get() 在 async 函数中
             if re.search(r'(?<!async )requests\.(get|post|put|delete)\s*\(', func_code):
                 issues.append({
                     "type": "sync_http_in_async",
@@ -262,7 +232,6 @@ def _check_async_robustness(tree: ast.AST, code: str, filepath: str) -> list[dic
                     "suggestion": "使用 httpx.AsyncClient 替代",
                 })
 
-            # 缺少 await 的 async 调用
             for child in ast.walk(node):
                 if isinstance(child, ast.Call):
                     func_name = ""
@@ -270,10 +239,8 @@ def _check_async_robustness(tree: ast.AST, code: str, filepath: str) -> list[dic
                         func_name = child.func.attr
                     elif isinstance(child.func, ast.Name):
                         func_name = child.func.id
-                    # 简单启发式：调用名为 async_xxx 或带 async 参数的不算
                     pass
 
-    # 全局检查：是否配置了超时
     if 'timeout' not in code.lower() and 'TIMEOUT' not in code:
         issues.append({
             "type": "missing_timeout_config",
@@ -287,15 +254,11 @@ def _check_async_robustness(tree: ast.AST, code: str, filepath: str) -> list[dic
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 7. API 设计审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_api_design(code: str, filepath: str) -> list[dict]:
     """检查 API 响应的一致性。"""
     issues = []
-    # 检查是否有 HTTPException 但没有统一的错误处理
     has_httpexception = 'HTTPException' in code
     has_error_handler = any(x in code for x in [
         'exception_handlers', 'add_exception_handler',
@@ -315,9 +278,6 @@ def _check_api_design(code: str, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 8. 安全纵深审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_security_deep(code: str, filepath: str) -> list[dict]:
@@ -329,7 +289,6 @@ def _check_security_deep(code: str, filepath: str) -> list[dict]:
         if stripped.startswith('#') or stripped.startswith('"""'):
             continue
 
-        # os.system / subprocess shell=True
         if re.search(r'os\.system\s*\(', stripped):
             issues.append({
                 "type": "command_injection_risk",
@@ -340,7 +299,6 @@ def _check_security_deep(code: str, filepath: str) -> list[dict]:
                 "suggestion": "使用 subprocess.run() 并传递参数列表而非字符串",
             })
 
-        # eval / exec
         if re.search(r'\beval\s*\(', stripped) or re.search(r'\bexec\s*\(', stripped):
             issues.append({
                 "type": "dangerous_eval",
@@ -351,7 +309,6 @@ def _check_security_deep(code: str, filepath: str) -> list[dict]:
                 "suggestion": "避免使用 eval/exec，使用 ast.literal_eval() 解析安全表达式",
             })
 
-        # 硬编码密钥模式
         if re.search(r'(api_key|secret|password|token|apikey)\s*[=:]\s*[\"\'](?![\"\'])', stripped, re.I):
             if 'os.environ' not in stripped and 'env.' not in stripped and 'getenv' not in stripped:
                 issues.append({
@@ -366,9 +323,6 @@ def _check_security_deep(code: str, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 9. 测试质量审计
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _check_test_quality(tree: ast.AST, filepath: str) -> list[dict]:
@@ -386,7 +340,6 @@ def _check_test_quality(tree: ast.AST, filepath: str) -> list[dict]:
         if isinstance(node, ast.FunctionDef):
             if node.name.startswith('test_'):
                 test_funcs += 1
-                # 计算该测试函数的 assert 数
                 for child in ast.walk(node):
                     if isinstance(child, ast.Assert):
                         asserts += 1
@@ -422,9 +375,6 @@ def _check_test_quality(tree: ast.AST, filepath: str) -> list[dict]:
     return issues
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 主入口
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def scan_deep(project_root: str) -> dict:
@@ -450,7 +400,6 @@ def scan_deep(project_root: str) -> dict:
     all_issues = []
     files_scanned = 0
 
-    # 扫描所有 Python 文件（排除 site-packages、venv、node_modules + 自身分析目录）
     for py_file in sorted(root.rglob("*.py")):
         rel = py_file.relative_to(root)
         if any(p in str(rel) for p in ['.hermes', '__pycache__', 'venv', 'node_modules',
@@ -467,34 +416,24 @@ def scan_deep(project_root: str) -> dict:
         str_path = str(rel)
         files_scanned += 1
 
-        # 1. 圈复杂度
         all_issues.extend(_check_complexity(tree, str_path))
 
-        # 2. 异常处理
         all_issues.extend(_check_exception_handling(tree, str_path))
 
-        # 3. 类型安全
         all_issues.extend(_check_type_safety(tree, str_path))
 
-        # 4. 资源管理
         all_issues.extend(_check_resource_management(code, str_path))
 
-        # 5. 日志规范
         all_issues.extend(_check_logging(code, str_path))
 
-        # 6. 异步健壮性
         all_issues.extend(_check_async_robustness(tree, code, str_path))
 
-        # 7. API 设计
         all_issues.extend(_check_api_design(code, str_path))
 
-        # 8. 安全纵深
         all_issues.extend(_check_security_deep(code, str_path))
 
-        # 9. 测试质量
         all_issues.extend(_check_test_quality(tree, str_path))
 
-    # 计算评分
     severity_weights = {"critical": 10, "high": 5, "medium": 2, "low": 1}
     severity_caps = {"critical": 3, "high": 6, "medium": 10, "low": 10}
     total_penalty = 0
@@ -535,9 +474,6 @@ def scan_deep(project_root: str) -> dict:
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# CLI 入口
-# ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     import json, sys
@@ -548,7 +484,6 @@ if __name__ == "__main__":
     print(f"严重程度: critical={result['by_severity'].get('critical',0)} high={result['by_severity'].get('high',0)} medium={result['by_severity'].get('medium',0)}")
     print(f"文件覆盖: {result['files_scanned']}")
     print()
-    # 按严重程度排列
     sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     for i in sorted(result['issues'], key=lambda x: sev_order.get(x.get('severity','low'), 99)):
         print(f"  [{i['severity']:8s}] {i['type']:30s} {i['file']}:{i['line']}")

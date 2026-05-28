@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def main():
     """主入口 — 完整流程，调用各个子函数。"""
@@ -66,25 +60,21 @@ def main():
         if cost_warning:
             relog("⏸️", "成本超限，跳过 LLM 密集型操作")
 
-        # 项目同步
         if PROJECT1_DIR is not None:
             _sync_project(PROJECT1_DIR, "项目一", timestamp)
         else:
             relog("ℹ️", "项目一目录未配置（PROJECT1_DIR=None），跳过同步")
         _sync_project(SWARM_DIR, "项目三", timestamp)
 
-        # 优化引擎
         targets, is_dry_run, cost_tier = _collect_optimization_targets(cost_warning)
         cfg = _get_config()
         opt_dims = cfg.get("optimization_dimensions", None)
         _run_optimization_engine(targets, timestamp, opt_dims if opt_dims else OPT_DIMENSIONS, is_dry_run)
 
-        # 深层修复任务 + 失败分析 + 日志扫描
         _run_deep_scan_and_tasks(targets, cost_tier, timestamp)
         _run_failure_analysis(timestamp)
         _run_log_scan()
 
-        # 委托诊断 + 心跳 + 并行规划
         run_delegation_diagnosis()
         check_forced_delegation()
         check_and_heal_heartbeats()
@@ -100,7 +90,6 @@ def main():
         except Exception as e:
             relog("⚠️", "微委托规划失败: %s", e)
 
-        # 成本 + 状态
         _update_state_and_cost(state, timestamp)
 
         relog("")

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """cost_tracker_db.py — SQLite 持久化成本跟踪
 
 职责：
@@ -21,13 +20,10 @@ import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# src/infra/ → 向上三级: infra → src → 项目根
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 DB_PATH = SWARM_DIR / "data" / "cost_tracker.db"
 LOG_FILE = SWARM_DIR / "logs" / "cost_tracker.log"
 
-# ─── 表结构 ────────────────────────────────────────────────────────────
 CREATE_SQL = """
 CREATE TABLE IF NOT EXISTS cost_records (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,

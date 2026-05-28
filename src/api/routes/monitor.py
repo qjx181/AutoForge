@@ -32,7 +32,6 @@ async def get_metrics():
 
     budget = state.get("daily_budget", {})
     rounds_history = state.get("completed_task_ids", [])
-    # 从 self_evolve_log.json 读取轮次
     evo_log = _read_json(PROJECT_DIR / "self_evolve_log.json")
     rounds = evo_log.get("rounds", []) if isinstance(evo_log, dict) else []
 
@@ -71,7 +70,6 @@ async def get_status():
         import logging
         logging.warning("Git status 检查失败")
 
-    # 检查 Docker/Podman
     docker_available = False
     try:
         subprocess.run(
@@ -115,7 +113,6 @@ async def get_logs(lines: int = 50):
 
 
 
-# ── Bug 相关路由 ────────────────────────────────────────────────────────
 
 BUGS_DIR = PROJECT_DIR / "bugs"
 BUGS_DIR.mkdir(exist_ok=True)

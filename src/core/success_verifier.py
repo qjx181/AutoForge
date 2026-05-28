@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """success_verifier.py — 修复后自动验证（借鉴 SWE-agent/Looper 的 patch-then-verify 模式）
 
 核心思想（面试话术）：
@@ -30,9 +29,6 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 验证结果
-# ═══════════════════════════════════════════════════════════════════════
 
 @dataclass
 class VerifyResult:
@@ -56,9 +52,6 @@ class VerifyChainResult:
         return f"验证 {passed}/{len(self.results)} 通过, 置信度修正 {self.total_delta:+.2f}"
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 验证器抽象接口
-# ═══════════════════════════════════════════════════════════════════════
 
 class BaseVerifier(ABC):
     """验证器基类。"""
@@ -74,9 +67,6 @@ class BaseVerifier(ABC):
         """验证修复是否真正解决了问题。"""
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 具体验证器
-# ═══════════════════════════════════════════════════════════════════════
 
 class SyntaxVerifier(BaseVerifier):
     """验证修改后的文件能否通过 Python 语法检查。
@@ -132,12 +122,10 @@ class ReScanVerifier(BaseVerifier):
                 detail="无扫描器注册表，跳过重扫验证", confidence_delta=0,
             )
 
-        # 找到能扫描此 issue_type 的扫描器
         from .adapters import Issue
         for scanner in self._registry.all():
             try:
                 issues = scanner.scan(project_root)
-                # 检查同一文件同一类型的问题是否还存在
                 remaining = [
                     i for i in issues
                     if i.type == issue_type and i.file == str(file_path)
@@ -171,7 +159,6 @@ class ImportVerifier(BaseVerifier):
 
     def verify(self, issue_type: str, file_path: Path,
                fix_action: str, project_root: Path) -> VerifyResult:
-        # 只对涉及 import 的修复做此验证
         import_keywords = ["import", "module", "dependency", "missing"]
         if not any(kw in issue_type.lower() or kw in fix_action.lower()
                    for kw in import_keywords):
@@ -203,9 +190,6 @@ class ImportVerifier(BaseVerifier):
             )
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 验证链
-# ═══════════════════════════════════════════════════════════════════════
 
 class VerifierChain:
     """按顺序执行多个验证器，汇总结果。
@@ -238,7 +222,6 @@ class VerifierChain:
 
             if not vr.passed:
                 chain_result.passed = False
-                # 语法失败必须回滚
                 if verifier.name == "syntax":
                     chain_result.should_rollback = True
                     logger.warning("Syntax verification failed, rollback recommended")

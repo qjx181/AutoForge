@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """bug_analysis_engine.py — Bug 分析引擎
 
 从 Python Traceback、Java Stack Trace、CI/CD 日志中提取错误信息并分析根因。
@@ -21,7 +20,6 @@ import datetime
 from pathlib import Path
 
 
-# ── 持久化 ──────────────────────────────────────────────────────────────
 
 BUGS_DIR = Path(__file__).parent / "bugs"
 BUGS_DIR.mkdir(exist_ok=True)
@@ -51,7 +49,6 @@ def fix_suggestion(error_type: str) -> str:
     return FIX_SUGGESTIONS.get(error_type, "请人工审查此错误。自动分析未覆盖该类型。")
 
 
-# ── 自动修复 ────────────────────────────────────────────────────────────
 
 
 def execute_bug_fix(bug: dict, project_path: str) -> dict:
@@ -105,16 +102,12 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
             "details": "分析结果中无文件路径，无法定位修复位置",
         }
 
-    # 拼接完整文件路径
-    # bug["file"] 可能是绝对路径或相对路径
     if _Path(error_file).is_absolute():
         target_file = _Path(error_file)
     else:
-        # 假设是相对于 project_path 的路径
         target_file = project / error_file
 
     if not target_file.exists():
-        # 尝试在 project_path 下递归搜索同名文件
         matches = list(project.rglob(_Path(error_file).name))
         if matches:
             target_file = matches[0]
@@ -127,7 +120,6 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
                 "details": f"目标文件不存在: {error_file}，已尝试在 {project_path} 下搜索但未找到",
             }
 
-    # 读取文件
     try:
         with open(target_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -140,7 +132,6 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
             "details": f"读取文件失败: {e}",
         }
 
-    # 检查行号是否有效
     if error_line <= 0 or error_line > len(lines):
         return {
             "success": False,
@@ -150,7 +141,6 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
             "details": f"行号无效: {error_line}（文件共 {len(lines)} 行）",
         }
 
-    # 生成修复代码
     patch_lines = _generate_fix(error_type, message, lines, error_line - 1)
     if not patch_lines:
         return {
@@ -161,7 +151,6 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
             "details": f"无法为 {error_type} 自动生成修复代码，请人工处理",
         }
 
-    # 应用 patch
     new_lines = lines[:error_line - 1] + patch_lines + lines[error_line:]
     backup_file = target_file.with_suffix(target_file.suffix + ".bak")
     shutil.copy(target_file, backup_file)
@@ -171,7 +160,6 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
             f.writelines(new_lines)
         patch_applied = True
     except Exception as e:
-        # 恢复备份
         shutil.copy(backup_file, target_file)
         return {
             "success": False,
@@ -181,7 +169,6 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
             "details": f"写入文件失败，已恢复备份: {e}",
         }
 
-    # 验证语法
     verification = ""
     try:
         compile_result = subprocess.run(
@@ -196,14 +183,12 @@ def execute_bug_fix(bug: dict, project_path: str) -> dict:
         else:
             verification = f"❌ 语法错误: {compile_result.stderr[:200]}"
             success = False
-            # 恢复备份
             shutil.copy(backup_file, target_file)
             patch_applied = False
     except Exception as e:
         verification = f"⚠️ 验证过程出错: {e}"
         success = False
 
-    # 删除备份文件
     try:
         backup_file.unlink()
     except Exception:
@@ -235,8 +220,6 @@ def _generate_fix(error_type: str, message: str, lines: list, line_idx: int) -> 
     orig_line = lines[line_idx].rstrip("\r\n")
 
     if error_type == "ValueError":
-        # 为类型转换添加 try/except
-        # 查找是否包含 int() / float() / json.loads() 等
         if "int(" in orig_line or "float(" in orig_line:
             indent = len(orig_line) - len(orig_line.lstrip())
             spaces = " " * indent
@@ -247,11 +230,9 @@ def _generate_fix(error_type: str, message: str, lines: list, line_idx: int) -> 
                 f"{spaces}    # TODO: 处理转换失败 {message}\n",
                 f"{spaces}    raise\n",
             ]
-        # 其他 ValueError 加上注释说明
         return [f"# [FIXED] {orig_line}  -- 修复原因: {error_type}: {message[:50]}\n"]
 
     elif error_type == "TypeError":
-        # 检查 None 访问
         if "NoneType" in message or ".get(" not in orig_line:
             indent = len(orig_line) - len(orig_line.lstrip())
             spaces = " " * indent
@@ -262,7 +243,6 @@ def _generate_fix(error_type: str, message: str, lines: list, line_idx: int) -> 
         return [f"# [FIXED] {orig_line}  -- 修复原因: {error_type}: {message[:50]}\n"]
 
     elif error_type == "KeyError":
-        # 为字典访问添加 .get() 或 try/except
         indent = len(orig_line) - len(orig_line.lstrip())
         spaces = " " * indent
         match = __import__("re").search(r"(\w+)\[", orig_line)
@@ -275,7 +255,6 @@ def _generate_fix(error_type: str, message: str, lines: list, line_idx: int) -> 
         return [f"# [FIXED] {orig_line}  -- 修复原因: {error_type}: {message[:50]}\n"]
 
     elif error_type == "IndexError":
-        # 为列表访问添加边界检查
         indent = len(orig_line) - len(orig_line.lstrip())
         spaces = " " * indent
         return [
@@ -296,12 +275,10 @@ def _generate_fix(error_type: str, message: str, lines: list, line_idx: int) -> 
         return [f"# [FIXED] 导入错误: {message}\n"]
 
     else:
-        # 默认：添加错误标记注释
         return [f"# [FIXED] {orig_line}  -- 修复原因: {error_type}: {message[:80]}\n"]
 
 
 if __name__ == "__main__":
-    # 快速测试
     test_tb = """Traceback (most recent call last):
   File "/app/src/main.py", line 42, in process_data
     result = int(user_input)

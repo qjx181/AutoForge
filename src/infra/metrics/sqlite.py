@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """swarm_metrics.py — Swarm 自我进化循环的指标收集模块
 
 提供 Swarm 自我进化循环的完整指标收集能力，包含五个核心组件：
@@ -32,10 +31,8 @@ from typing import Any, Dict, List, Optional, Union
 from src.infra.swarm_utils import read_file_safe, write_file_safe, log_step
 from src.infra.swarm_logger import SwarmLogger
 
-# ── 默认日志记录器 ──────────────────────────────────────────────────
 _log = SwarmLogger(name="swarm_metrics", level="INFO", json_mode=False)
 
-# ── 严重级别排序权重 ────────────────────────────────────────────────
 SEVERITY_ORDER: List[str] = ["critical", "error", "warning", "info", "debug"]
 SEVERITY_WEIGHT: Dict[str, int] = {
     "critical": 50,
@@ -46,9 +43,6 @@ SEVERITY_WEIGHT: Dict[str, int] = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════
-# RoundTimer
-# ═══════════════════════════════════════════════════════════════════
 
 def record_sqlite_metric(operation: str, sqlite_path: str = "") -> None:
     """兼容包装 — 记录 SQLite 操作指标。
@@ -63,13 +57,6 @@ if __name__ == "__main__":
     main()
 
 
-# ═══════════════════════════════════════════════════════════════════
-# ContainerPoolMonitor — Docker 容器预热池自动扩缩容监控（项1）
-# ═══════════════════════════════════════════════════════════════════
-# 监控等待队列长度，当队列 > 2 且持续 > 10 秒时自动 docker run
-# 扩容一个新容器（上限 10 个）。每 5 分钟扫描一次池状态，当
-# 空闲容器 > 3 时，停止最旧的几个容器进行缩容。
-# ═══════════════════════════════════════════════════════════════════
 
 class ContainerPoolMonitor:
     """ContainerPoolMonitor — Docker 容器预热池监控器。
@@ -160,7 +147,6 @@ class ContainerPoolMonitor:
                           length=length, threshold=self.queue_scale_up_threshold)
             elif now - self.queue_start_time >= self.queue_wait_seconds:
                 self.scale_up()
-                # 扩容后重置计时器，防止触发多次
                 self.queue_start_time = now
         else:
             self.queue_start_time = None
@@ -315,7 +301,6 @@ class ContainerPoolMonitor:
         pool_info = self._count_pool_containers()
         self.pool_size = pool_info.get("total_count", 0)
 
-        # 确保不低于最小池大小
         if self.pool_size < self.min_pool_size:
             _log.info("容器池低于最小值，回补到 %d", self.min_pool_size)
             for _ in range(self.min_pool_size - self.pool_size):
@@ -355,7 +340,6 @@ class ContainerPoolMonitor:
             "idle_count": pool_info.get("idle_count", 0),
         }
 
-    # ── 内部辅助方法 ──────────────────────────────────────────────
 
     def _count_pool_containers(self) -> dict:
         """_count_pool_containers — 统计当前容器池中容器数量和空闲数量。
@@ -382,7 +366,6 @@ class ContainerPoolMonitor:
 
             names = [n.strip() for n in result.stdout.splitlines() if n.strip()]
             total = len(names)
-            # 简化版：所有容器都视为空闲（真实场景需集成 mark_in_use/mark_idle）
             return {"total_count": total, "idle_count": total}
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return {"total_count": 0, "idle_count": 0}

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """enterprise_fixer.py — 企业级自动修复器
 
 修复 deep_enterprise_scanner.py 发现的各种深层问题。
@@ -14,7 +13,6 @@ print = PrintToLogger(__name__).info
 import re
 import logging
 from pathlib import Path
-# ── 工具函数 ────────────────────────────────────────────────────────────
 
 
 def _read_file(path: Path) -> str | None:
@@ -40,9 +38,6 @@ def _check_syntax(code: str) -> bool:
         return False
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 1. 修复吞没的异常 — 空的 except 块改为 logging
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def _find_except_block_end(lines: list, line_num: int, except_indent: int) -> int:
@@ -105,23 +100,19 @@ def fix_swallowed_exception(filepath: Path, line_num: int) -> dict:
     if line_num < 1 or line_num > len(lines):
         return {"success": False, "error": f"行号 {line_num} 超出范围"}
 
-    # 分析 except 行
     except_line = lines[line_num - 1]
     except_indent = len(except_line) - len(except_line.lstrip())
     stripped = except_line.strip()
     if not stripped.startswith("except"):
         return {"success": False, "error": f"行 {line_num} 不是 except 语句: {stripped[:40]}"}
 
-    # 定位并检查块
     block_end = _find_except_block_end(lines, line_num, except_indent)
     if not _check_block_empty(lines, line_num, block_end):
         return {"success": False, "reason": "except 块已有代码，不需要修复"}
 
-    # 构建替换代码
     replacement_code = _build_replacement_code(lines, line_num, block_end, except_indent)
     new_lines = lines[:line_num - 1] + replacement_code.split("\n") + lines[block_end:]
 
-    # 确保 import logging
     new_lines, _ = _ensure_logging_import(new_lines)
     new_code = "\n".join(new_lines)
 
@@ -132,9 +123,6 @@ def fix_swallowed_exception(filepath: Path, line_num: int) -> dict:
     return {"success": True, "action": "空 except → logging.exception()"}
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 2. 修复裸 except — 改为 except Exception
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def fix_bare_except(filepath: Path, line_num: int) -> dict:
@@ -159,7 +147,6 @@ def fix_bare_except(filepath: Path, line_num: int) -> dict:
         return {"success": False, "error": f"行号 {line_num} 超出范围"}
 
     line = lines[line_num - 1]
-    # 匹配 "except:" 但排除 "except Xxx:"
     if re.match(r'^\s*except\s*:', line):
         new_line = line.replace("except:", "except Exception:")
         lines[line_num - 1] = new_line
@@ -168,9 +155,6 @@ def fix_bare_except(filepath: Path, line_num: int) -> dict:
             _write_file(filepath, new_code)
             return {"success": True, "action": "裸 except → except Exception"}
     return {"success": False, "reason": "不是裸 except"}
-# ═══════════════════════════════════════════════════════════════════════
-# 3. 修复 print → logging
-# ═══════════════════════════════════════════════════════════════════════
 
 
 def fix_print_to_logging(filepath: Path, line_num: int) -> dict:
@@ -185,7 +169,6 @@ def fix_print_to_logging(filepath: Path, line_num: int) -> dict:
     line = lines[line_num - 1]
     stripped = line.strip()
 
-    # 匹配 print(...)
     m = re.match(r'^(.*)print\s*\((.*)\)\s*$', stripped)
     if not m:
         return {"success": False, "reason": "不是 print 调用"}
@@ -193,17 +176,14 @@ def fix_print_to_logging(filepath: Path, line_num: int) -> dict:
     indent = line[:len(line) - len(line.lstrip())]
     content = m.group(2)
 
-    # 将 print(f"xxx") 替换为 logging.info(f"xxx")
     new_stripped = f"logging.info({content})"
     new_line = indent + new_stripped
 
-    # 检查 logging 是否已 import
     has_logging = any(l.strip().startswith("import logging") or l.strip().startswith("from logging")
                       for l in lines)
 
     lines[line_num - 1] = new_line
     if not has_logging:
-        # 在最后的 import 后插入
         insert_pos = 0
         for i, l in enumerate(lines):
             if l.strip().startswith("import ") or l.strip().startswith("from "):
@@ -216,9 +196,6 @@ def fix_print_to_logging(filepath: Path, line_num: int) -> dict:
 
     _write_file(filepath, new_code)
     return {"success": True, "action": f"print → logging.info"}
-# ═══════════════════════════════════════════════════════════════════════
-# 4. 修复资源未管理 — 添加 with 语句
-# ═══════════════════════════════════════════════════════════════════════
 
 def fix_resource_management(filepath: Path, line_num: int) -> dict:
     code = _read_file(filepath)
@@ -233,19 +210,16 @@ def fix_resource_management(filepath: Path, line_num: int) -> dict:
     stripped = line.strip()
     indent = line[:len(line) - len(line.lstrip())]
 
-    # 匹配 open("file") 或 open('file') 但没有 with
     m = re.match(r'(.*?)open\(([^)]+)\)(.*)', stripped)
     if not m:
         return {"success": False, "reason": "不是 open() 调用"}
     if "with " in stripped:
         return {"success": False, "reason": "已有 with 语句"}
 
-    # 尝试用 with 包装
     before = m.group(1).strip()
     args = m.group(2)
     after = m.group(3).strip()
 
-    # 推断变量名
     var_match = re.match(r'(\w+)\s*=', before) if before else None
     var_name = var_match.group(1) if var_match else "f"
 
@@ -261,9 +235,6 @@ def fix_resource_management(filepath: Path, line_num: int) -> dict:
 
     _write_file(filepath, new_code)
     return {"success": True, "action": "open → with open"}
-# ═══════════════════════════════════════════════════════════════════════
-# 5. 修复缺失超时 — 给 requests 调用添加 timeout
-# ═══════════════════════════════════════════════════════════════════════
 
 def fix_missing_timeout(filepath: Path, line_num: int) -> dict:
     """修复 requests.get/post() 缺少 timeout 参数"""
@@ -278,7 +249,6 @@ def fix_missing_timeout(filepath: Path, line_num: int) -> dict:
     line = lines[line_num - 1]
     stripped = line.strip()
 
-    # 匹配 requests.get(...) 或 requests.post(...) 等
     m = re.match(r'(.*)(requests\.(get|post|put|delete|patch|request)\s*\([^)]*)\)(.*)', stripped)
     if not m:
         return {"success": False, "reason": "不是 requests 调用"}
@@ -287,11 +257,9 @@ def fix_missing_timeout(filepath: Path, line_num: int) -> dict:
     call = m.group(2)
     after = m.group(4)
 
-    # 检查是否已有 timeout 参数
     if 'timeout' in call:
         return {"success": False, "reason": "已有 timeout 参数"}
 
-    # 添加 timeout=30
     new_call = call.rstrip() + ', timeout=30)'
     lines[line_num - 1] = before + new_call + after
     new_code = "\n".join(lines)
@@ -301,9 +269,6 @@ def fix_missing_timeout(filepath: Path, line_num: int) -> dict:
 
     _write_file(filepath, new_code)
     return {"success": True, "action": "添加 timeout=30"}
-# ═══════════════════════════════════════════════════════════════════════
-# 6. 修复缺失返回类型注解 — 添加 -> None
-# ═══════════════════════════════════════════════════════════════════════
 
 def fix_missing_return_type(filepath: Path, line_num: int) -> dict:
     code = _read_file(filepath)
@@ -317,23 +282,19 @@ def fix_missing_return_type(filepath: Path, line_num: int) -> dict:
     line = lines[line_num - 1]
     stripped = line.strip()
 
-    # 匹配 "def func_name(...):" 没有返回类型
     m = re.match(r'^(.*def\s+\w+\s*\([^)]*\))\s*:\s*(.*)', stripped)
     if not m:
         return {"success": False, "reason": "不是 def 行或已有返回类型"}
 
-    # 检查是否已有 -> 
     if "->" in stripped:
         return {"success": False, "reason": "已有返回类型"}
 
-    # 检查是否有 return 语句
     has_return = False
     for i in range(line_num, min(line_num + 50, len(lines))):
         if lines[i].strip().startswith("return "):
             has_return = True
             break
 
-    # 推断返回类型
     return_type = "None" if not has_return else "Any"
 
     if not return_type:
@@ -353,9 +314,6 @@ def fix_missing_return_type(filepath: Path, line_num: int) -> dict:
     _write_file(filepath, new_code)
     return {"success": True, "action": f"添加 -> {return_type}"}
 
-# ═══════════════════════════════════════════════════════════════════════
-# 修复器注册表
-# ═══════════════════════════════════════════════════════════════════════
 
 DEEP_FIXERS = {
     "swallowed_exception": fix_swallowed_exception,

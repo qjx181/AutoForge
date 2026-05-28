@@ -13,6 +13,5 @@ def _logged_print(*args, **kwargs):
     message = " ".join(str(a) for a in args)
     logger.info(message)
 
-# 只对项目三的模块生效
 _project3_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 builtins.print = _logged_print

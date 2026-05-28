@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def _get_project1_dir() -> Path:
     env_path = os.environ.get("PROJECT1_DIR", "").strip()
@@ -50,12 +44,10 @@ def _get_project1_dir() -> Path:
         p = Path(env_path)
         if p.exists():
             return p
-    # 回退：从 config.yaml 读取
     cfg = SWARM_DIR / "config.yaml"
     if cfg.exists():
         try:
             text = cfg.read_text(encoding="utf-8")
-            # 支持 project1_dir: "path" 或 project1_dir: path
             m = re.search(r"^\s*project1_dir:\s*(?:['\"]([^'\"]*)['\"]|(\S+))", text, re.MULTILINE)
             if m:
                 path_val = m.group(1).strip() if m.group(1) else (m.group(2).strip() if m.group(2) else "")

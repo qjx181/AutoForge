@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """optimizer/security.py — 维度 2：安全审查扫描器
 
 检测：SQL 注入、命令注入、密钥泄露、XSS、路径遍历、eval/shadowing 等。
@@ -16,7 +15,6 @@ from pathlib import Path
 from typing import Optional
 
 
-# ── 顶层报告函数 ────────────────────────────────────────────────────────
 
 
 def scan(project_path: str | Path) -> dict:
@@ -70,7 +68,6 @@ def scan(project_path: str | Path) -> dict:
     }
 
 
-# ── 检查函数 ─────────────────────────────────────────────────────────────
 
 
 def _check_sql_injection(code: str, file: Path) -> list[dict]:
@@ -138,7 +135,6 @@ def _check_secret_leak(code: str, file: Path) -> list[dict]:
     lines = code.split("\n")
     for i, line in enumerate(lines, 1):
         if re.search(SECRET_RE, line) and not re.search(SKIP_VALUES, line):
-            # 检查是否为赋值语句且含有真实密钥
             if re.search(r'=\s*["\'][^"\']{10,}', line):
                 issues.append({
                     "file": str(file),
@@ -153,7 +149,6 @@ def _check_secret_leak(code: str, file: Path) -> list[dict]:
 
 def _check_xss(code: str, file: Path) -> list[dict]:
     issues = []
-    # HTML/Jinja 模板中未转义的用户输入
     patterns = [
         (r'render_template_string\s*\(', "render_template_string 可能导致 XSS"),
         (r'Markup\s*\(', "Markup() 可能绕过转义导致 XSS"),
@@ -211,7 +206,6 @@ def _check_path_traversal(code: str, file: Path) -> list[dict]:
     return issues
 
 
-# ── 辅助 ─────────────────────────────────────────────────────────────────
 
 
 def _should_skip(path: Path) -> bool:

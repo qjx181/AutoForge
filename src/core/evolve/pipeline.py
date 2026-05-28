@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """self_evolve_round.py — 项目三自进化后勤脚本
 
 职责（每 30 分钟由 cronjob 触发）：
@@ -36,13 +35,8 @@ try:
 except ImportError:
     HAS_FCNTL = False
 
-# ─── 路径（自动计算，不依赖硬编码）─────────────────────────────────────
-# self_evolve_round.py 现在位于 src/core/，需要向上两级回到项目根目录
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
-# ─── PROJECT1_DIR：从环境变量或配置读取，不硬编码路径 ──────────────────
-# 用法：export PROJECT1_DIR=/path/to/project1
-# 或在 config.yaml 中设置 project1_dir 字段
 
 def run_optimization_pipeline(
     scan_targets: list[Path],
@@ -102,7 +96,6 @@ def run_optimization_pipeline(
         relog("🔍", "优化目标: %s（维度: %s）", target_str, ", ".join(dimensions))
         overall["targets"].append(target_str)
 
-        # ── 步骤1：执行 9 维度扫描 ──
         try:
             pipeline_result = run_full_pipeline(target_str, dimensions=dimensions)
         except Exception as e:
@@ -113,11 +106,9 @@ def run_optimization_pipeline(
             })
             continue
 
-        # ── 汇总结果 ──
         total_issues = pipeline_result.get("total_issues", 0)
         overall["total_findings"] += total_issues
 
-        # 按维度统计
         by_dimension = {}
         for dim_name, dim_result in pipeline_result.get("dimensions", {}).items():
             dim_label = DIMENSION_NAMES.get(dim_name, dim_name)
@@ -149,7 +140,6 @@ def run_optimization_pipeline(
             pipeline_result.get("total_scan_time_ms", 0),
         )
 
-    # ── 步骤5：写入 state.json ──
     state = load_state()
     state["last_optimization"] = {
         "targets": overall["targets"],
@@ -174,7 +164,6 @@ def run_optimization_pipeline(
     )
 
     return overall
-    # 延迟导入，避免循环依赖
     from src.analysis.optimizer_core import run_full_pipeline, DIMENSION_NAMES
 
     try:
@@ -192,11 +181,8 @@ def run_optimization_pipeline(
             "error": str(e),
         }
 
-# ─── 磁盘阈值 ──────────────────────────────────────────────────────────
 MIN_FREE_GB = 5
 MAX_LOG_DAYS = 7
 
-# ─── 日志 ──────────────────────────────────────────────────────────────
 
-# JSON 日志模式（--json-logs 启动参数控制）
 _JSON_MODE = False

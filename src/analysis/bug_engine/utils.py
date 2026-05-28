@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """bug_analysis_engine.py — Bug 分析引擎
 
 从 Python Traceback、Java Stack Trace、CI/CD 日志中提取错误信息并分析根因。
@@ -21,7 +20,6 @@ import datetime
 from pathlib import Path
 
 
-# ── 持久化 ──────────────────────────────────────────────────────────────
 
 BUGS_DIR = Path(__file__).parent / "bugs"
 BUGS_DIR.mkdir(exist_ok=True)
@@ -61,7 +59,6 @@ def _save_history(report: dict) -> None:
     """
     history = _load_history()
     history.append(report)
-    # 最多保留 500 条，防止文件无限膨胀
     if len(history) > 500:
         history = history[-500:]
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
@@ -85,4 +82,3 @@ def _next_id() -> str:
     return f"{max_id + 1:05d}"
 
 
-# ── 解析函数 ────────────────────────────────────────────────────────────
