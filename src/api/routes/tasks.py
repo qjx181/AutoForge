@@ -7,7 +7,7 @@ import json, os, datetime
 router = APIRouter()
 
 @router.get("/api/tasks")
-async def list_tasks():
+async def list_tasks() -> Any:
     """列出所有任务
 
     Returns:
@@ -17,7 +17,7 @@ async def list_tasks():
 
 
 @router.get("/api/tasks/{task_id}")
-async def get_task(task_id: str):
+async def get_task(task_id: str) -> Any:
     """查看单个任务详情"""
     tasks = _parse_tasks_from_todo()
     for t in tasks:
@@ -27,7 +27,7 @@ async def get_task(task_id: str):
 
 
 @router.post("/api/tasks")
-async def create_task(task: dict):
+async def create_task(task: dict) -> Any:
     """提交新任务
 
     Args:
@@ -72,7 +72,7 @@ async def create_task(task: dict):
 
 
 @router.delete("/api/tasks/{task_id}")
-async def delete_task(task_id: str):
+async def delete_task(task_id: str) -> Any:
     """删除任务
 
     从 TODO.md 中移除对应任务条目。

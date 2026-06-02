@@ -1,4 +1,4 @@
-"""code_review.py — PR 代码审查 Agent 模块
+1| 1| 1| """code_review.py — PR 代码审查 Agent 模块
 
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
 

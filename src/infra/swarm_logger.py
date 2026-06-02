@@ -290,7 +290,7 @@ class SwarmLogger:
             else:
                 self.logger.log(resolved, msg)
         except Exception:
-            print(f"[swarm_logger] 日志记录失败: {msg}", file=sys.stderr, flush=True)
+            logging.info(f"[swarm_logger] 日志记录失败: {msg}", file=sys.stderr, flush=True)
 
     def set_level(self, level: Union[str, int]) -> None:
         """设置日志级别 —— 动态调整生效级别。
@@ -389,7 +389,7 @@ def main() -> None:
     logger.error("这是一条 ERROR 日志", service="db", host="10.0.0.1")
     logger.critical("这是一条 CRITICAL 日志", panic=True)
 
-    print("日志测试完成。", file=sys.stderr)
+    logging.info("日志测试完成。", file=sys.stderr)
 
 
 if __name__ == "__main__":

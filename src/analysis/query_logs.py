@@ -46,6 +46,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import logging
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_LOG_DIR = SCRIPT_DIR / "logs"
 
@@ -139,7 +140,7 @@ def scan_logs(
       - JSON 行解析失败：跳过该行并打印警告
     """
     if not log_dir.exists():
-        print(f"⚠️ 日志目录不存在: {log_dir}", file=sys.stderr)
+        logging.info(f"⚠️ 日志目录不存在: {log_dir}", file=sys.stderr)
         return []
 
     results: List[Dict[str, Any]] = []
@@ -150,7 +151,7 @@ def scan_logs(
         if dated.exists() and dated.is_dir():
             date_dirs.append(dated)
         else:
-            print(f"⚠️ 指定日期无日志目录: {date_filter}", file=sys.stderr)
+            logging.info(f"⚠️ 指定日期无日志目录: {date_filter}", file=sys.stderr)
             return []
     else:
         for item in log_dir.iterdir():
@@ -158,7 +159,7 @@ def scan_logs(
                 date_dirs.append(item)
 
     if not date_dirs:
-        print("没有找到匹配的日志目录。", file=sys.stderr)
+        logging.info("没有找到匹配的日志目录。", file=sys.stderr)
         return []
 
     for date_dir in date_dirs:
@@ -299,7 +300,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main():
+def main() -> None:
     """main — 命令行入口
 
     逻辑：
@@ -324,7 +325,7 @@ def main():
 
     if not has_filter:
         parser.print_help()
-        print("\n⚠️ 请至少指定一个过滤条件（--date / --request-id / --task / --status / --last / --level）")
+        logging.info("\n⚠️ 请至少指定一个过滤条件（--date / --request-id / --task / --status / --last / --level）")
         sys.exit(1)
 
     # 规范化 level
@@ -346,12 +347,12 @@ def main():
 
     # 输出
     if not results:
-        print("没有找到匹配的日志。")
+        logging.info("没有找到匹配的日志。")
         return
 
     fmt = format_json if args.output == "json" else format_text
     for entry in results:
-        print(fmt(entry))
+        logging.info(fmt(entry))
 
     # 统计摘要
     if len(results) > 1:
@@ -364,14 +365,14 @@ def main():
             if st:
                 statuses[st] = statuses.get(st, 0) + 1
 
-        print(file=sys.stderr)
-        print(f"📊 共 {len(results)} 条日志", file=sys.stderr)
+        logging.info(file=sys.stderr)
+        logging.info(f"📊 共 {len(results)} 条日志", file=sys.stderr)
         if levels:
             parts = [f"{k}={v}" for k, v in sorted(levels.items())]
-            print(f"   级别分布: {', '.join(parts)}", file=sys.stderr)
+            logging.info(f"   级别分布: {', '.join(parts)}", file=sys.stderr)
         if statuses:
             parts = [f"{k}={v}" for k, v in sorted(statuses.items())]
-            print(f"   状态分布: {', '.join(parts)}", file=sys.stderr)
+            logging.info(f"   状态分布: {', '.join(parts)}", file=sys.stderr)
 
 
 if __name__ == "__main__":

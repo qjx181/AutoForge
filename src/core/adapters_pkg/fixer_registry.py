@@ -57,23 +57,43 @@ class FixerRegistry:
 
     def __init__(self):
         self._fixers: dict[str, FixerAdapter] = {}  # issue_type → fixer
+        self._type_fixers: dict[str, list[FixerAdapter]] = {}  # issue_type → [fixer1, fixer2, ...]
         self._fixer_instances: list[FixerAdapter] = []
 
     def register(self, fixer: FixerAdapter) -> None:
         """注册一个修复器。按 supported_types 索引。"""
         self._fixer_instances.append(fixer)
         for issue_type in fixer.supported_types:
-            if issue_type in self._fixers:
+            if issue_type in self._fixers and issue_type != "*":
                 logger.warning(
                     "Issue type '%s' already has a fixer (%s), overriding with %s",
                     issue_type, self._fixers[issue_type].name, fixer.name,
                 )
             self._fixers[issue_type] = fixer
+            if issue_type not in self._type_fixers:
+                self._type_fixers[issue_type] = []
+            self._type_fixers[issue_type].append(fixer)
         logger.info("Fixer registered: %s (types=%s)", fixer.name, fixer.supported_types)
 
     def get_fixer(self, issue_type: str) -> Optional[FixerAdapter]:
         """按 Issue 类型获取对应的修复器。"""
         return self._fixers.get(issue_type)
+
+    def get_fixers_for_type(self, issue_type: str) -> list[FixerAdapter]:
+        """获取所有能处理该 issue_type 的修复器列表。
+
+        用于 fallback chain 和策略选择器。
+        返回注册顺序的 fixer 列表。
+        """
+        # 精确匹配 + 通配符匹配
+        result = []
+        if issue_type in self._type_fixers:
+            result.extend(self._type_fixers[issue_type])
+        if "*" in self._type_fixers:
+            for f in self._type_fixers["*"]:
+                if f not in result:
+                    result.append(f)
+        return result
 
     def can_fix(self, issue_type: str) -> bool:
         """检查是否有修复器能处理此类型。"""

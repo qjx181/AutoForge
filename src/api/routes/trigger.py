@@ -1,3 +1,9 @@
+import os, sys, datetime
+from pathlib import Path
+
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
+LOGS_DIR = PROJECT_DIR / "logs"
+
 """API routes — trigger"""
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -7,7 +13,7 @@ import json, os, datetime
 router = APIRouter()
 
 @router.post("/api/trigger")
-async def trigger_evolution(background_tasks: BackgroundTasks):
+async def trigger_evolution(background_tasks: BackgroundTasks) -> Any:
     """手动触发一轮进化
 
     在后台运行 self_evolve_round.py（不阻塞 API 响应）。

@@ -3,17 +3,29 @@ import json, os, subprocess, datetime, sys, logging, asyncio, shutil, uuid, re
 from pathlib import Path
 from typing import Any, Optional
 from collections import OrderedDict
+from fastapi import HTTPException, BackgroundTasks
 
 SWARM_DIR = Path(__file__).resolve().parent.parent.parent
+PROJECT_DIR = SWARM_DIR
+
+
+def _write_json(path: Path, data: dict) -> None:
+    """写入 JSON 文件（自动创建父目录）"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 def _scan_project(path: str) -> dict:
     import subprocess as sub
-    proj = Path(path)
+    import shlex
+    proj = Path(path).resolve()
+    allowed = Path(PROJECT_DIR).resolve()
+    if not str(proj).startswith(str(allowed)):
+        return {"project_path": path, "scan_time": datetime.datetime.now().isoformat(), "bug_count": 0, "py_files_scanned": 0, "findings": []}
     findings = []
-    py_files = list(proj.rglob("*.py"))[:50]
+    py_files = [f for f in proj.rglob("*.py") if f.is_file()][:50]
     for pf in py_files:
         try:
-            r = sub.run(["python", "-m", "py_compile", str(pf)],
+            r = sub.run(["python", "-m", "py_compile", shlex.quote(str(pf))],
                         capture_output=True, text=True, timeout=5)
             if r.returncode != 0:
                 findings.append({
@@ -49,7 +61,7 @@ def _scan_project(path: str) -> dict:
     }
 
 
-async def submit_bug(bug_data: dict):
+async def submit_bug(bug_data: dict) -> Any:
     error_text = bug_data.get("error_text", "").strip()
     project_path = bug_data.get("project_path", "").strip()
     source_type = bug_data.get("source_type", "python")
@@ -84,18 +96,18 @@ async def submit_bug(bug_data: dict):
     return {"bug_id": result["id"], "analysis": result, "can_fix": result["status"] == "pending_fix", "message": msg}
 
 
-async def list_bugs(limit: int = 30):
+async def list_bugs(limit: int = 30) -> Any:
     return _bug_history_load()[-limit:]
 
 
-async def get_bug(bug_id: str):
+async def get_bug(bug_id: str) -> Any:
     bug = _bug_get(bug_id)
     if not bug:
         raise HTTPException(status_code=404, detail=f"Bug {bug_id} 不存在")
     return bug
 
 
-async def fix_bug(bug_id: str, background_tasks: BackgroundTasks):
+async def fix_bug(bug_id: str, background_tasks: BackgroundTasks) -> Any:
     bug = _bug_get(bug_id)
     if not bug:
         raise HTTPException(status_code=404, detail=f"Bug {bug_id} 不存在")
@@ -117,7 +129,7 @@ async def fix_bug(bug_id: str, background_tasks: BackgroundTasks):
     return {"bug_id": bug_id, "status": "fixing", "message": "修复已启动，请稍后刷新查看结果"}
 
 
-async def get_fix_result(bug_id: str):
+async def get_fix_result(bug_id: str) -> Any:
     bug = _bug_get(bug_id)
     if not bug:
         raise HTTPException(status_code=404, detail=f"Bug {bug_id} 不存在")
@@ -202,7 +214,7 @@ def _run_optimization_in_bg(target_dir: str, dimensions: list[str],
             run_lock.unlink()
 
 
-async def start_optimization(body: dict):
+async def start_optimization(body: dict) -> Any:
     """启动优化扫描
 
     POST JSON body:
@@ -323,10 +335,10 @@ def _load_running_runs(runs: list) -> None:
                         "started_at": data.get("started_at", ""),
                     })
             except Exception:
-                pass
+                                logging.exception('异常捕获: ')
 
 
-async def list_optimize_runs(limit: int = 20):
+async def list_optimize_runs(limit: int = 20) -> Any:
     """列出最近的优化运行记录"""
     runs = []
     _load_runs_from_opt_dir(limit, runs)
@@ -337,7 +349,7 @@ async def list_optimize_runs(limit: int = 20):
     return runs
 
 
-async def get_optimize_run(run_id: str):
+async def get_optimize_run(run_id: str) -> Any:
     """获取单次优化运行的详细结果"""
     result_file = OPT_RUNS_DIR / f"{run_id}.json"
     if not result_file.exists():
@@ -352,7 +364,7 @@ async def get_optimize_run(run_id: str):
         raise HTTPException(status_code=500, detail=f"结果文件损坏: {e}")
 
 
-async def list_dimensions():
+async def list_dimensions() -> Any:
     """返回所有可用的优化维度"""
     from src.analysis.dims import DIMENSION_ORDER, DIMENSION_NAMES
     return {
@@ -375,7 +387,7 @@ def _update_auto_progress(run_id: str, data: dict) -> None:
         existing["updated_at"] = datetime.datetime.now().isoformat()
         progress_file.write_text(json.dumps(existing, ensure_ascii=False), encoding="utf-8")
     except Exception:
-        pass
+                logging.exception('异常捕获: ')
 
 
 def _check_convergence(score_history: list) -> dict:
@@ -652,7 +664,7 @@ def _make_json_safe(obj):
         return str(obj)
 
 
-async def start_evolution(body: dict):
+async def start_evolution(body: dict) -> Any:
     """启动单轮进化循环：扫描 → 修复 → 验证 → 重扫
 
     POST JSON body:
@@ -704,7 +716,7 @@ async def start_evolution(body: dict):
             "message": f"进化循环已启动！将扫描 → 修复（最多{max_fixes}个）→ 验证 → 重扫"}
 
 
-async def start_auto_optimize(body: dict):
+async def start_auto_optimize(body: dict) -> Any:
     """启动持续优化循环
 
     POST JSON body:
@@ -758,7 +770,7 @@ async def start_auto_optimize(body: dict):
             "message": "持续优化循环已启动！它将自动扫描→修复→重扫→再优化，直到分数稳定"}
 
 
-async def get_auto_progress(run_id: str):
+async def get_auto_progress(run_id: str) -> Any:
     """获取持续优化循环的实时进度"""
     progress_file = OPT_RUNS_DIR / f"{run_id}.progress"
     if not progress_file.exists():
@@ -780,7 +792,7 @@ async def get_auto_progress(run_id: str):
         return {"run_id": run_id, "status": "unknown"}
 
 
-async def optimizer_page():
+async def optimizer_page() -> Any:
     """返回优化引擎操作页面"""
     from fastapi.responses import HTMLResponse
     opt_file = PROJECT_DIR / "api" / "optimizer.html"
@@ -794,7 +806,7 @@ async def optimizer_page():
 
 
 
-async def start_agent_evolution(body: dict):
+async def start_agent_evolution(body: dict) -> None:
     """启动多Agent持续自进化：设置目标路径 + 恢复 cronjob（不做一次性扫描）
 
     POST JSON body:
@@ -936,11 +948,11 @@ def _check_running_status() -> dict:
         if marker.get("status") in ("running", "continuous"):
             return marker
     except Exception:
-        pass
+                logging.exception('异常捕获: ')
     return None
 
 
-async def get_agent_status():
+async def get_agent_status() -> Any:
     """获取多Agent自进化运行状态"""
     target_file = PROJECT_DIR / "data" / "opt_target.txt"
     target = target_file.read_text(encoding="utf-8").strip() if target_file.exists() else None
@@ -971,7 +983,7 @@ async def get_agent_status():
 
 
 
-async def stop_agent():
+async def stop_agent() -> Any:
     """停止多Agent自进化：直接暂停 cronjob"""
     cron_file = Path.home() / ".hermes" / "cron" / "jobs.json"
     if cron_file.exists():
@@ -985,7 +997,7 @@ async def stop_agent():
                     break
             cron_file.write_text(json.dumps(cron_data, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception as e:
-            pass
+                        logging.exception('异常捕获: ')
 
     run_marker = PROJECT_DIR / "data" / ".current_run.json"
     run_marker.write_text(json.dumps({
@@ -1002,7 +1014,7 @@ async def stop_agent():
 
 
 
-async def dashboard():
+async def dashboard() -> Any:
     """返回 Web 仪表盘页面"""
     return _get_dashboard_html()
 
@@ -1019,7 +1031,7 @@ def _get_dashboard_html() -> HTMLResponse:
 
 
 
-def api_entrypoint():
+def api_entrypoint() -> None:
     """启动 FastAPI 服务
 
     供 docker-entrypoint.sh 调用，或直接 python src/api/api_service.py 启动。

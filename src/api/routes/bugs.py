@@ -1,13 +1,19 @@
 """API routes — bugs"""
+from pathlib import Path
+from typing import Any
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 import json, os, datetime
-from src.api.backend.core import _run_optimization_in_bg
+
+from src.api.backend.core import _run_optimization_in_bg, _write_json, PROJECT_DIR
+from src.api.routes.monitor import (
+    _bug_history_load, _bug_history_save, _bug_get, _bug_patch, _scan_project,
+)
 
 router = APIRouter()
 
 @router.post("/api/bugs")
-async def submit_bug(bug_data: dict):
+async def submit_bug(bug_data: dict) -> Any:
     error_text = bug_data.get("error_text", "").strip()
     project_path = bug_data.get("project_path", "").strip()
     source_type = bug_data.get("source_type", "python")
@@ -43,12 +49,12 @@ async def submit_bug(bug_data: dict):
 
 
 @router.get("/api/bugs")
-async def list_bugs(limit: int = 30):
+async def list_bugs(limit: int = 30) -> Any:
     return _bug_history_load()[-limit:]
 
 
 @router.get("/api/bugs/{bug_id}")
-async def get_bug(bug_id: str):
+async def get_bug(bug_id: str) -> Any:
     bug = _bug_get(bug_id)
     if not bug:
         raise HTTPException(status_code=404, detail=f"Bug {bug_id} 不存在")
@@ -56,7 +62,7 @@ async def get_bug(bug_id: str):
 
 
 @router.post("/api/bugs/{bug_id}/fix")
-async def fix_bug(bug_id: str, background_tasks: BackgroundTasks):
+async def fix_bug(bug_id: str, background_tasks: BackgroundTasks) -> Any:
     bug = _bug_get(bug_id)
     if not bug:
         raise HTTPException(status_code=404, detail=f"Bug {bug_id} 不存在")
@@ -79,7 +85,7 @@ async def fix_bug(bug_id: str, background_tasks: BackgroundTasks):
 
 
 @router.get("/api/bugs/{bug_id}/fix")
-async def get_fix_result(bug_id: str):
+async def get_fix_result(bug_id: str) -> Any:
     bug = _bug_get(bug_id)
     if not bug:
         raise HTTPException(status_code=404, detail=f"Bug {bug_id} 不存在")
@@ -103,62 +109,3 @@ async def get_fix_result(bug_id: str):
 
 OPT_RUNS_DIR = PROJECT_DIR / "data" / "opt_runs"
 OPT_RUNS_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _run_optimization_in_bg(target_dir: str, dimensions: list[str],
-                            run_id: str, dry_run: bool) -> None:
-    """后台执行优化扫描，结果写回 JSON 文件"""
-    import sys as _sys
-    import traceback as _tb
-    _SRC = PROJECT_DIR / "src"
-    if str(_SRC) not in _sys.path:
-        _sys.path.insert(0, str(_SRC))
-    if str(PROJECT_DIR) not in _sys.path:
-        _sys.path.insert(0, str(PROJECT_DIR))
-    try:
-        from src.analysis.optimizer_core import run_full_pipeline
-        result = run_full_pipeline(target_dir, dimensions=dimensions)
-
-        def _make_json_safe(obj):
-            if hasattr(obj, '__dict__'):
-                return _make_json_safe(obj.__dict__)
-            if isinstance(obj, dict):
-                return {k: _make_json_safe(v) for k, v in obj.items()}
-            if isinstance(obj, (list, tuple)):
-                return [_make_json_safe(i) for i in obj]
-            if isinstance(obj, (str, int, float, bool, type(None))):
-                return obj
-            if isinstance(obj, (datetime.datetime,)):
-                return obj.isoformat()
-            if isinstance(obj, Path):
-                return str(obj)
-            try:
-                json.dumps(obj)
-                return obj
-            except (TypeError, ValueError):
-                return str(obj)
-
-        result = _make_json_safe(result)
-
-        result["target_dir"] = target_dir
-        result["dry_run"] = dry_run
-        result["run_id"] = run_id
-        result["finished_at"] = datetime.datetime.now().isoformat()
-        result["status"] = "completed"
-
-        _write_json(OPT_RUNS_DIR / f"{run_id}.json", result)
-    except Exception as e:
-        _write_json(OPT_RUNS_DIR / f"{run_id}.json", {
-            "run_id": run_id,
-            "target_dir": target_dir,
-            "dimensions": dimensions,
-            "dry_run": dry_run,
-            "status": "failed",
-            "error": str(e),
-            "traceback": _tb.format_exc(),
-            "finished_at": datetime.datetime.now().isoformat(),
-        })
-    finally:
-        run_lock = OPT_RUNS_DIR / f"{run_id}.running"
-        if run_lock.exists():
-            run_lock.unlink()

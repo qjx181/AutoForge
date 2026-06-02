@@ -1,4 +1,4 @@
-"""swarm_metrics.py — Swarm 自我进化循环的指标收集模块
+"""metrics_reporter.py — Swarm 自我进化循环的指标收集模块
 
 提供 Swarm 自我进化循环的完整指标收集能力，包含五个核心组件：
   - RoundTimer:   记录每轮开始/结束时间、持续时长

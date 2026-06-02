@@ -1,41 +1,25 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/git_ops — Git 操作封装（pull/commit/push/冲突处理）
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+职责：
+  - git_pull_rebase: 拉取并处理冲突
+  - run_git_commit / run_git_commit_with_retry: 带重试的提交
+  - check_and_heal_conflicts / mark_conflict: 冲突状态管理
 """
 
 import json
 from src.infra.logging_config import PrintToLogger
 print = PrintToLogger(__name__).info
 import os
+from typing import Any
 import re
 import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
-
-try:
-    import fcntl
-    HAS_FCNTL = True
-except ImportError:
-    HAS_FCNTL = False
-
 from src.core.evolve.cost import GIT_TIMEOUT
+from src.core.evolve.logging import relog
+from src.core.evolve.state import load_state, save_state
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
 
@@ -100,7 +84,7 @@ def run_git_commit_with_retry(repo_dir: Path, message: str, repo_name: str = "un
 
 
 
-def check_and_heal_conflicts():
+def check_and_heal_conflicts() -> Any:
     """检查并自动恢复冲突状态。"""
     state = load_state()
     if state.get("paused_due_to_conflict"):
@@ -110,7 +94,7 @@ def check_and_heal_conflicts():
     return True
 
 
-def mark_conflict(conflict_files: list[str]):
+def mark_conflict(conflict_files: list[str]) -> None:
     """标记冲突状态。"""
     state = load_state()
     state["paused_due_to_conflict"] = True

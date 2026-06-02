@@ -72,7 +72,7 @@ def sample_config() -> dict:
 # ═══════════════════════════════════════════════════════════════════════
 
 
-def pytest_configure(config):
+def pytest_configure(config) -> None:
     """注册自定义标记"""
     config.addinivalue_line("markers", "integration: 集成测试（可能依赖外部服务）")
     config.addinivalue_line("markers", "slow: 耗时较长的测试（默认跳过）")

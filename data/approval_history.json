@@ -1,0 +1,3192 @@
+[
+  {
+    "item_id": "a55da846aa0c",
+    "action": "auto_applied",
+    "reviewer": "system",
+    "comment": "Confidence 1.00",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T20:03:47.011562"
+  },
+  {
+    "item_id": "68243d86ec6b",
+    "action": "auto_applied",
+    "reviewer": "system",
+    "comment": "Confidence 1.00",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T20:03:47.681845"
+  },
+  {
+    "item_id": "32ac4ed46cea",
+    "action": "auto_applied",
+    "reviewer": "system",
+    "comment": "Confidence 1.00",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T20:03:56.447267"
+  },
+  {
+    "item_id": "f317c1727bc2",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T20:39:43.570854"
+  },
+  {
+    "item_id": "003a5702a52a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T20:39:52.450652"
+  },
+  {
+    "item_id": "d065f4b78d09",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:02:53.252812"
+  },
+  {
+    "item_id": "255e6cce4bf7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:02:55.963309"
+  },
+  {
+    "item_id": "0a21f026d155",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:03:14.761868"
+  },
+  {
+    "item_id": "94b6c0df4782",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:03:33.453904"
+  },
+  {
+    "item_id": "ce75abf21c19",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:03:35.384765"
+  },
+  {
+    "item_id": "e94415940e84",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:03:37.576267"
+  },
+  {
+    "item_id": "29e58cb59857",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:03:47.169874"
+  },
+  {
+    "item_id": "2d0155826e06",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:03:57.178148"
+  },
+  {
+    "item_id": "6d0adb4abe65",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:04:55.706521"
+  },
+  {
+    "item_id": "32adba64752c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:01.284448"
+  },
+  {
+    "item_id": "3c87c14345e1",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:09.107867"
+  },
+  {
+    "item_id": "6ed749510c96",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:16.788559"
+  },
+  {
+    "item_id": "e6883fe85b53",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:24.382526"
+  },
+  {
+    "item_id": "acd84b38d4cb",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:31.826438"
+  },
+  {
+    "item_id": "70546c81e7ce",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:39.661325"
+  },
+  {
+    "item_id": "766362a66513",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:47.427552"
+  },
+  {
+    "item_id": "6b784a2c3256",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:05:55.387288"
+  },
+  {
+    "item_id": "0f6ce6073e94",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:06:03.347806"
+  },
+  {
+    "item_id": "af451052716f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:06:11.770118"
+  },
+  {
+    "item_id": "ccac14fe87d2",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:06:20.155033"
+  },
+  {
+    "item_id": "d03cace4963a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:06:28.482571"
+  },
+  {
+    "item_id": "07b8b72a2509",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:00.238435"
+  },
+  {
+    "item_id": "ae3281224fbb",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:03.936158"
+  },
+  {
+    "item_id": "7b41093b3383",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:08.185775"
+  },
+  {
+    "item_id": "d09aa266bd31",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:12.236314"
+  },
+  {
+    "item_id": "4fe0d7b68a27",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:16.367864"
+  },
+  {
+    "item_id": "edd225812ec6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:19.107990"
+  },
+  {
+    "item_id": "8cffc96dba74",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:21.968866"
+  },
+  {
+    "item_id": "787617a779f7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:26.043424"
+  },
+  {
+    "item_id": "c80984207f34",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:30.463832"
+  },
+  {
+    "item_id": "968cf01c79ca",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:35.257809"
+  },
+  {
+    "item_id": "57d017dd6a0e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:41.309789"
+  },
+  {
+    "item_id": "cbd2510b20e7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:46.713846"
+  },
+  {
+    "item_id": "3b2c3a9243ad",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:52.645238"
+  },
+  {
+    "item_id": "a8c2bdca7e50",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:10:58.948262"
+  },
+  {
+    "item_id": "75541146d42c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:04.901867"
+  },
+  {
+    "item_id": "327c727624d6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:10.792642"
+  },
+  {
+    "item_id": "39b649069341",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:17.040079"
+  },
+  {
+    "item_id": "cec44bbc21d3",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:21.415105"
+  },
+  {
+    "item_id": "3b7d8cbd9c79",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:26.409327"
+  },
+  {
+    "item_id": "69f63d274c71",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:31.945496"
+  },
+  {
+    "item_id": "96bf3b14f267",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:37.430478"
+  },
+  {
+    "item_id": "79237659d83a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:11:46.913131"
+  },
+  {
+    "item_id": "f804e05b572b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:13.518131"
+  },
+  {
+    "item_id": "6c0706d54c5d",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:15.442944"
+  },
+  {
+    "item_id": "843616de54a9",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:17.812245"
+  },
+  {
+    "item_id": "b3e05939cbe4",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:20.875484"
+  },
+  {
+    "item_id": "f782a2a15ffd",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:23.808743"
+  },
+  {
+    "item_id": "448625405fdb",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:26.957899"
+  },
+  {
+    "item_id": "4b2835cd4bc4",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:29.850954"
+  },
+  {
+    "item_id": "118f3c24dbcc",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:32.752177"
+  },
+  {
+    "item_id": "3e8248cdecdd",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:35.748873"
+  },
+  {
+    "item_id": "91e04c1de12c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:38.662277"
+  },
+  {
+    "item_id": "ebab47c9814b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:41.554773"
+  },
+  {
+    "item_id": "657c9b38629c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:44.815002"
+  },
+  {
+    "item_id": "4ab4d930d5d7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:48.467807"
+  },
+  {
+    "item_id": "c2957f7cca1c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:51.994639"
+  },
+  {
+    "item_id": "ed3db97ef5ac",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:55.442189"
+  },
+  {
+    "item_id": "48bf1e54c61f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:12:58.948403"
+  },
+  {
+    "item_id": "105f02d6a959",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:13:03.308396"
+  },
+  {
+    "item_id": "c3691ba40aa0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:13:07.145254"
+  },
+  {
+    "item_id": "ec20e396a4c6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:13:11.250898"
+  },
+  {
+    "item_id": "d530ff309541",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:13:15.603343"
+  },
+  {
+    "item_id": "ac790a8673d6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:13:24.486406"
+  },
+  {
+    "item_id": "841eab797609",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-05-31T21:13:38.321665"
+  },
+  {
+    "item_id": "0ced95ff7baa",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:26:44.254993"
+  },
+  {
+    "item_id": "c61fc4f65602",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:26:52.933647"
+  },
+  {
+    "item_id": "60c1e5ca61ed",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:27:01.280516"
+  },
+  {
+    "item_id": "8ab04f164ea1",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:27:10.234900"
+  },
+  {
+    "item_id": "b9017f5f370b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:27:18.559647"
+  },
+  {
+    "item_id": "17d4da6befaa",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:27:27.049957"
+  },
+  {
+    "item_id": "7a263bb80bfa",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:27:34.980129"
+  },
+  {
+    "item_id": "4c8768b7449c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:27:43.255143"
+  },
+  {
+    "item_id": "d8813a2e8406",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:27:53.122055"
+  },
+  {
+    "item_id": "3f0c9678622c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:28:03.678737"
+  },
+  {
+    "item_id": "c122b9737161",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:28:12.753142"
+  },
+  {
+    "item_id": "afc2914c8fce",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:28:30.673547"
+  },
+  {
+    "item_id": "b75604cc7931",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:28:39.999640"
+  },
+  {
+    "item_id": "fad9622b9d28",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:28:48.044838"
+  },
+  {
+    "item_id": "f0bf9b69f7c6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:52:48.758804"
+  },
+  {
+    "item_id": "504725b5c8c3",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:52:51.400040"
+  },
+  {
+    "item_id": "40814a1be52f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T08:52:54.301286"
+  },
+  {
+    "item_id": "8144fbe7ffb6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:17:10.643736"
+  },
+  {
+    "item_id": "59b0cb45f495",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:17:15.073749"
+  },
+  {
+    "item_id": "48d6138fea54",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:17:24.531123"
+  },
+  {
+    "item_id": "4b2f95e79907",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:17:27.828553"
+  },
+  {
+    "item_id": "9fddc9738493",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:29:17.255121"
+  },
+  {
+    "item_id": "1ff3b18e1eca",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:29:20.353608"
+  },
+  {
+    "item_id": "749d9334ca5c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:29:22.805276"
+  },
+  {
+    "item_id": "16c9945b6aaa",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:29:49.974834"
+  },
+  {
+    "item_id": "0f99bf6dd5d0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:29:54.040849"
+  },
+  {
+    "item_id": "1a5a2e96ab92",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:29:57.630598"
+  },
+  {
+    "item_id": "6dd6cb6e019e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:30:04.946657"
+  },
+  {
+    "item_id": "a31cb78fed08",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:30:07.840065"
+  },
+  {
+    "item_id": "1aa53c75a802",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:30:10.644331"
+  },
+  {
+    "item_id": "7c36ec1c6d3e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:30:13.981440"
+  },
+  {
+    "item_id": "678b551abf4d",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:30:16.738826"
+  },
+  {
+    "item_id": "0c797e0f2bc0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:48:59.389763"
+  },
+  {
+    "item_id": "9d8a3be98473",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:49:04.129394"
+  },
+  {
+    "item_id": "135d429a100e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:49:11.293957"
+  },
+  {
+    "item_id": "0cd869b432b1",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:49:33.552745"
+  },
+  {
+    "item_id": "5f340d800318",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:49:37.367585"
+  },
+  {
+    "item_id": "3384134740b0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:49:42.807312"
+  },
+  {
+    "item_id": "f0090f57832c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:49:52.573196"
+  },
+  {
+    "item_id": "c9b6a2beeb48",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:01.713531"
+  },
+  {
+    "item_id": "a8432584b54f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:01.807803"
+  },
+  {
+    "item_id": "5fdc342d4339",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:01.905097"
+  },
+  {
+    "item_id": "3e22028ffb20",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:01.993986"
+  },
+  {
+    "item_id": "b77771250c43",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:02.084170"
+  },
+  {
+    "item_id": "4909abce4c1a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:02.181785"
+  },
+  {
+    "item_id": "7b68e8a4148a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:02.277875"
+  },
+  {
+    "item_id": "261347bf0028",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:02.364653"
+  },
+  {
+    "item_id": "6748abf63144",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T10:54:02.444571"
+  },
+  {
+    "item_id": "7a083f9cc33b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:05:32.259154"
+  },
+  {
+    "item_id": "b606c9512c05",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:05:41.360570"
+  },
+  {
+    "item_id": "7096352076a8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:06:08.024717"
+  },
+  {
+    "item_id": "f82340a01d73",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:06:11.947018"
+  },
+  {
+    "item_id": "df90d884d82f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:06:16.028308"
+  },
+  {
+    "item_id": "2df4d6af4a18",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:06:20.574275"
+  },
+  {
+    "item_id": "26ff2030cc23",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:06:28.747964"
+  },
+  {
+    "item_id": "aaa2407ff045",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:06:36.717514"
+  },
+  {
+    "item_id": "f50bcfc72b3f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T11:06:39.791890"
+  },
+  {
+    "item_id": "b08f06463ae9",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:15.124115"
+  },
+  {
+    "item_id": "85fd6444c9cb",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:28.439777"
+  },
+  {
+    "item_id": "ce48bd8119b8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:35.749165"
+  },
+  {
+    "item_id": "e025fd65c55b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:38.960893"
+  },
+  {
+    "item_id": "dbe3307a8a65",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:44.927642"
+  },
+  {
+    "item_id": "ed7f6f2a062a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:49.653961"
+  },
+  {
+    "item_id": "f91d5db2a3c6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:54.508784"
+  },
+  {
+    "item_id": "e5dc30cecc1c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:38:59.825561"
+  },
+  {
+    "item_id": "c5da1423f3b8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:39:03.338291"
+  },
+  {
+    "item_id": "b3fb515f5a94",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:39:06.131666"
+  },
+  {
+    "item_id": "3a88ce5499b8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:39:09.297563"
+  },
+  {
+    "item_id": "4d7070cec6e1",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:39:11.548378"
+  },
+  {
+    "item_id": "2a67470489f3",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:39:14.368364"
+  },
+  {
+    "item_id": "059837554619",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:41:28.483219"
+  },
+  {
+    "item_id": "3868c8abd3a8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:41:32.645138"
+  },
+  {
+    "item_id": "e0c3fc063966",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:41:41.877123"
+  },
+  {
+    "item_id": "936b1e24c6b7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:41:47.288854"
+  },
+  {
+    "item_id": "a84c7630f5a3",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:41:52.396907"
+  },
+  {
+    "item_id": "4dd64bead6c4",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:41:55.736767"
+  },
+  {
+    "item_id": "3cd52dfccde6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:41:59.012183"
+  },
+  {
+    "item_id": "a8aad078ef13",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:00.749562"
+  },
+  {
+    "item_id": "a35c2e69bf13",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:03.789899"
+  },
+  {
+    "item_id": "533a775cd4da",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:06.817780"
+  },
+  {
+    "item_id": "fa303ae823eb",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:12.226326"
+  },
+  {
+    "item_id": "ac7060f9fc20",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:19.108477"
+  },
+  {
+    "item_id": "3f288ca3dc67",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:22.180801"
+  },
+  {
+    "item_id": "6be6e28dc1db",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:23.856706"
+  },
+  {
+    "item_id": "bbdcdc0ed0f2",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:28.992882"
+  },
+  {
+    "item_id": "f3bbe597b8c0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:30.274542"
+  },
+  {
+    "item_id": "900d28fd30ef",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:33.634460"
+  },
+  {
+    "item_id": "502c917b1bdc",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:37.760336"
+  },
+  {
+    "item_id": "fdc2991e6fe1",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:44.242089"
+  },
+  {
+    "item_id": "923a0d6f2dc0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:53.421393"
+  },
+  {
+    "item_id": "9a906eef4802",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:42:59.417207"
+  },
+  {
+    "item_id": "0c8b831aa978",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:06.908644"
+  },
+  {
+    "item_id": "b50a118ff4a4",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:14.983932"
+  },
+  {
+    "item_id": "e72c01dbdb90",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:20.740180"
+  },
+  {
+    "item_id": "cebf0b7d2858",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:24.651181"
+  },
+  {
+    "item_id": "3003f6668f62",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:28.149812"
+  },
+  {
+    "item_id": "fbea32474807",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:31.657548"
+  },
+  {
+    "item_id": "d239d0a75b37",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:34.442630"
+  },
+  {
+    "item_id": "3e1e4b4815e4",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:48.990623"
+  },
+  {
+    "item_id": "23c4512b336e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:43:54.334539"
+  },
+  {
+    "item_id": "eb68fdc8b450",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:44:03.447490"
+  },
+  {
+    "item_id": "95a493e81272",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:44:07.535113"
+  },
+  {
+    "item_id": "4314a62b05b5",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:44:11.178623"
+  },
+  {
+    "item_id": "53de2ca4989f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:44:17.982685"
+  },
+  {
+    "item_id": "32bfb84803b5",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:44:20.694640"
+  },
+  {
+    "item_id": "685e20e9897c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:44:23.627482"
+  },
+  {
+    "item_id": "a47db76d0412",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:44:26.476046"
+  },
+  {
+    "item_id": "49239851e64f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:11.332645"
+  },
+  {
+    "item_id": "f3814ef7082e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:23.155596"
+  },
+  {
+    "item_id": "5faecfd36651",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:27.244613"
+  },
+  {
+    "item_id": "2caec0520562",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:29.903793"
+  },
+  {
+    "item_id": "8af289f88beb",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:39.748765"
+  },
+  {
+    "item_id": "f0f2c7ceaaa7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:43.117481"
+  },
+  {
+    "item_id": "3d6ee718a9b8",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.30 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:45.864543"
+  },
+  {
+    "item_id": "3717e1f71ce8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:48:54.457630"
+  },
+  {
+    "item_id": "3d5fa0c2fb04",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:49:22.057441"
+  },
+  {
+    "item_id": "c627905d19ee",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:49:37.340555"
+  },
+  {
+    "item_id": "6ae7e720e9ee",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:49:40.301067"
+  },
+  {
+    "item_id": "264cda50043e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:49:58.274455"
+  },
+  {
+    "item_id": "e061d214a9c0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:01.498836"
+  },
+  {
+    "item_id": "dbc5db5af134",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:04.990906"
+  },
+  {
+    "item_id": "f0676c40a691",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:06.504975"
+  },
+  {
+    "item_id": "53de080375e9",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:15.444325"
+  },
+  {
+    "item_id": "f62ecef32309",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:20.816882"
+  },
+  {
+    "item_id": "193134ebd5a0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:25.131059"
+  },
+  {
+    "item_id": "e476122241cb",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:28.796917"
+  },
+  {
+    "item_id": "fd996c2c2b3c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:31.676630"
+  },
+  {
+    "item_id": "4e35d26bc56c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:44.493893"
+  },
+  {
+    "item_id": "99f8cf6447b6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:50:54.741653"
+  },
+  {
+    "item_id": "166205e2dfa8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:51:04.522904"
+  },
+  {
+    "item_id": "d646559d8a42",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:51:07.735089"
+  },
+  {
+    "item_id": "e494cf9ddf5c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:51:12.315596"
+  },
+  {
+    "item_id": "64e63673864c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T13:51:20.547028"
+  },
+  {
+    "item_id": "4ff98ebbcdfd",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:00:48.370060"
+  },
+  {
+    "item_id": "e59be2f33158",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:00:53.822016"
+  },
+  {
+    "item_id": "29cb8252f4e6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:07.139663"
+  },
+  {
+    "item_id": "79fc1311395a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:10.249839"
+  },
+  {
+    "item_id": "5fe080aeb10e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:15.097683"
+  },
+  {
+    "item_id": "14d8ec8ad5e8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:28.446480"
+  },
+  {
+    "item_id": "87b50cb1d47d",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:30.274454"
+  },
+  {
+    "item_id": "402e6d4e34b3",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:32.415864"
+  },
+  {
+    "item_id": "49a80182965a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:36.851769"
+  },
+  {
+    "item_id": "f2e875d64a3b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:40.190927"
+  },
+  {
+    "item_id": "6fe345df14a7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:01:43.856686"
+  },
+  {
+    "item_id": "9c852c4dbf11",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:02:45.222553"
+  },
+  {
+    "item_id": "42eea6f1be34",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:02:48.570164"
+  },
+  {
+    "item_id": "884685803cd0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:02:51.757776"
+  },
+  {
+    "item_id": "5798050499dd",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:02:58.799968"
+  },
+  {
+    "item_id": "2a76b12b51fa",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:03:08.123669"
+  },
+  {
+    "item_id": "7294554bc10b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:03:09.841393"
+  },
+  {
+    "item_id": "3cae21ba8e62",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:03:13.165622"
+  },
+  {
+    "item_id": "b5775308d175",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:03:16.264133"
+  },
+  {
+    "item_id": "66ad7ed5689d",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:03:47.192114"
+  },
+  {
+    "item_id": "45afb1170fb8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:04:00.257245"
+  },
+  {
+    "item_id": "eef7dc6cf1e7",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.10 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:04:09.314285"
+  },
+  {
+    "item_id": "510616b80a27",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:04:22.569663"
+  },
+  {
+    "item_id": "ec8fc4c0d02c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:04:27.256067"
+  },
+  {
+    "item_id": "a996d9416f42",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:04:59.865210"
+  },
+  {
+    "item_id": "830d571cafa8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:06.103839"
+  },
+  {
+    "item_id": "cd42c407a425",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:08.760818"
+  },
+  {
+    "item_id": "aa2c4eb6e119",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:11.555860"
+  },
+  {
+    "item_id": "7e4c6933df0e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:14.482940"
+  },
+  {
+    "item_id": "7db124ce006e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:16.924064"
+  },
+  {
+    "item_id": "f504d0cc0f49",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:26.424969"
+  },
+  {
+    "item_id": "03d846ef1037",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:31.384634"
+  },
+  {
+    "item_id": "bf168fad0cb5",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:37.278386"
+  },
+  {
+    "item_id": "e53b5dd72739",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:44.535223"
+  },
+  {
+    "item_id": "79ae8bf4420a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:47.933604"
+  },
+  {
+    "item_id": "7fa4cdef95a9",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:49.739761"
+  },
+  {
+    "item_id": "9bc1a0487272",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:53.496699"
+  },
+  {
+    "item_id": "d66ac22ecffd",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:05:58.130336"
+  },
+  {
+    "item_id": "ee5ccff9572e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:06:01.769157"
+  },
+  {
+    "item_id": "7a39d3c95353",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.30 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:06:07.332187"
+  },
+  {
+    "item_id": "1d4821d252ff",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:06:12.274761"
+  },
+  {
+    "item_id": "dfe0cf675233",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.30 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:06:14.744439"
+  },
+  {
+    "item_id": "4b89f60d168e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:06:18.995197"
+  },
+  {
+    "item_id": "6283259ba979",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:06:24.480377"
+  },
+  {
+    "item_id": "4ff98ebbcdfd",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:16:13.848370"
+  },
+  {
+    "item_id": "e59be2f33158",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:16:20.992770"
+  },
+  {
+    "item_id": "5d8468eb1896",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T14:31:31.390827"
+  },
+  {
+    "item_id": "d92c02d14d65",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T16:25:48.847906"
+  },
+  {
+    "item_id": "24e6f24abaa9",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T16:25:56.015115"
+  },
+  {
+    "item_id": "d7d98abc0b55",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T16:26:02.221979"
+  },
+  {
+    "item_id": "03bed0dae47e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T16:26:06.573802"
+  },
+  {
+    "item_id": "47bf957074c3",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T16:46:14.632830"
+  },
+  {
+    "item_id": "6e34077cea22",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T16:46:25.235631"
+  },
+  {
+    "item_id": "689e61e329cc",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T16:46:28.489159"
+  },
+  {
+    "item_id": "d62993649736",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:42:57.306499"
+  },
+  {
+    "item_id": "67c439a7cbdf",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:43:08.203837"
+  },
+  {
+    "item_id": "663157297744",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:43:12.826517"
+  },
+  {
+    "item_id": "1d74852fadcf",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:43:19.708939"
+  },
+  {
+    "item_id": "b3e626e5e0ec",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:43:25.343966"
+  },
+  {
+    "item_id": "142b2f9c09f0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:49:36.967256"
+  },
+  {
+    "item_id": "e631d28b6275",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:49:40.641925"
+  },
+  {
+    "item_id": "281d6c7e481b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:49:44.842569"
+  },
+  {
+    "item_id": "68d4f1d201c2",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:49:51.443141"
+  },
+  {
+    "item_id": "4fd89199aee7",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:49:54.943264"
+  },
+  {
+    "item_id": "a034bb776f64",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T18:50:07.870280"
+  },
+  {
+    "item_id": "d17211a8eb9f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:39:17.101213"
+  },
+  {
+    "item_id": "8c7b32cd8c00",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:39:18.586821"
+  },
+  {
+    "item_id": "1d5565f36ff6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:39:20.991848"
+  },
+  {
+    "item_id": "15e1065d808e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:39:22.726961"
+  },
+  {
+    "item_id": "2e36ef325b23",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:39:28.637655"
+  },
+  {
+    "item_id": "e50419ed7520",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:43:50.908273"
+  },
+  {
+    "item_id": "0b7741a801a0",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:43:59.093953"
+  },
+  {
+    "item_id": "2b208cecfb81",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:02.590111"
+  },
+  {
+    "item_id": "ec3fb5e9aa3f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:06.786309"
+  },
+  {
+    "item_id": "bf4700ada573",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:11.475775"
+  },
+  {
+    "item_id": "53a009dfb228",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:16.491467"
+  },
+  {
+    "item_id": "4c6c43f370a9",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:19.328546"
+  },
+  {
+    "item_id": "e57f70e4a7c8",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:23.145255"
+  },
+  {
+    "item_id": "c82db624211b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:25.611037"
+  },
+  {
+    "item_id": "2ceac14b722e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:31.194183"
+  },
+  {
+    "item_id": "803c0126cf7b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:40.427946"
+  },
+  {
+    "item_id": "e32e13a40946",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:48:49.286751"
+  },
+  {
+    "item_id": "3861c7196b02",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:51:21.165393"
+  },
+  {
+    "item_id": "d15a9c5db81d",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:51:26.039951"
+  },
+  {
+    "item_id": "0f752e975cef",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:51:29.354424"
+  },
+  {
+    "item_id": "6c0d03f013c3",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T19:51:31.527201"
+  },
+  {
+    "item_id": "1814f9cc55af",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T20:43:27.408838"
+  },
+  {
+    "item_id": "60163c83976f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T21:40:43.118734"
+  },
+  {
+    "item_id": "5638820ef62a",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T21:40:46.558964"
+  },
+  {
+    "item_id": "b5bfe5f5f601",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T21:40:50.997132"
+  },
+  {
+    "item_id": "0e9054729ce2",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T21:40:54.403480"
+  },
+  {
+    "item_id": "142e0a866061",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T21:52:08.326603"
+  },
+  {
+    "item_id": "ed16a3e79f52",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T21:52:17.815669"
+  },
+  {
+    "item_id": "fe17195b8c09",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T21:52:20.851888"
+  },
+  {
+    "item_id": "e52efdcb1613",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.30 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:08:28.175106"
+  },
+  {
+    "item_id": "1028067faa04",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.30 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:08:31.976466"
+  },
+  {
+    "item_id": "5d533f34cca6",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:08:47.250843"
+  },
+  {
+    "item_id": "753301748d9e",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:08:51.142782"
+  },
+  {
+    "item_id": "b9a89d655c2f",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:08:57.925133"
+  },
+  {
+    "item_id": "65e57a2e4d61",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:01.531586"
+  },
+  {
+    "item_id": "494c6e4b9dff",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.20 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:05.091433"
+  },
+  {
+    "item_id": "84ac7cae892b",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:08.938006"
+  },
+  {
+    "item_id": "f50022576f02",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:13.212032"
+  },
+  {
+    "item_id": "1d0c59886b3c",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:16.521010"
+  },
+  {
+    "item_id": "b27309d60698",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:20.227629"
+  },
+  {
+    "item_id": "a9863f4ad164",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.80",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:25.289364"
+  },
+  {
+    "item_id": "5cf26c285c1d",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:29.345887"
+  },
+  {
+    "item_id": "0e315416818f",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.20 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:32.783032"
+  },
+  {
+    "item_id": "288583ef7af4",
+    "action": "rejected_low_confidence",
+    "reviewer": "system",
+    "comment": "Confidence 0.30 below threshold",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:41.110992"
+  },
+  {
+    "item_id": "e7ce9765fa23",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:09:43.495039"
+  },
+  {
+    "item_id": "575cfca229fe",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:18:15.719593"
+  },
+  {
+    "item_id": "8f7b5940de78",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:18:19.532924"
+  },
+  {
+    "item_id": "58a4623f5b06",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:18:22.445804"
+  },
+  {
+    "item_id": "3f390cc95234",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:18:33.917086"
+  },
+  {
+    "item_id": "54c5046c6a95",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:18:39.296337"
+  },
+  {
+    "item_id": "0f7fca06d045",
+    "action": "auto_apply_noop",
+    "reviewer": "system",
+    "comment": "Confidence 0.85",
+    "issue_type": "",
+    "file": "",
+    "confidence": 0,
+    "at": "2026-06-01T22:18:51.654917"
+  }
+]

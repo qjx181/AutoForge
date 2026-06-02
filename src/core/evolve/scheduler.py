@@ -1,20 +1,10 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/scheduler — 自进化后勤脚本调度器
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+主入口 main() 的核心调度逻辑，按顺序执行：
+  1. PID 锁 + 磁盘检查 + 成本检查
+  2. 项目同步（git pull + commit）
+  3. 优化引擎 + 深度扫描 + 任务规划
+  4. 心跳检查 + 并行任务规划 + state 更新
 """
 
 import json
@@ -29,24 +19,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
-try:
-    import fcntl
-    HAS_FCNTL = True
-except ImportError:
-    HAS_FCNTL = False
+import src.core.evolve.config_ext as _cfg
+from src.core.evolve.config_ext import OPT_DIMENSIONS, TODO_FILE, audit_log, guard_git_push, _get_config
+from src.core.evolve.cost import check_disk_space, check_cost_over_budget
+from src.core.evolve.delegation import run_delegation_diagnosis, check_forced_delegation
+from src.core.evolve.git_ops import _run_git, git_pull_rebase, run_git_commit_with_retry, check_and_heal_conflicts, mark_conflict
+from src.core.evolve.logging import relog
+from src.core.evolve.pipeline import run_optimization_pipeline
+from src.core.evolve.state import load_state, save_state, acquire_pid_file, release_pid_file
 
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
-
-
-def _load_parallel_dispatcher():
-    """尝试从工作目录加载 parallel_dispatcher 模块。"""
-    sys.path.insert(0, str(SWARM_DIR))
-    try:
-        import src.agents.parallel_dispatcher as parallel_dispatcher
-        return parallel_dispatcher
-    except ImportError as e:
-        relog("⚠️", "parallel_dispatcher 加载失败: %s", e)
-        return None
 
 
 def _parse_todo_dependencies() -> dict[str, dict]:
@@ -320,26 +302,12 @@ def check_and_heal_heartbeats() -> int:
 
         if _try_restart_agent(agent_name, old_pid, pid_file):
             restarted += 1
-    return restarted
-
     if restarted > 0:
         relog("💓", "本轮重启 %d 个失联 agent", restarted)
     else:
         relog("✅", "心跳检查: 所有 agent 状态正常")
 
-    if restarted > 0:
-        recovery_log = SWARM_DIR / "logs" / "heartbeat_recovery.log"
-        recovery_log.parent.mkdir(parents=True, exist_ok=True)
-        with recovery_log.open("a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "restarted": restarted,
-                "reason": "heartbeat_timeout",
-            }, ensure_ascii=False) + "\n")
-
     return restarted
-
-
 
 
 def check_git_push_safety(repo_dir: Path) -> tuple[bool, str]:
@@ -452,8 +420,7 @@ def _parse_cli_args() -> str:
     arg_parser.add_argument("--json-logs", action="store_true", default=False, help="启用 JSON 格式日志输出")
     cli_args, _ = arg_parser.parse_known_args()
     if cli_args.json_logs:
-        global _JSON_MODE
-        _JSON_MODE = True
+        _cfg._JSON_MODE = True
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 

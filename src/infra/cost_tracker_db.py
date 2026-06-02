@@ -1,18 +1,3 @@
-"""cost_tracker_db.py — SQLite 持久化成本跟踪
-
-职责：
-  1. 创建 cost_tracker.db SQLite 数据库
-  2. 存储每条 API 调用的成本记录（provider / model / cost / task_id）
-  3. 支持按日期查询历史成本趋势
-  4. 异常降级到内存模式（不丢失本轮数据）
-
-使用方式：
-  from cost_tracker_db import CostTrackerDB
-  db = CostTrackerDB()
-  db.record_cost("deepseek", "deepseek-v4-flash", 0.15, "task_001")
-  hist = db.get_trend(days=7)
-"""
-
 import sqlite3
 from src.infra.logging_config import PrintToLogger
 print = PrintToLogger(__name__).info
@@ -20,6 +5,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+import logging
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 DB_PATH = SWARM_DIR / "data" / "cost_tracker.db"
 LOG_FILE = SWARM_DIR / "logs" / "cost_tracker.log"
@@ -63,10 +49,15 @@ class CostTrackerDB:
             self._in_memory = False
         except Exception as e:
             self._log_warning(f"SQLite 初始化失败，降级到内存: {e}")
-            self._conn = sqlite3.connect(":memory:")
-            self._conn.executescript(CREATE_SQL)
-            self._conn.commit()
-            self._in_memory = True
+            try:
+                self._conn = sqlite3.connect(":memory:")
+                self._conn.executescript(CREATE_SQL)
+                self._conn.commit()
+                self._in_memory = True
+            except Exception as inner_e:
+                self._log_warning(f"内存数据库初始化也失败: {inner_e}")
+                self._conn = None
+                self._in_memory = False
 
     def record_cost(
         self,
@@ -175,8 +166,7 @@ class CostTrackerDB:
             try:
                 self._conn.close()
             except Exception:
-                pass
-            self._conn = None
+                logging.exception('关闭数据库连接时发生异常')
 
     @staticmethod
     def _log_warning(msg: str) -> None:
@@ -185,55 +175,4 @@ class CostTrackerDB:
             with LOG_FILE.open("a", encoding="utf-8") as f:
                 f.write(f"[{datetime.now().strftime('%H:%M:%S')}] WARNING: {msg}\n")
         except Exception:
-            pass  # 静默失败，避免递归
-
-
-# ─── 快捷函数（供 self_evolve_round.py 直接调用） ─────────────────────
-
-_db_instance: Optional[CostTrackerDB] = None
-_db_lock = threading.Lock()
-
-
-def get_db() -> CostTrackerDB:
-    """获取全局 CostTrackerDB 单例。"""
-    global _db_instance
-    if _db_instance is None:
-        with _db_lock:
-            if _db_instance is None:
-                _db_instance = CostTrackerDB()
-    return _db_instance
-
-
-def record_cost(provider: str, model: str, cost: float, task_id: Optional[str] = None) -> bool:
-    """快捷记录成本。"""
-    return get_db().record_cost(provider, model, cost, task_id)
-
-
-def get_today_spent() -> float:
-    """快捷获取当日总花费。"""
-    return get_db().get_total_spent_today()
-
-
-def get_cost_trend(days: int = 7) -> list[dict]:
-    """快捷获取成本趋势。"""
-    return get_db().get_trend(days)
-
-
-def get_cost_summary(date_str: Optional[str] = None) -> dict:
-    """快捷获取日汇总。"""
-    return get_db().get_daily_summary(date_str)
-
-
-# ─── main（测试入口） ──────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    db = CostTrackerDB()
-    print(f"数据库路径: {db._path}")
-    print(f"降级到内存: {db.is_in_memory}")
-
-    db.record_cost("deepseek", "deepseek-v4-flash", 0.15, "test_001")
-    db.record_cost("ollama", "qwen2.5:7b", 0.0, "test_001")
-    print(f"今日花费: ${db.get_total_spent_today():.4f}")
-    print(f"趋势(3天): {db.get_trend(3)}")
-    print(f"任务成本: {db.get_task_costs('test_001')}")
-    db.close()
+                        logging.exception('异常捕获: ')

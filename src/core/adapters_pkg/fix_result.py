@@ -35,8 +35,7 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
-
-
+@dataclass
 class FixResult:
     """标准化的修复结果。
 

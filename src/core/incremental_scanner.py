@@ -97,7 +97,7 @@ class IncrementalScanner:
         try:
             subprocess.run(
                 ["git", "rev-parse", "--git-dir"],
-                capture_output=True, cwd=str(self._root), timeout=5,
+                capture_output=True, cwd=str(self._root.resolve()), timeout=5,
             )
 
             result = subprocess.run(
@@ -173,7 +173,7 @@ class IncrementalScanner:
         _save_state(self._root, state)
         logger.info("Scan state saved: %d files tracked", len(mtimes))
 
-    def scan_changed(self, scanner_registry, extensions: Optional[set[str]] = None):
+    def scan_changed(self, scanner_registry, extensions: Optional[set[str]] = None) -> Any:
         """只扫描变更文件，返回 Issue 列表。
 
         Args:

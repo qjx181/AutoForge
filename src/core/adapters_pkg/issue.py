@@ -35,8 +35,7 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
-
-
+@dataclass
 class Issue:
     """标准化的问题描述。
 

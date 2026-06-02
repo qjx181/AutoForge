@@ -22,9 +22,9 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-from .adapters import (
+from .adapters_pkg import (
     Issue, FixResult, ScannerRegistry, FixerRegistry,
     IssueProcessor, IssueIR,
     build_default_scanner_registry, build_default_fixer_registry,
@@ -34,6 +34,7 @@ from .success_verifier import VerifierChain, build_default_verifier_chain, Verif
 from .experience_store import (
     record_experience, get_calibrated_confidence,
     get_relevant_experiences, get_failure_warnings,
+    propagate_confidence_to_fixers,
 )
 
 logger = logging.getLogger(__name__)
@@ -110,21 +111,21 @@ class PipelineRunState:
         self.phase_timings: dict[str, float] = {}  # phase_name → duration_seconds
         self._cancel_requested = False
 
-    def start(self):
+    def start(self) -> Any:
         """状态转移：queued → running"""
         if self.state != "queued":
             raise ValueError(f"Cannot start from state {self.state}")
         self.state = "running"
         self.started_at = datetime.now()
 
-    def succeed(self):
+    def succeed(self) -> Any:
         """状态转移：running → succeeded"""
         if self.state != "running":
             raise ValueError(f"Cannot succeed from state {self.state}")
         self.state = "succeeded"
         self.finished_at = datetime.now()
 
-    def fail(self, error: str):
+    def fail(self, error: str) -> Any:
         """状态转移：running → failed"""
         if self.state != "running":
             raise ValueError(f"Cannot fail from state {self.state}")
@@ -132,7 +133,7 @@ class PipelineRunState:
         self.finished_at = datetime.now()
         self.error_message = error
 
-    def cancel(self):
+    def cancel(self) -> Any:
         """请求取消（实际取消在下一次检查点）"""
         self._cancel_requested = True
 
@@ -140,14 +141,14 @@ class PipelineRunState:
     def is_cancelled(self) -> bool:
         return self._cancel_requested
 
-    def check_cancel(self):
+    def check_cancel(self) -> Any:
         """检查点：如果请求了取消，转移到 cancelled 状态并抛异常"""
         if self._cancel_requested:
             self.state = "cancelled"
             self.finished_at = datetime.now()
             raise PipelineCancelled(f"Pipeline {self.run_id} cancelled by user")
 
-    def record_phase(self, phase_name: str, duration_seconds: float):
+    def record_phase(self, phase_name: str, duration_seconds: float) -> Any:
         """记录阶段耗时"""
         self.phase_timings[phase_name] = duration_seconds
 
@@ -195,7 +196,7 @@ def _run_scan_phase(
     return all_issues
 
 
-def _run_single_fix(
+def _run_single_fix_with_fallback(
     ir: IssueIR,
     fixers: FixerRegistry,
     project_root: Path,
@@ -203,18 +204,30 @@ def _run_single_fix(
     result: PipelineResult,
     run_state: Optional[PipelineRunState] = None,
 ):
-    """执行单个 Issue 的修复流程（供串行和并行模式共用）。"""
+    """带 fallback chain 的单 Issue 修复。
+
+    策略选择器选第一个 fixer，失败后按历史表现依次尝试下一个。
+    LLM Fixer 作为最后一道防线。
+
+    流程：
+      1. 策略选择器按历史成功率排序 fixer
+      2. 注入经验上下文（供 LLM Fixer 使用）
+      3. 依次尝试每个 fixer
+      4. 每次修复后验证（语法检查 + 可选重扫）
+      5. 验证通过则记录经验并返回
+      6. 验证失败则回滚并尝试下一个 fixer
+    """
+    from src.core.strategy_selector import get_fallback_chain
+
     issue = ir.issue
-    fixer = fixers.get_fixer(issue.type)
-    if not fixer:
+
+    # 获取 fallback chain（按历史表现排序）
+    fallback_chain = get_fallback_chain(issue.type, fixers)
+    if not fallback_chain:
         result.details.append({"issue": issue.to_dict(), "decision": "no_fixer"})
         return
 
-    target_file = project_root / issue.file
-    original_content = None
-    if target_file.exists():
-        original_content = target_file.read_text(encoding="utf-8")
-
+    # 注入经验上下文（供 LLM Fixer 的 prompt 使用）
     past_experiences = get_relevant_experiences(issue.type, issue.file)
     failure_warnings = get_failure_warnings(issue.type)
     if past_experiences or failure_warnings:
@@ -224,96 +237,138 @@ def _run_single_fix(
         ]
         issue.context["failure_warnings"] = failure_warnings[:3]
 
-    try:
-        fix_result = fixer.fix(issue, project_root)
-    except Exception as e:
-        logger.error("Fixer %s threw exception for %s: %s", fixer.name, issue.type, e)
-        result.errors += 1
-        record_experience(
-            issue_type=issue.type, file=issue.file, line=issue.line,
-            fixer=fixer.name, action="", confidence=0, success=False,
-            code_snippet="", project=str(project_root), error=str(e),
-        )
-        return
+    target_file = project_root / issue.file
+    original_content = None
+    if target_file.exists():
+        original_content = target_file.read_text(encoding="utf-8")
 
-    verify_result: Optional[VerifyChainResult] = None
-    if verifier and fix_result.success:
-        verify_result = verifier.verify(
-            issue_type=issue.type,
-            file_path=target_file,
-            fix_action=fix_result.action,
-            project_root=project_root,
-        )
-        fix_result.confidence = max(0.0, min(1.0,
-            fix_result.confidence + verify_result.total_delta
-        ))
-        logger.info("Verification %s: %s", issue.type, verify_result.summary())
+    # 提取修复前代码片段（供经验库记录用）
+    _cb_lines = original_content.split("\n") if original_content else []
+    _cb_start = max(0, issue.line - 4)
+    _cb_end = min(len(_cb_lines), issue.line + 3)
+    code_before_snippet = "\n".join(_cb_lines[_cb_start:_cb_end]) if _cb_lines else ""
 
-        if verify_result.should_rollback and original_content is not None:
-            target_file.write_text(original_content, encoding="utf-8")
-            logger.warning("Rolled back fix for %s:%s due to verification failure", issue.file, issue.line)
-            fix_result.success = False
-            fix_result.error = f"验证失败已回滚: {'; '.join(r.detail for r in verify_result.results if not r.passed)}"
+    last_fix_result = None
+    for idx, fixer in enumerate(fallback_chain):
+        if idx > 0:
+            logger.info("[Fallback] 尝试第 %d 个修复器: %s", idx + 1, fixer.name)
+
+        try:
+            fix_result = fixer.fix(issue, project_root)
+        except Exception as e:
+            logger.error("Fixer %s threw exception for %s: %s", fixer.name, issue.type, e)
             result.errors += 1
             record_experience(
                 issue_type=issue.type, file=issue.file, line=issue.line,
-                fixer=fixer.name, action=fix_result.action,
-                confidence=0, success=False,
-                code_snippet="", project=str(project_root),
-                error=fix_result.error,
+                fixer=fixer.name, action="", confidence=0, success=False,
+                code_snippet="", project=str(project_root), error=str(e),
             )
-            result.details.append({
-                "issue": issue.to_dict(), "fix_result": fix_result.to_dict(),
-                "decision": "rolled_back", "verify": verify_result.summary(),
-            })
-            return
+            continue  # fallback 到下一个 fixer
 
-    original_conf = fix_result.confidence
-    fix_result.confidence = get_calibrated_confidence(
-        issue.type, fixer.name, fix_result.confidence
-    )
-    if fix_result.confidence != original_conf:
-        logger.info(
-            "Confidence calibrated: %.2f → %.2f for %s/%s",
-            original_conf, fix_result.confidence, issue.type, fixer.name,
+        if not fix_result.success:
+            logger.info("[Fallback] %s 修复失败: %s",
+                        fixer.name, (fix_result.error or "未知原因")[:100])
+            last_fix_result = fix_result
+            continue  # fallback 到下一个 fixer
+
+        # 修复成功，进入验证流程
+        verify_result: Optional[VerifyChainResult] = None
+        if verifier:
+            verify_result = verifier.verify(
+                issue_type=issue.type,
+                file_path=target_file,
+                fix_action=fix_result.action,
+                project_root=project_root,
+            )
+            fix_result.confidence = max(0.0, min(1.0,
+                fix_result.confidence + verify_result.total_delta
+            ))
+            logger.info("Verification %s: %s", issue.type, verify_result.summary())
+
+            if verify_result.should_rollback and original_content is not None:
+                target_file.write_text(original_content, encoding="utf-8")
+                logger.warning("Rolled back fix for %s:%s due to verification failure", issue.file, issue.line)
+                fix_result.success = False
+                fix_result.error = f"验证失败已回滚: {'; '.join(r.detail for r in verify_result.results if not r.passed)}"
+                last_fix_result = fix_result
+                continue  # fallback 到下一个 fixer
+
+        # 验证通过，走置信度校准 + Gate 流程
+        original_conf = fix_result.confidence
+        fix_result.confidence = get_calibrated_confidence(
+            issue.type, fixer.name, fix_result.confidence
+        )
+        if fix_result.confidence != original_conf:
+            logger.info(
+                "Confidence calibrated: %.2f → %.2f for %s/%s",
+                original_conf, fix_result.confidence, issue.type, fixer.name,
+            )
+
+        result.fixes_attempted += 1
+
+        gate_result = process_fix(fix_result, issue, apply_fn=lambda fr: fr.success)
+
+        decision = gate_result["decision"]
+        if decision == "auto_apply":
+            result.auto_applied += 1
+        elif decision == "pending_review":
+            result.pending_review += 1
+        else:
+            result.rejected += 1
+
+        # 修复后读取文件内容作为 code_after
+        code_after_snippet = ""
+        if target_file.exists():
+            _new_lines = target_file.read_text(encoding="utf-8").split("\n")
+            _ca_start = max(0, issue.line - 4)
+            _ca_end = min(len(_new_lines), issue.line + 3)
+            code_after_snippet = "\n".join(_new_lines[_ca_start:_ca_end]) if _new_lines else ""
+
+        record_experience(
+            issue_type=issue.type, file=issue.file, line=issue.line,
+            fixer=fixer.name, action=fix_result.action,
+            confidence=fix_result.confidence, success=fix_result.success,
+            code_snippet=issue.description[:200], project=str(project_root),
+            error=fix_result.error,
+            code_before=code_before_snippet,
+            code_after=code_after_snippet,
         )
 
-    result.fixes_attempted += 1
+        detail = {
+            "issue": issue.to_dict(),
+            "fix_result": fix_result.to_dict(),
+            "decision": decision,
+            "item_id": gate_result.get("item_id"),
+            "confidence_calibrated": fix_result.confidence != original_conf,
+            "ir_complexity": ir.fix_complexity,
+            "ir_tags": ir.tags,
+            "ir_estimated_effort": ir.estimated_effort,
+            "ir_fix_strategy": ir.fix_strategy.approach,
+            "ir_risk": ir.risk_assessment.regression_risk,
+        }
+        if verify_result:
+            detail["verify"] = verify_result.summary()
+            detail["verify_passed"] = verify_result.passed
+        result.details.append(detail)
+        return  # 成功，退出
 
-    gate_result = process_fix(fix_result, issue, apply_fn=lambda fr: fr.success)
+    # 所有 fixer 都失败了
+    if last_fix_result:
+        record_experience(
+            issue_type=issue.type, file=issue.file, line=issue.line,
+            fixer=last_fix_result.fixer or "unknown",
+            action=last_fix_result.action or "", confidence=last_fix_result.confidence or 0,
+            success=False, code_snippet="", project=str(project_root),
+            error=last_fix_result.error or "所有修复器均失败",
+        )
+        result.details.append({
+            "issue": issue.to_dict(),
+            "fix_result": last_fix_result.to_dict() if last_fix_result else {},
+            "decision": "all_fixers_failed",
+            "fallback_count": len(fallback_chain),
+        })
 
-    decision = gate_result["decision"]
-    if decision == "auto_apply":
-        result.auto_applied += 1
-    elif decision == "pending_review":
-        result.pending_review += 1
-    else:
-        result.rejected += 1
 
-    record_experience(
-        issue_type=issue.type, file=issue.file, line=issue.line,
-        fixer=fixer.name, action=fix_result.action,
-        confidence=fix_result.confidence, success=fix_result.success,
-        code_snippet=issue.description[:200], project=str(project_root),
-        error=fix_result.error,
-    )
-
-    detail = {
-        "issue": issue.to_dict(),
-        "fix_result": fix_result.to_dict(),
-        "decision": decision,
-        "item_id": gate_result.get("item_id"),
-        "confidence_calibrated": fix_result.confidence != original_conf,
-        "ir_complexity": ir.fix_complexity,
-        "ir_tags": ir.tags,
-        "ir_estimated_effort": ir.estimated_effort,
-        "ir_fix_strategy": ir.fix_strategy.approach,
-        "ir_risk": ir.risk_assessment.regression_risk,
-    }
-    if verify_result:
-        detail["verify"] = verify_result.summary()
-        detail["verify_passed"] = verify_result.passed
-    result.details.append(detail)
 
 
 def _run_parallel_fixes(
@@ -342,13 +397,13 @@ def _run_parallel_fixes(
     for file_path in by_file:
         file_locks[file_path] = threading.Lock()
 
-    def fix_with_lock(ir: IssueIR):
+    def fix_with_lock(ir: IssueIR) -> None:
         """带文件锁的修复执行"""
         lock = file_locks[ir.issue.file]
         with lock:
             if run_state:
                 run_state.check_cancel()
-            _run_single_fix(ir, fixers, project_root, verifier, result, run_state)
+            _run_single_fix_with_fallback(ir, fixers, project_root, verifier, result, run_state)
 
     with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
         futures = {}
@@ -394,19 +449,35 @@ def _run_fix_phase(
     SWE-agent 模式：修复后自动验证（语法 + 重扫），
     验证失败则回滚，不信任修复器自评。
 
+    排序策略：有专有 fixer 的 issue 优先处理（成功率更高），
+    通配符 fixer 的 issue 排后面。
+
     返回部分填充的 PipelineResult（不含扫描阶段的统计）。
     """
     result = PipelineResult()
 
+    # 按是否有专有 fixer 排序：有专有 fixer 的排前面
+    def _has_dedicated_fixer(ir: IssueIR) -> bool:
+        """检查 issue 类型是否有非通配符 fixer。"""
+        from src.core.strategy_selector import get_fallback_chain
+        chain = get_fallback_chain(ir.issue.type, fixers)
+        for f in chain:
+            if "*" not in f.supported_types:
+                return True
+        return False
+
+    sorted_irs = sorted(ir_list, key=lambda ir: (0 if _has_dedicated_fixer(ir) else 1))
+
     parallel_irs = []
     sequential_irs = []
-    for ir in ir_list[:max_fixes]:
+    for ir in sorted_irs[:max_fixes]:
         if ir.fix_strategy.can_parallelize and ir.risk_assessment.regression_risk != "high":
             parallel_irs.append(ir)
         else:
             sequential_irs.append(ir)
 
-    logger.info("Fix phase: %d parallel, %d sequential", len(parallel_irs), len(sequential_irs))
+    logger.info("Fix phase: %d parallel, %d sequential (from %d sorted, max_fixes=%d)",
+                len(parallel_irs), len(sequential_irs), len(sorted_irs[:max_fixes]), max_fixes)
 
     if parallel_irs:
         _run_parallel_fixes(parallel_irs, fixers, project_root, verifier, result, run_state, max_concurrency=4)
@@ -414,7 +485,7 @@ def _run_fix_phase(
     for ir in sequential_irs:
         if run_state:
             run_state.check_cancel()
-        _run_single_fix(ir, fixers, project_root, verifier, result, run_state)
+        _run_single_fix_with_fallback(ir, fixers, project_root, verifier, result, run_state)
 
     return result
 
@@ -424,7 +495,7 @@ def run_pipeline(
     scanner_registry: Optional[ScannerRegistry] = None,
     fixer_registry: Optional[FixerRegistry] = None,
     dimensions: Optional[list[str]] = None,
-    max_fixes: int = 50,
+    max_fixes: int = 500,
     dry_run: bool = False,
     incremental: bool = False,
     run_state: Optional[PipelineRunState] = None,
@@ -507,6 +578,16 @@ def run_pipeline(
         result.details = fix_result.details
         run_state.record_phase("fix", (datetime.now() - fix_start).total_seconds())
 
+        # 借鉴 HiveWard：配置变更自动传播
+        # 管道完成后，将本次校准的置信度传播到 propagated_confidences
+        # 供下次管道启动时批量加载
+        try:
+            propagate_result = propagate_confidence_to_fixers()
+            if propagate_result["propagated_count"] > 0:
+                logger.info("[经验传播] 已传播 %d 条校准置信度", propagate_result["propagated_count"])
+        except Exception as e:
+            logger.warning("[经验传播] 传播失败（不影响管道结果）: %s", e)
+
         result.finished_at = datetime.now().isoformat()
         run_state.succeed()
         logger.info("Pipeline: %s", result.summary())
@@ -568,6 +649,21 @@ def run_fix_for_issue(issue_dict: dict, project_root: Path) -> dict:
         issue.type, fixer.name, fix_result.confidence
     )
 
+    # 提取 code_before/code_after 供经验库记录
+    code_before_snippet = ""
+    code_after_snippet = ""
+    target_file = project_root / issue.file
+    if target_file.exists():
+        orig = target_file.read_text(encoding="utf-8").split("\n")
+        _s = max(0, issue.line - 4)
+        _e = min(len(orig), issue.line + 3)
+        code_before_snippet = "\n".join(orig[_s:_e])
+    if target_file.exists() and fix_result.success:
+        new = target_file.read_text(encoding="utf-8").split("\n")
+        _s = max(0, issue.line - 4)
+        _e = min(len(new), issue.line + 3)
+        code_after_snippet = "\n".join(new[_s:_e])
+
     gate_result = process_fix(fix_result, issue)
 
     record_experience(
@@ -575,6 +671,8 @@ def run_fix_for_issue(issue_dict: dict, project_root: Path) -> dict:
         fixer=fixer.name, action=fix_result.action,
         confidence=fix_result.confidence, success=fix_result.success,
         project=str(project_root), error=fix_result.error,
+        code_before=code_before_snippet,
+        code_after=code_after_snippet,
     )
 
     return gate_result

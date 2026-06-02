@@ -1,20 +1,8 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/pipeline — 持续优化引擎主入口（九维全覆盖）
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+核心公式：扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
+run_optimization_pipeline() 调用 optimizer_core 对每个目标目录执行九维扫描，
+汇总结果并写入 state.json。
 """
 
 import json
@@ -27,13 +15,11 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
-try:
-    import fcntl
-    HAS_FCNTL = True
-except ImportError:
-    HAS_FCNTL = False
+from src.core.evolve.config_ext import OPT_DIMENSIONS
+from src.core.evolve.logging import relog
+from src.core.evolve.state import load_state, save_state
 
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
@@ -164,25 +150,3 @@ def run_optimization_pipeline(
     )
 
     return overall
-    from src.analysis.optimizer_core import run_full_pipeline, DIMENSION_NAMES
-
-    try:
-        pipeline_result = run_full_pipeline(str(scan_target), dimensions=dimensions)
-        relog("🔍", "9 维度扫描完成: %s", pipeline_result.get("summary", "").split("\n")[0])
-        return pipeline_result
-    except Exception as e:
-        relog("⚠️", "optimizer_core 执行失败 [%s]: %s", scan_target, e)
-        return {
-            "dimension": "all",
-            "score": 0,
-            "issues": [],
-            "issue_count": 0,
-            "summary": f"优化引擎执行失败: {e}",
-            "error": str(e),
-        }
-
-MIN_FREE_GB = 5
-MAX_LOG_DAYS = 7
-
-
-_JSON_MODE = False

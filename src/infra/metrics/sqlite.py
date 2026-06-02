@@ -1,4 +1,4 @@
-"""swarm_metrics.py — Swarm 自我进化循环的指标收集模块
+"""sqlite.py — Swarm 自我进化循环的指标收集模块
 
 提供 Swarm 自我进化循环的完整指标收集能力，包含五个核心组件：
   - RoundTimer:   记录每轮开始/结束时间、持续时长
@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from src.infra.swarm_utils import read_file_safe, write_file_safe, log_step
 from src.infra.swarm_logger import SwarmLogger
+import logging
 
 _log = SwarmLogger(name="swarm_metrics", level="INFO", json_mode=False)
 
@@ -51,7 +52,7 @@ def record_sqlite_metric(operation: str, sqlite_path: str = "") -> None:
         operation: 操作类型（如 insert, select, vacuum）
         sqlite_path: SQLite 文件路径（可选）
     """
-    print(f"[swarm_metrics] sqlite:{operation} {sqlite_path}")
+    logging.info(f"[swarm_metrics] sqlite:{operation} {sqlite_path}")
 
 if __name__ == "__main__":
     main()

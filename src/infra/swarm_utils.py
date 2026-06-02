@@ -10,6 +10,7 @@ print = PrintToLogger(__name__).info
 import sys
 import datetime
 from typing import Union, Optional
+import logging
 def read_file_safe(path: Union[str, os.PathLike]) -> Optional[str]:
     """安全读取文件内容。
 
@@ -70,4 +71,4 @@ def log_step(step_name: str) -> None:
         step_name: 当前步骤名称（例如 "初始化配置"、"读取数据"）。
     """
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{timestamp}] ▶ {step_name}", file=sys.stderr, flush=True)
+    logging.info(f"[{timestamp}] ▶ {step_name}", file=sys.stderr, flush=True)

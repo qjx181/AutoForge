@@ -1,39 +1,14 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/config_ext — 自进化系统的运行时配置常量
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+从 config.yaml 读取项目配置，同时定义所有模块共享的路径常量和调优参数。
+不含任何业务逻辑，只做"读配置 + 暴露常量"。
 """
 
-import json
-from src.infra.logging_config import PrintToLogger
-print = PrintToLogger(__name__).info
 import os
-import re
-import subprocess
-import sys
-import time
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
-try:
-    import fcntl
-    HAS_FCNTL = True
-except ImportError:
-    HAS_FCNTL = False
+from src.core.evolve.config import _parse_yaml_top_level
 
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
@@ -55,13 +30,13 @@ def _get_config() -> dict:
 try:
     from src.infra.audit_trail import audit_log
 except ImportError:
-    def audit_log(*args, **kwargs):
+    def audit_log(*args, **kwargs) -> Any:
         pass
 
 try:
     from src.infra.safety_interlock import guard_git_push
 except ImportError:
-    def guard_git_push(*args, **kwargs):
+    def guard_git_push(*args, **kwargs) -> Any:
         return True
 
 STATE_FILE = SWARM_DIR / "data" / "state.json"
@@ -82,3 +57,10 @@ OPT_DIMENSIONS = [
 ]
 MAX_OPTIMIZATIONS_PER_ROUND = 10
 OPT_CONFIDENCE_THRESHOLD = 0.75
+
+# 磁盘/日志常量
+MIN_FREE_GB = 5       # 磁盘剩余低于此值触发清理
+MAX_LOG_DAYS = 7       # 日志保留天数
+
+# 日志格式开关（CLI --json-logs 可动态开启）
+_JSON_MODE = False

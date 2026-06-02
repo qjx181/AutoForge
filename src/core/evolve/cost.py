@@ -1,20 +1,9 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/cost — 磁盘空间检查 + 成本熔断 + 日志轮转
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+职责：
+  - check_disk_space: 检查磁盘剩余空间，低于阈值触发日志轮转
+  - check_cost_over_budget: 检查当日 LLM 成本是否超限
+  - rotate_logs: 按天数清理旧日志
 """
 
 import json
@@ -27,13 +16,11 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
-try:
-    import fcntl
-    HAS_FCNTL = True
-except ImportError:
-    HAS_FCNTL = False
+from src.core.evolve.config_ext import MIN_FREE_GB, MAX_LOG_DAYS
+from src.core.evolve.logging import relog
+from src.core.evolve.state import load_state
 
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 

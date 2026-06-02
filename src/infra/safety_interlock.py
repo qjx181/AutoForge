@@ -23,6 +23,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+import logging
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 STATE_FILE = SWARM_DIR / "data" / "state.json"
 AUDIT_FILE = SWARM_DIR / "logs" / "audit.jsonl"
@@ -152,15 +153,15 @@ def confirm_destructive_op(
             f"'{op_def['description']}'，已达上限"
         )
         _log_audit("reject", op_type, path_or_description, msg)
-        print(f"[safety] ⛔ {msg}")
+        logging.info(f"[safety] ⛔ {msg}")
         return False
 
-    print(f"\n⚠️  【安全确认】危险操作: {op_def['description']}")
-    print(f"  级别: {op_def['level']}")
-    print(f"  目标: {path_or_description}")
-    print(f"  本轮已执行: {current}/{op_def['max_per_round']}")
-    print(f"  确认执行请输入: CONFIRM (大写)，其他任意键跳过")
-    print(f"  > ", end="", flush=True)
+    logging.info(f"\n⚠️  【安全确认】危险操作: {op_def['description']}")
+    logging.info(f"  级别: {op_def['level']}")
+    logging.info(f"  目标: {path_or_description}")
+    logging.info(f"  本轮已执行: {current}/{op_def['max_per_round']}")
+    logging.info(f"  确认执行请输入: CONFIRM (大写)，其他任意键跳过")
+    logging.info(f"  > ", end="", flush=True)
 
     try:
         user_input = sys.stdin.readline().strip()
@@ -170,11 +171,11 @@ def confirm_destructive_op(
     if user_input == "CONFIRM":
         _round_op_count[op_type] = current + 1
         _log_audit("confirm", op_type, path_or_description, "用户确认执行")
-        print(f"[safety] ✅ 已确认")
+        logging.info(f"[safety] ✅ 已确认")
         return True
     else:
         _log_audit("skip", op_type, path_or_description, "用户跳过")
-        print(f"[safety] ⏭ 已跳过")
+        logging.info(f"[safety] ⏭ 已跳过")
         return False
 
 
@@ -194,7 +195,7 @@ def guard_delete(path: str, force_skip: bool = False) -> bool:
     if filename in protected:
         msg = f"保护文件 {filename} 禁止删除"
         _log_audit("block", "delete_file", path, msg)
-        print(f"[safety] 🛑 {msg}")
+        logging.info(f"[safety] 🛑 {msg}")
         return False
 
     return confirm_destructive_op("delete_file", path, force_skip)
@@ -227,14 +228,14 @@ def _log_audit(action: str, op_type: str, target: str, reason: str):
 
 
 if __name__ == "__main__":
-    print(f"[safety] 测试模式")
-    print(f"  Round: {_get_round()}")
+    logging.info(f"[safety] 测试模式")
+    logging.info(f"  Round: {_get_round()}")
 
     result = guard_delete("/tmp/test.py", force_skip=True)
-    print(f"  guard_delete(/tmp/test.py): {'允许' if result else '拒绝'}")
+    logging.info(f"  guard_delete(/tmp/test.py): {'允许' if result else '拒绝'}")
 
     result = guard_delete("config.yaml", force_skip=True)
-    print(f"  guard_delete(config.yaml): {'允许' if result else '拒绝'}")
+    logging.info(f"  guard_delete(config.yaml): {'允许' if result else '拒绝'}")
 
     result = guard_git_push(force_skip=True)
-    print(f"  guard_git_push: {'允许' if result else '拒绝'}")
+    logging.info(f"  guard_git_push: {'允许' if result else '拒绝'}")

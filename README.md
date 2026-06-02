@@ -106,28 +106,28 @@ pip install -r requirements.txt
 ### 一行命令扫描任意项目
 
 ```bash
-python p3.py scan /path/to/your/project
+python moreagent.py scan /path/to/your/project
 ```
 
 ### 注册优化目标（自动循环）
 
 ```bash
-python p3.py setup /path/to/your/project
-python p3.py cron on    # 开启每 2 小时自动扫描
+python moreagent.py setup /path/to/your/project
+python moreagent.py cron on    # 开启每 2 小时自动扫描
 ```
 
 ### 查看状态和成本
 
 ```bash
-python p3.py status     # 系统状态
-python p3.py cost       # 成本报告
-python p3.py history    # 历史修复记录
+python moreagent.py status     # 系统状态
+python moreagent.py cost       # 成本报告
+python moreagent.py history    # 历史修复记录
 ```
 
 ### 生成 CI 配置
 
 ```bash
-python p3.py init-ci /path/to/your/project
+python moreagent.py init-ci /path/to/your/project
 ```
 
 ---
@@ -183,7 +183,7 @@ MoreAgent 的核心差异化：**它不只是执行规则，它会学习。**
 
 ```
 more_agent/
-├── p3.py                          # CLI 入口
+├── moreagent.py                   # CLI 入口
 ├── config.yaml                    # 全局配置
 ├── src/
 │   ├── core/                      # 核心管道

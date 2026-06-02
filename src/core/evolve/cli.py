@@ -1,20 +1,7 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/cli — 自进化后勤脚本 CLI 入口
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+解析命令行参数，调用 scheduler.main() 执行完整后勤流程。
+支持 --json-logs 参数启用 JSON 格式日志。
 """
 
 import json
@@ -29,16 +16,24 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
-try:
-    import fcntl
-    HAS_FCNTL = True
-except ImportError:
-    HAS_FCNTL = False
+from src.core.evolve.config import PROJECT1_DIR
+from src.core.evolve.config_ext import OPT_DIMENSIONS, _get_config
+from src.core.evolve.cost import check_disk_space, check_cost_over_budget
+from src.core.evolve.delegation import run_delegation_diagnosis, check_forced_delegation
+from src.core.evolve.git_ops import check_and_heal_conflicts
+from src.core.evolve.logging import relog
+from src.core.evolve.state import load_state, acquire_pid_file, release_pid_file
+from src.core.evolve.scheduler import (
+    _parse_cli_args, _sync_project, _collect_optimization_targets,
+    _run_optimization_engine, _run_deep_scan_and_tasks,
+    _run_failure_analysis, _run_log_scan, _update_state_and_cost,
+    check_and_heal_heartbeats, plan_parallel_tasks,
+)
 
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
 
-def main():
+def main() -> None:
     """主入口 — 完整流程，调用各个子函数。"""
     timestamp = _parse_cli_args()
     relog("=" * 60, "")

@@ -52,11 +52,11 @@ class DAGPipeline:
         self.nodes: dict[str, DAGNode] = {}
         self._results: dict[str, Any] = {}
     
-    def add_node(self, node: DAGNode):
+    def add_node(self, node: DAGNode) -> Any:
         self.nodes[node.name] = node
         return self
     
-    def add_edge(self, fr: str, to: str):
+    def add_edge(self, fr: str, to: str) -> Any:
         """添加依赖边"""
         if to in self.nodes:
             self.nodes[to].depends_on.append(fr)
@@ -67,7 +67,7 @@ class DAGPipeline:
         visited = set()
         order = []
         
-        def dfs(node_name: str, path: set):
+        def dfs(node_name: str, path: set) -> Any:
             if node_name in path:
                 raise ValueError(f"检测到环路: {node_name}")
             if node_name in visited:

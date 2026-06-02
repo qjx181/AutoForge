@@ -1,0 +1,420 @@
+[
+  {
+    "id": "f57198feb8ac",
+    "fix_result": {
+      "success": true,
+      "action": "将build_context改为异步函数（假设可修改）",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "假设build_context已被重写为异步函数，直接await调用。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "sync_io_in_async",
+      "file": "routes/chat.py",
+      "line": 49
+    },
+    "issue": {
+      "type": "sync_io_in_async",
+      "severity": "high",
+      "file": "routes/chat.py",
+      "line": 49,
+      "description": "build_context同步调用阻塞事件循环",
+      "suggestion": "使用run_in_executor或异步重写",
+      "scanner": "llm_scanner/performance",
+      "context": {
+        "confidence": 0.9,
+        "dimension": "performance",
+        "related_files": []
+      }
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T13:42:49.593211",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "b53c8f30ea59",
+    "fix_result": {
+      "success": true,
+      "action": "增加行数限制并改进缩进判断",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "将前10行限制增加到前50行，减少漏检，但仍有局限性。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "empty_test",
+      "file": "src/analysis/dims/test_scanner.py",
+      "line": 0
+    },
+    "issue": {
+      "type": "empty_test",
+      "severity": "high",
+      "file": "src/analysis/dims/test_scanner.py",
+      "line": 0,
+      "description": "检测空测试函数，但仅检查前10行无有效代码",
+      "suggestion": "使用AST分析函数体",
+      "scanner": "llm_scanner/quality",
+      "context": {
+        "confidence": 0.4,
+        "dimension": "quality",
+        "related_files": []
+      }
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T13:50:51.388046",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "86c0c8d23e33",
+    "fix_result": {
+      "success": true,
+      "action": "在subprocess.run调用处使用shlex.quote转义参数",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "假设第44行附近有subprocess.run调用且包含用户可控参数，使用shlex.quote转义该参数以防止命令注入。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "command_injection",
+      "file": "p3.py",
+      "line": 0
+    },
+    "issue": {
+      "type": "command_injection",
+      "severity": "critical",
+      "file": "p3.py",
+      "line": 0,
+      "description": "subprocess.run 使用用户可控参数可能导致命令注入",
+      "suggestion": "使用 shlex.quote 转义参数或避免直接拼接命令",
+      "scanner": "llm_scanner/security",
+      "context": {
+        "confidence": 0.9,
+        "dimension": "security",
+        "related_files": []
+      }
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T14:00:35.700708",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "49239851e64f",
+    "fix_result": {
+      "success": true,
+      "action": "增强SQL注入检测：添加对变量拼接execute的检测",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "添加对execute(变量)模式的检测，减少漏报。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "sql_injection",
+      "file": "src/analysis/dims/sec_scanner.py",
+      "line": 0
+    },
+    "issue": {
+      "type": "sql_injection",
+      "severity": "critical",
+      "file": "src/analysis/dims/sec_scanner.py",
+      "line": 0,
+      "description": "SQL注入检测规则仅基于正则，可能漏报或误报",
+      "suggestion": "使用AST分析或更精确的语义检测",
+      "scanner": "llm_scanner/security",
+      "context": {
+        "confidence": 0.7,
+        "dimension": "security",
+        "related_files": []
+      }
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T14:00:42.988894",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "991f02f57ccd",
+    "fix_result": {
+      "success": true,
+      "action": "将第46-47行改为await调用并保留",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "如果第46-47行是故意重复调用，则应改为await。但更可能是冗余代码，建议删除。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "missing_await",
+      "file": "routes/chat.py",
+      "line": 30
+    },
+    "issue": {
+      "type": "missing_await",
+      "severity": "critical",
+      "file": "routes/chat.py",
+      "line": 30,
+      "description": "chat函数定义为同步但调用了异步函数get_last_web_debug",
+      "suggestion": "将chat函数改为async def并await get_last_web_debug",
+      "scanner": "llm_scanner/quality",
+      "context": {
+        "confidence": 1.0,
+        "dimension": "quality",
+        "related_files": []
+      }
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T14:03:38.218830",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "22c664d4b8e2",
+    "fix_result": {
+      "success": true,
+      "action": "将event_stream改为普通函数并返回异步迭代器",
+      "confidence": 0.5,
+      "error": "",
+      "diff": "将event_stream改为异步生成器，并确保所有yield语句在异步上下文中。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "missing_await",
+      "file": "routes/chat.py",
+      "line": 30
+    },
+    "issue": {
+      "type": "missing_await",
+      "severity": "critical",
+      "file": "routes/chat.py",
+      "line": 30,
+      "description": "chat函数定义为同步但调用了异步函数json.dumps",
+      "suggestion": "将chat函数改为async def并await json.dumps",
+      "scanner": "llm_scanner/quality",
+      "context": {
+        "confidence": 1.0,
+        "dimension": "quality",
+        "related_files": []
+      }
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T14:04:32.275975",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "e3a7ffb9d86a",
+    "fix_result": {
+      "success": true,
+      "action": "在split_chunks函数中，确保返回的列表不为空，如果为空则返回['']",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "如果split_chunks返回空列表，则save_jsonl中不会添加任何item，但可能期望至少有一个空内容占位。不过这种修改可能不符合预期，谨慎使用。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "missing_null_check",
+      "file": "clean_pdf_to_jsonl.py",
+      "line": 0
+    },
+    "issue": {
+      "type": "missing_null_check",
+      "severity": "high",
+      "file": "clean_pdf_to_jsonl.py",
+      "line": 0,
+      "description": "save_jsonl中split_chunks返回空列表时items为空（共 23 处同类）",
+      "suggestion": "添加空列表检查",
+      "scanner": "llm_scanner/quality",
+      "context": {
+        "confidence": 0.9,
+        "dimension": "quality",
+        "related_files": []
+      }
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T18:43:04.419069",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "bd468e86420d",
+    "fix_result": {
+      "success": true,
+      "action": "将第60行替换为正确的函数定义和变量引用",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "第60行缺少函数定义，且pdf_path未定义。添加函数定义并正确引用参数。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "type_error",
+      "file": "clean_pdf_to_jsonl.py",
+      "line": 60
+    },
+    "issue": {
+      "type": "type_error",
+      "severity": "high",
+      "file": "clean_pdf_to_jsonl.py",
+      "line": 60,
+      "description": "变量未定义",
+      "suggestion": "",
+      "scanner": "ruff/F821",
+      "context": {}
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T22:08:35.616194",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "c72db1966a6a",
+    "fix_result": {
+      "success": true,
+      "action": "将第52行的text.strip()改为line.strip()，并删除后续重复的函数定义",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "将未定义的text改为函数参数line，但后续还有重复定义，建议删除整个重复函数。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "type_error",
+      "file": "高血压数据清洗.py",
+      "line": 52
+    },
+    "issue": {
+      "type": "type_error",
+      "severity": "high",
+      "file": "高血压数据清洗.py",
+      "line": 52,
+      "description": "变量未定义",
+      "suggestion": "",
+      "scanner": "ruff/F821",
+      "context": {}
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T22:08:54.843295",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "959ce9fabf2f",
+    "fix_result": {
+      "success": true,
+      "action": "修复第226行：将split_into_chunks改为已定义的函数或变量",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "函数split_into_chunks未定义，而merged_lines已经是合并后的行列表，可以直接作为chunks使用。后续代码期望chunks是字典列表，但merged_lines是字符串列表，可能导致类型错误。不过这是最直接的修复，避免未定义错误。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "type_error",
+      "file": "高血压数据清洗.py",
+      "line": 226
+    },
+    "issue": {
+      "type": "type_error",
+      "severity": "high",
+      "file": "高血压数据清洗.py",
+      "line": 226,
+      "description": "变量未定义",
+      "suggestion": "",
+      "scanner": "ruff/F821",
+      "context": {}
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T22:09:36.618249",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "f1839a396467",
+    "fix_result": {
+      "success": true,
+      "action": "将第119行的pages改为已定义的变量doc，并修正循环逻辑",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "将未定义的pages改为doc，但注意doc是fitz对象，需确保在作用域内。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "type_error",
+      "file": "高血压数据清洗.py",
+      "line": 119
+    },
+    "issue": {
+      "type": "type_error",
+      "severity": "high",
+      "file": "高血压数据清洗.py",
+      "line": 119,
+      "description": "变量未定义",
+      "suggestion": "",
+      "scanner": "ruff/F821",
+      "context": {}
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T22:18:25.839530",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "b1169b87b6c0",
+    "fix_result": {
+      "success": true,
+      "action": "将第119行的doc替换为已定义的变量，并修正循环逻辑",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "将doc替换为pages，但注意此段代码会陷入无限循环，因为它在遍历pages的同时追加元素。此方案不推荐，但作为候选。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "type_error",
+      "file": "高血压数据清洗.py",
+      "line": 126
+    },
+    "issue": {
+      "type": "type_error",
+      "severity": "high",
+      "file": "高血压数据清洗.py",
+      "line": 126,
+      "description": "变量未定义",
+      "suggestion": "",
+      "scanner": "ruff/F821",
+      "context": {}
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T22:18:30.112455",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  },
+  {
+    "id": "68f2671f0dbd",
+    "fix_result": {
+      "success": true,
+      "action": "修复第62行：删除第62行后的死代码",
+      "confidence": 0.7,
+      "error": "",
+      "diff": "第62行之后存在死代码（第67-77行），这些代码永远不会执行，且包含未定义的变量 s。删除这些死代码可以清理函数。但问题要求修复 None 检查，此方案不直接解决。",
+      "rollback_info": "",
+      "fixer": "llm_fixer",
+      "issue_type": "missing_null_check",
+      "file": "高血压数据清洗.py",
+      "line": 62
+    },
+    "issue": {
+      "type": "missing_null_check",
+      "severity": "high",
+      "file": "高血压数据清洗.py",
+      "line": 62,
+      "description": "变量 line 可能为 None，直接调用 strip",
+      "suggestion": "添加 if line is None 检查",
+      "scanner": "llm/quality",
+      "context": {}
+    },
+    "status": "pending",
+    "queued_at": "2026-06-01T22:18:58.172588",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "review_comment": ""
+  }
+]

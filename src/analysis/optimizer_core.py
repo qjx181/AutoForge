@@ -47,8 +47,16 @@ def _lazy_imports():
     if PROJECT_ANALYZER is None:
         from . import project_analyzer as _pa
         PROJECT_ANALYZER = _pa
-        from . import dims as _d
-        DIMS = _d
+        try:
+            from . import dims as _d
+            DIMS = _d
+        except ImportError:
+            print("⚠️ 旧版 dims 扫描器已清理，optimizer_core 降级为仅报告模式")
+            # 创建一个 stub 对象，避免调用处崩溃
+            class _DimsStub:
+                DIMENSION_ORDER = []
+                DIMENSION_NAMES = {}
+            DIMS = _DimsStub()
 
 
 

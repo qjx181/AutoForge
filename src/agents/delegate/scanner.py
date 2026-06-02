@@ -26,6 +26,7 @@ import os
 import re
 from pathlib import Path
 from typing import Optional
+import logging
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 TEMPLATES_DIR = SWARM_DIR / "templates"
 SELF_EVOLVE_LOG = SWARM_DIR / "data" / "self_evolve_log.json"
@@ -106,7 +107,7 @@ def scan_codebase_for_issues(project_dir: str) -> list[str]:
     用法（协调者思维中调用）：
         issues = scan_codebase_for_issues(os.environ.get("PROJECT1_DIR", "/path/to/project"))
         for sev, cat, desc, hint in issues:
-            print(f"[{sev}] {cat}: {desc} ({hint})")
+            logging.info(f"[{sev}] {cat}: {desc} ({hint})")
     """
     issues = []
     root = Path(project_dir)

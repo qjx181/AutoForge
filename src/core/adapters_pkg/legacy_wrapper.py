@@ -520,43 +520,74 @@ class IssueProcessor:
         )
 
 
+class LegacyDimScannerWrapper(ScannerAdapter):
+    """包装 dims/ 下的本地扫描器模块到 ScannerAdapter 接口。
+
+    dims 模块的接口是 scan(blueprint) -> dict，pipeline 需要 scan(project_root) -> list[Issue]。
+    这个适配器做蓝图构建 + dict→Issue 转换。
+    """
+
+    def __init__(self, name: str, dimension: str, scan_fn):
+        self._name = name
+        self._dimension = dimension
+        self._scan_fn = scan_fn
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def dimension(self) -> str:
+        return self._dimension
+
+    def scan(self, project_root: Path) -> list[Issue]:
+        try:
+            from src.analysis.project_analyzer import analyze_project
+            blueprint = analyze_project(str(project_root))
+            result = self._scan_fn(blueprint)
+            issues = []
+            for item in result.get("issues", []):
+                issues.append(Issue(
+                    type=item.get("type", "unknown"),
+                    severity=item.get("severity", "medium"),
+                    file=item.get("file", ""),
+                    line=item.get("line", 0),
+                    description=item.get("description", ""),
+                    suggestion=item.get("suggestion", ""),
+                    scanner=self._name,
+                ))
+            return issues
+        except Exception as e:
+            logger.error("DimScanner %s failed: %s", self._name, e)
+            return []
+
+
 def build_default_scanner_registry() -> ScannerRegistry:
     """构建默认扫描器注册表，包装所有现有扫描器。
 
-    这个函数把 9 个维度扫描器 + deep_enterprise_scanner 注册到统一 registry。
+    注册 8 个本地维度扫描器（AST 静态分析，零 API 成本）+ LLM 扫描器单独运行。
     新增扫描器只需要在这里加一行 register()。
     """
     registry = ScannerRegistry()
 
-    _SCANNER_MAP = [
-        ("security", "security", "dims.sec_scanner"),
-        ("performance", "performance", "dims.perf_scanner"),
-        ("quality", "quality", "dims.quality_scanner"),
-        ("async_sync", "async_sync", "dims.async_scanner"),
-        ("config", "config", "dims.config_scanner"),
-        ("deadcode", "deadcode", "dims.deadcode_scanner"),
-        ("documentation", "documentation", "dims.doc_scanner"),
-        ("architecture", "architecture", "dims.arch_scanner"),
-        ("testing", "testing", "dims.test_scanner"),
+    _DIM_SCANNERS = [
+        ("quality",     "quality",     "src.analysis.dims.quality_scanner"),
+        ("security",    "security",    "src.analysis.dims.sec_scanner"),
+        ("performance", "performance", "src.analysis.dims.perf_scanner"),
+        ("asyncification", "asyncification", "src.analysis.dims.async_scanner"),
+        ("configuration",  "configuration",  "src.analysis.dims.config_scanner"),
+        ("testing",     "testing",     "src.analysis.dims.test_scanner"),
+        ("documentation", "documentation", "src.analysis.dims.doc_scanner"),
+        ("deadcode",    "deadcode",    "src.analysis.dims.deadcode_scanner"),
     ]
 
-    for name, dimension, module_path in _SCANNER_MAP:
+    for name, dim, module_path in _DIM_SCANNERS:
         try:
             import importlib
-            mod = importlib.import_module(f"src.analysis.{module_path}")
-            scan_fn = getattr(mod, "scan", None)
-            if scan_fn:
-                registry.register(LegacyScannerWrapper(
-                    name, dimension, scan_fn, needs_blueprint=True
-                ))
-        except ImportError as e:
-            logger.warning("Scanner %s not available: %s", name, e)
-
-    try:
-        from src.analysis.deep_enterprise_scanner import scan_deep
-        registry.register(LegacyScannerWrapper("enterprise", "enterprise", scan_deep, accepts_root=True))
-    except ImportError as e:
-        logger.warning("Enterprise scanner not available: %s", e)
+            mod = importlib.import_module(module_path)
+            registry.register(LegacyDimScannerWrapper(name, dim, mod.scan))
+        except Exception as e:
+            logger.warning("DimScanner %s not available: %s", name, e)
 
     return registry
 
@@ -564,7 +595,7 @@ def build_default_scanner_registry() -> ScannerRegistry:
 def build_default_fixer_registry() -> FixerRegistry:
     """构建默认修复器注册表，包装所有现有修复器。
 
-    这个函数把 enterprise_fixer 的 6 个可工作修复器注册到统一 registry。
+    这个函数把 enterprise_fixer 的 8 个可工作修复器 + LLM 兜底修复器注册到统一 registry。
     新增修复器只需要在这里加一行 register()。
     """
     registry = FixerRegistry()
@@ -574,6 +605,7 @@ def build_default_fixer_registry() -> FixerRegistry:
         _FIXER_TYPES = [
             "swallowed_exception", "bare_except", "print_used",
             "resource_not_managed", "missing_timeout_config", "missing_return_type",
+            "missing_param_type", "sync_sleep_in_async",
         ]
 
         for issue_type in _FIXER_TYPES:
@@ -583,5 +615,33 @@ def build_default_fixer_registry() -> FixerRegistry:
 
     except ImportError as e:
         logger.warning("Enterprise fixer not available: %s", e)
+
+    # 注册规则修复器（高频 issue 类型，纯规则无需 LLM）
+    try:
+        from src.fixers.unused_import_fixer import UnusedImportFixer
+        registry.register(UnusedImportFixer())
+    except ImportError as e:
+        logger.warning("UnusedImport fixer not available: %s", e)
+
+    try:
+        from src.fixers.dead_code_fixer import DeadCodeFixer
+        registry.register(DeadCodeFixer())
+    except ImportError as e:
+        logger.warning("DeadCode fixer not available: %s", e)
+
+    # 注册经验修复器（从历史成功修复中学习，零 API 调用）
+    try:
+        from src.fixers.experience_fixer import ExperienceFixer
+        registry.register(ExperienceFixer())
+    except ImportError as e:
+        logger.warning("Experience fixer not available: %s", e)
+
+    # 注册 LLM 兜底修复器（规则修复器搞不定时的最后防线）
+    try:
+        from src.fixers.llm_fixer import LLMFixer
+        llm_fixer = LLMFixer()
+        registry.register(llm_fixer)
+    except ImportError as e:
+        logger.warning("LLM fixer not available: %s", e)
 
     return registry

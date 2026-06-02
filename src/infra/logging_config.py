@@ -12,7 +12,7 @@ LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
 _configured = False
 
-def setup_logging(level=logging.INFO, log_file=None):
+def setup_logging(level=logging.INFO, log_file=None) -> None:
     """配置全局日志系统
     
     - 控制台：只有消息本身（干净）
@@ -51,14 +51,14 @@ class PrintToLogger:
     def __init__(self, name=None):
         self._logger = logging.getLogger(name or __name__)
     
-    def info(self, *args, **kwargs):
+    def info(self, *args, **kwargs) -> None:
         self._logger.info(" ".join(str(a) for a in args))
     
-    def debug(self, *args, **kwargs):
+    def debug(self, *args, **kwargs) -> None:
         self._logger.debug(" ".join(str(a) for a in args))
     
-    def warning(self, *args, **kwargs):
+    def warning(self, *args, **kwargs) -> None:
         self._logger.warning(" ".join(str(a) for a in args))
     
-    def error(self, *args, **kwargs):
+    def error(self, *args, **kwargs) -> None:
         self._logger.error(" ".join(str(a) for a in args))

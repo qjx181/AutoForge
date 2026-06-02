@@ -1,0 +1,30 @@
+# ═══════════════════════════════════════════════════════════════════════
+# MoreAgent Docker Compose
+# ═══════════════════════════════════════════════════════════════════════
+# 首次使用:
+#   cp .env.example .env   # 然后编辑填入你的 API key
+#   docker compose build
+#   docker compose run moreagent scan /workspace/你的项目
+# ═══════════════════════════════════════════════════════════════════════
+
+services:
+  moreagent:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: moreagent:latest
+    container_name: moreagent
+    env_file:
+      - .env
+    volumes:
+      # 用户代码目录（扫描/修复目标）
+      - ${WORKSPACE_PATH:-./workspace}:/workspace
+      # 经验索引持久化（跨次运行保留学习成果）
+      - moreagent-data:/app/data
+    working_dir: /app
+    stdin_open: true
+    tty: true
+
+volumes:
+  moreagent-data:
+    name: moreagent-data

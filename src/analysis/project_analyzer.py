@@ -162,11 +162,11 @@ def _scan_tree(root: Path, max_files: int = 5000) -> dict[str, int]:
     counts: dict[str, int] = {}
     found: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if not d.startswith(".")
+        dirnames[:] = sorted([d for d in dirnames if not d.startswith(".")
                        and d not in ("node_modules", "__pycache__", ".venv", "venv",
                                      "target", "dist", "build", ".git", "vendor",
-                                     "__pypackages__")]
-        for filename in filenames:
+                                     "__pypackages__")])
+        for filename in sorted(filenames):
             if filename.startswith("."):
                 continue
             ext = os.path.splitext(filename)[1].lower()

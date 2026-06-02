@@ -1,5 +1,5 @@
 """code_review.py — PR 代码审查 Agent 模块
-
+    SKIP_VALUES = re.compile(os.environ.get('SKIP_VALUES_PATTERN', r"(your_|example_|test_|changeme|placeholder|xxx|sk-[A-Za-z0-9]{5,10}|'[^']{1,5}')"), re.IGNORECASE)
 自动审查代码变更，检测安全、性能、代码质量问题，输出质量报告。
 
 模块结构:

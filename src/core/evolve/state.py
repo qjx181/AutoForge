@@ -1,43 +1,25 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/state — PID 文件锁 + state.json 读写
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+职责：
+  - acquire_pid_file / release_pid_file: 进程级互斥锁，防止多实例并发
+  - load_state / save_state: state.json 的原子读写（tmp+rename）
 """
 
 import json
-from src.infra.logging_config import PrintToLogger
-print = PrintToLogger(__name__).info
 import os
-import re
-import subprocess
-import sys
-import time
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
-from src.core.evolve.config_ext import PID_FILE
-LOCK_FILE = PID_FILE.with_suffix(".lock")
+from typing import Any
 
 try:
     import fcntl
     HAS_FCNTL = True
 except ImportError:
     HAS_FCNTL = False
+from src.core.evolve.config_ext import PID_FILE, STATE_FILE
+from src.core.evolve.logging import relog
+import logging
 
-SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
+LOCK_FILE = PID_FILE.with_suffix(".lock")
 
 
 def acquire_pid_file() -> bool:
@@ -68,13 +50,13 @@ def acquire_pid_file() -> bool:
         return False
 
 
-def release_pid_file():
+def release_pid_file() -> Any:
     """释放 PID 文件锁。"""
     if HAS_FCNTL and PID_FILE.exists():
         try:
             PID_FILE.unlink(missing_ok=True)
         except OSError:
-            pass
+                        logging.exception('异常捕获: ')
 
 
 
@@ -86,7 +68,7 @@ def load_state() -> dict:
     return {}
 
 
-def save_state(state: dict):
+def save_state(state: dict) -> None:
     """保存 state.json（原子写入）。"""
     tmp = STATE_FILE.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(state, ensure_ascii=False, indent=2))

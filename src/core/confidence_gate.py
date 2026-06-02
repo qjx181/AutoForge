@@ -26,7 +26,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from .adapters import FixResult, Issue
+from .adapters_pkg import FixResult, Issue
 
 logger = logging.getLogger(__name__)
 

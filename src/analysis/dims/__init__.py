@@ -1,27 +1,16 @@
-"""src.analysis.dims — 9 维度扫描器包
+"""src.analysis.dims — 8维度AST扫描器
 
-各维度扫描器均实现统一的 scan(blueprint) -> dict 接口。
-
-维度映射：
-  1. quality_scanner    -> 代码质量 + 死代码函数级
-  2. test_scanner       -> 测试覆盖
-  3. perf_scanner       -> 性能热点
-  4. arch_scanner       -> 架构模式
-  5. sec_scanner        -> 安全漏洞
-  6. doc_scanner        -> 文档完整性
-  7. config_scanner     -> 配置规范性
-  8. async_scanner      -> 异步化
-  9. deadcode_scanner   -> 死文件/重复文件
+每个模块导出 scan(blueprint) 函数，返回 dict:
+  {"dimension", "score", "issues", "file_count", "issue_count", "summary"}
 """
 
 from .quality_scanner import scan as scan_quality
-from .test_scanner import scan as scan_testing
-from .perf_scanner import scan as scan_performance
-from .arch_scanner import scan as scan_architecture
 from .sec_scanner import scan as scan_security
-from .doc_scanner import scan as scan_documentation
-from .config_scanner import scan as scan_configuration
+from .perf_scanner import scan as scan_performance
 from .async_scanner import scan as scan_asyncification
+from .config_scanner import scan as scan_configuration
+from .test_scanner import scan as scan_testing
+from .doc_scanner import scan as scan_documentation
 from .deadcode_scanner import scan as scan_deadcode
 
 DIMENSION_ORDER = [
@@ -50,13 +39,12 @@ DIMENSION_NAMES = {
 
 __all__ = [
     "scan_quality",
-    "scan_testing",
-    "scan_performance",
-    "scan_architecture",
     "scan_security",
-    "scan_documentation",
-    "scan_configuration",
+    "scan_performance",
     "scan_asyncification",
+    "scan_configuration",
+    "scan_testing",
+    "scan_documentation",
     "scan_deadcode",
     "DIMENSION_ORDER",
     "DIMENSION_NAMES",

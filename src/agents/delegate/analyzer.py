@@ -26,6 +26,7 @@ import os
 import re
 from pathlib import Path
 from typing import Optional
+import logging
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 TEMPLATES_DIR = SWARM_DIR / "templates"
 SELF_EVOLVE_LOG = SWARM_DIR / "data" / "self_evolve_log.json"
@@ -151,13 +152,13 @@ def diagnose_failures(evolve_log_path: Optional[Path] = None) -> dict:
 
     total_lines_added = sum(r.get("lines_added", 0) or 0 for r in rounds)
     total_lines_removed = sum(r.get("lines_removed", 0) or 0 for r in rounds)
-
+    recent_rounds = rounds[-recent_count:] if recent_count > 0 else []
     return {
-        **stats,
+        "previous_5_success_rate": round(old_success / len(old_rounds), 3) if old_rounds else 0,
         **delegation,
         **failures,
         "trend": trend,
-        "token_heavy_rounds": token_heavy,
+        "improving": (recent_success / len(recent_rounds) > old_success / len(old_rounds)) if recent_rounds and old_rounds else None,
         "total_lines_added": total_lines_added,
         "total_lines_removed": total_lines_removed,
     }
@@ -240,6 +241,8 @@ def get_agent_capability(agent_id: str) -> Optional[dict]:
         return None
     try:
         data = json.loads(CAPABILITY_MAP_FILE.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return None
         return data.get("agents", {}).get(agent_id)
     except (json.JSONDecodeError, OSError):
         return None
@@ -314,7 +317,7 @@ def update_agent_capability(agent_id: str, task_result: dict) -> bool:
         )
         return True
     except (json.JSONDecodeError, OSError) as e:
-        print(f"[⚠️ 能力画像] 更新失败: {e}")
+        logging.info(f"[⚠️ 能力画像] 更新失败: {e}")
         return False
 
 

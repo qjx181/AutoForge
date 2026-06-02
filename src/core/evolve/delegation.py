@@ -1,20 +1,8 @@
-"""self_evolve_round.py — 项目三自进化后勤脚本
+"""evolve/delegation — Agent 委托诊断与强制委托
 
-职责（每 30 分钟由 cronjob 触发）：
-  1. PID 文件锁 + 冲突自愈
-  2. 磁盘空间检查 + 日志轮转
-  3. 成本熔断检查
-  4. 项目一同步（git pull + commit）
-  5. 项目三同步（git pull + commit）
-  6. 🚀 持续优化引擎（九维全覆盖，任意目标项目）：
-       扫一切可扫 → 优一切可优 → 验一切可验 → 记一切可记 → 下次更快
-  7. 分层委托诊断 + 强制委托检查
-  8. ⬆️ 并行任务规划（微委托集成）
-  9. 更新 state.json
-
-注意：
-  实际的任务执行（write_file / delegate_task）由 Hermes Agent cronjob 的 prompt 驱动。
-  本脚本只做"后勤 + 规划"——打扫战场、生成执行计划。
+职责：
+  - run_delegation_diagnosis: 检查子 Agent 健康状态，必要时重新委托
+  - check_forced_delegation: 检查是否有强制委托任务待执行
 """
 
 import json
@@ -27,18 +15,13 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
-
-try:
-    import fcntl
-    HAS_FCNTL = True
-except ImportError:
-    HAS_FCNTL = False
+from src.core.evolve.logging import relog
+from src.core.evolve.state import load_state, save_state
 
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 
 
-def run_delegation_diagnosis():
+def run_delegation_diagnosis() -> None:
     """从 self_evolve_log.json 分析委托成功率，写入 state.json。
 
     诊断指标：
@@ -94,7 +77,7 @@ def run_delegation_diagnosis():
 
 
 
-def check_forced_delegation():
+def check_forced_delegation() -> None:
     """强制委托检查——每轮确认是否有可委托的任务。
 
     从 self_evolve_log.json 最新一轮统计 delegate 使用情况。

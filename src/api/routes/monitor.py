@@ -1,4 +1,5 @@
-"""API routes — monitor"""
+from pathlib import Path
+import subprocess, shlex, re
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 import json, os, datetime
@@ -7,7 +8,7 @@ from src.api.backend.core import _scan_project
 router = APIRouter()
 
 @router.get("/api/metrics")
-async def get_metrics():
+async def get_metrics() -> Any:
     """返回核心指标
 
     Returns:
@@ -50,7 +51,7 @@ async def get_metrics():
 
 
 @router.get("/api/status")
-async def get_status():
+async def get_status() -> Any:
     """返回完整状态报告"""
     state = _read_json(STATE_FILE)
     metrics = await get_metrics()
@@ -62,7 +63,7 @@ async def get_status():
             capture_output=True,
             text=True,
             timeout=5,
-            cwd=str(PROJECT_DIR),
+            cwd=PROJECT_DIR,
         )
         if result.returncode == 0:
             github_status = result.stdout.strip()
@@ -95,7 +96,7 @@ async def get_status():
 
 
 @router.get("/api/logs")
-async def get_logs(lines: int = 50):
+async def get_logs(lines: int = 50) -> Any:
     """查看最近日志
 
     Args:
@@ -153,44 +154,4 @@ def _bug_patch(bug_id: str, updates: dict) -> None:
     _bug_history_save(data)
 
 
-def _scan_project(path: str) -> dict:
-    import subprocess as sub
-    proj = Path(path)
-    findings = []
-    py_files = list(proj.rglob("*.py"))[:50]
-    for pf in py_files:
-        try:
-            r = sub.run(["python", "-m", "py_compile", str(pf)],
-                        capture_output=True, text=True, timeout=5)
-            if r.returncode != 0:
-                findings.append({
-                    "type": "syntax_error", "file": str(pf), "line": 0,
-                    "detail": r.stderr[:200], "severity": "error",
-                })
-        except Exception:
-            import logging
-            logging.warning(f"py_compile 失败: {pf}")
-    for pf in py_files[:30]:
-        try:
-            txt = pf.read_text(encoding="utf-8", errors="ignore")
-            for i, ln in enumerate(txt.splitlines(), 1):
-                if any(k in ln for k in ["TODO", "FIXME", "XXX"]):
-                    findings.append({
-                        "type": "todo_comment", "file": str(pf), "line": i,
-                        "detail": ln.strip()[:100], "severity": "info",
-                    })
-                if re.search(r"except[^:]*:\s*pass", ln):
-                    findings.append({
-                        "type": "silent_exception", "file": str(pf), "line": i,
-                        "detail": ln.strip()[:100], "severity": "warning",
-                    })
-        except Exception:
-            import logging
-            logging.warning(f"读取文件失败: {pf}")
-    return {
-        "project_path": path,
-        "scan_time": datetime.datetime.now().isoformat(),
-        "bug_count": len(findings),
-        "py_files_scanned": len(py_files),
-        "findings": findings[:100],
-    }
+

@@ -1,24 +1,3 @@
-"""audit_trail.py — 操作审计日志模块
-
-职责：
-  记录项目三所有写操作（write_file / patch / delete）到持久化审计追踪。
-  每条记录包含：时间 / 来源 / 操作 / 目标文件 / 内容摘要 / 是否成功。
-
-使用方式：
-  from audit_trail import audit_log
-  audit_log("write_file", path, content_preview, success=True)
-
-日志格式：
-  JSON Lines (logs/audit.jsonl)，每行一个事件对象：
-  {"timestamp":"...", "source":"...", "operation":"...", "target":"...",
-   "content_summary":"...", "success":true, "round":45}
-
-安全约束：
-  - 审计日志本身不可删除（受 safety_interlock 保护）
-  - 敏感内容自动脱敏（见 redact）
-  - 日志文件达到 10MB 自动轮转
-"""
-
 import hashlib
 from src.infra.logging_config import PrintToLogger
 print = PrintToLogger(__name__).info
@@ -28,6 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+import logging
 
 SWARM_DIR = Path(__file__).parent.parent.parent.resolve()
 AUDIT_DIR = SWARM_DIR / "logs"
@@ -84,7 +64,7 @@ def summarize(content: str, max_len: int = 80) -> str:
                 keys = list(parsed.keys())[:5]
                 return f"JSON: keys={keys}"
         except (json.JSONDecodeError, ValueError):
-            pass
+                        logging.exception('异常捕获: ')
 
     first_line = stripped.split("\n")[0].strip()
     if len(first_line) > max_len:
@@ -144,7 +124,7 @@ def audit_log(
     success: bool = True,
     source: str = "unknown",
     extra: Optional[dict] = None,
-):
+) -> None:
     """记录一条审计日志。
 
     Args:
@@ -182,7 +162,7 @@ def audit_log(
             f.write(line + "\n")
 
     except Exception:
-        pass
+        logging.exception("审计日志写入失败")
 
 
 def get_recent_ops(limit: int = 20, operation: Optional[str] = None) -> list[dict]:
@@ -218,34 +198,15 @@ def get_recent_ops(limit: int = 20, operation: Optional[str] = None) -> list[dic
     return records[-limit:]
 
 
-def print_summary(limit: int = 10):
+def print_summary(limit: int = 10) -> None:
     """打印最近的审计事件摘要。"""
     records = get_recent_ops(limit=limit)
     if not records:
-        print("[audit] 暂无审计记录")
+        logging.info("[audit] 暂无审计记录")
         return
 
-    print(f"[audit] 最近 {len(records)} 条操作记录:")
+    logging.info(f"[audit] 最近 {len(records)} 条操作记录:")
     for r in reversed(records):
         status = "✅" if r.get("success") else "❌"
         ts = r.get("timestamp", "?")[11:19]  # 只显示 HH:MM:SS
         op = r.get("operation", "?").ljust(12)
-        target = Path(r.get("target", "")).name.ljust(30)
-        summary = r.get("content_summary", "")[:40]
-        print(f"  {status} {ts} {op} {target} {summary}")
-
-
-if __name__ == "__main__":
-    print(f"[audit] 测试模式")
-    print(f"  Round: {_get_round()}")
-    print(f"  审计文件: {AUDIT_FILE}")
-
-    audit_log("write_file", "config.yaml", "delegation_incentive:\n  enabled: true",
-              source="test")
-    audit_log("patch", "swarm_metrics.py", "import sqlite3",
-              source="test")
-    audit_log("delete", "tmp_agent/old_file.py",
-              source="test", success=True)
-
-    print()
-    print_summary()

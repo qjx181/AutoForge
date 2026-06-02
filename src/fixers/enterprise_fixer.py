@@ -315,6 +315,231 @@ def fix_missing_return_type(filepath: Path, line_num: int) -> dict:
     return {"success": True, "action": f"添加 -> {return_type}"}
 
 
+def fix_missing_param_type(filepath: Path, line_num: int) -> dict:
+    """修复函数参数缺少类型注解的问题。
+
+    自动为缺少类型注解的参数添加 `: Any`。
+    如果文件没有 `from typing import Any` 导入，会自动添加。
+
+    Args:
+        filepath: 文件路径
+        line_num: 函数定义所在行号
+
+    Returns:
+        {"success": bool, "action"|"reason"|"error": str}
+
+    设计决策（面试话术）：
+      "为什么默认用 Any 而不是推断具体类型？
+       因为自动推断类型需要分析函数体内的所有使用场景，
+       容易出错（比如参数既当 str 又当 int 用）。
+       用 Any 是最安全的默认值——不改变运行时行为，
+       只是让类型检查器知道'这里有个参数'。
+       后续可以手动或用更智能的工具替换为具体类型。"
+    """
+    code = _read_file(filepath)
+    if not code:
+        return {"success": False, "error": "无法读取文件"}
+
+    lines = code.split("\n")
+    if line_num < 1 or line_num > len(lines):
+        return {"success": False, "error": f"行号 {line_num} 超出范围"}
+
+    # 找到函数定义行
+    func_line_idx = line_num - 1
+    func_line = lines[func_line_idx]
+
+    # 检查是否是函数定义
+    if not re.match(r'^\s*(async\s+)?def\s+', func_line):
+        return {"success": False, "error": "不是函数定义行"}
+
+    # 使用正则表达式解析函数签名
+    # 匹配模式：def funcname(param1, param2: Type, param3=default, ...)
+    # 提取括号内的参数列表
+    match = re.search(r'def\s+\w+\s*\(([^)]*)\)', func_line)
+    if not match:
+        # 可能是多行函数定义，尝试合并
+        # 但为简化实现，先处理单行情况
+        return {"success": False, "error": "无法解析函数签名（可能需要多行解析）"}
+
+    params_str = match.group(1).strip()
+    if not params_str:
+        return {"success": False, "reason": "函数没有参数"}
+
+    # 解析参数列表
+    # 需要处理嵌套括号、默认值等情况
+    params = []
+    depth = 0
+    current_param = ""
+    for ch in params_str:
+        if ch == '(' or ch == '[':
+            depth += 1
+            current_param += ch
+        elif ch == ')' or ch == ']':
+            depth -= 1
+            current_param += ch
+        elif ch == ',' and depth == 0:
+            params.append(current_param.strip())
+            current_param = ""
+        else:
+            current_param += ch
+    if current_param.strip():
+        params.append(current_param.strip())
+
+    # 找出缺少类型注解的参数
+    missing_params = []
+    for param in params:
+        # 跳过 self/cls
+        if param.strip().startswith('self') or param.strip().startswith('cls'):
+            continue
+        # 检查是否有类型注解（包含冒号）
+        if ':' not in param:
+            # 提取参数名（去掉默认值）
+            param_name = param.split('=')[0].strip()
+            if param_name:
+                missing_params.append(param_name)
+
+    if not missing_params:
+        return {"success": False, "reason": "所有参数已有类型注解"}
+
+    # 使用正则表达式添加类型注解
+    new_func_line = func_line
+    for param_name in missing_params:
+        # 匹配参数名后面没有冒号的情况
+        # 处理 "def foo(a, b):" -> "def foo(a: Any, b: Any):"
+        # 需要确保不匹配已有类型注解的参数
+        pattern = rf'(\b{re.escape(param_name)}\b)(\s*[,):])'
+        replacement = rf'\1: Any\2'
+        new_func_line = re.sub(pattern, replacement, new_func_line, count=1)
+
+    if new_func_line == func_line:
+        return {"success": False, "reason": "无法匹配参数位置"}
+
+    lines[func_line_idx] = new_func_line
+
+    # 确保有 typing.Any 导入
+    has_typing_import = False
+    import_insert_pos = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('from typing import') and 'Any' in stripped:
+            has_typing_import = True
+            break
+        elif stripped.startswith('import ') or stripped.startswith('from '):
+            import_insert_pos = i + 1
+
+    if not has_typing_import:
+        # 检查是否有其他 typing 导入可以扩展
+        typing_import_found = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith('from typing import'):
+                # 在现有导入中添加 Any
+                if 'Any' not in line:
+                    lines[i] = line.rstrip() + ', Any'
+                typing_import_found = True
+                break
+
+        if not typing_import_found:
+            lines.insert(import_insert_pos, 'from typing import Any')
+
+    new_code = "\n".join(lines)
+    if not _check_syntax(new_code):
+        return {"success": False, "error": "修复后语法错误"}
+
+    _write_file(filepath, new_code)
+    return {"success": True, "action": f"添加参数类型注解: {', '.join(missing_params)} -> Any"}
+
+
+def fix_sync_sleep_in_async(filepath: Path, line_num: int) -> dict:
+    """修复异步函数中使用 time.sleep 的问题。
+
+    把 `time.sleep(N)` 改为 `await asyncio.sleep(N)`。
+    如果文件没有 `import asyncio`，会自动添加。
+
+    Args:
+        filepath: 文件路径
+        line_num: time.sleep 所在行号
+
+    Returns:
+        {"success": bool, "action"|"reason"|"error": str}
+
+    设计决策（面试话术）：
+      "为什么不能直接替换？因为 time.sleep 是同步阻塞的，
+       会阻塞整个事件循环。asyncio.sleep 是异步的，
+       会让出控制权给其他协程。
+       但替换的前提是：调用者必须在异步函数中（async def）。
+       如果在同步函数中调用 time.sleep，替换为 asyncio.sleep 会报错，
+       因为同步函数不能 await。所以我会检查调用者是否是异步函数。"
+    """
+    code = _read_file(filepath)
+    if not code:
+        return {"success": False, "error": "无法读取文件"}
+
+    lines = code.split("\n")
+    if line_num < 1 or line_num > len(lines):
+        return {"success": False, "error": f"行号 {line_num} 超出范围"}
+
+    line = lines[line_num - 1]
+    stripped = line.strip()
+
+    # 检查是否是 time.sleep 调用
+    if not re.search(r'time\.sleep\s*\(', stripped):
+        return {"success": False, "reason": "不是 time.sleep 调用"}
+
+    # 检查是否在异步函数中
+    in_async_func = False
+    for i in range(line_num - 2, -1, -1):
+        prev_line = lines[i].strip()
+        if prev_line.startswith('async def'):
+            in_async_func = True
+            break
+        elif prev_line.startswith('def '):
+            in_async_func = False
+            break
+
+    if not in_async_func:
+        return {"success": False, "reason": "不在异步函数中，不能替换为 asyncio.sleep"}
+
+    # 检查是否已经在 await 中
+    if 'await' in stripped and 'asyncio.sleep' in stripped:
+        return {"success": False, "reason": "已经是 await asyncio.sleep"}
+
+    # 替换 time.sleep -> await asyncio.sleep
+    indent = line[:len(line) - len(line.lstrip())]
+    new_stripped = re.sub(
+        r'time\.sleep\s*\(([^)]+)\)',
+        r'await asyncio.sleep(\1)',
+        stripped
+    )
+
+    # 如果原来没有 await，需要添加
+    if 'await' not in new_stripped:
+        # 检查是否已经有 await
+        if stripped.startswith('await '):
+            new_line = indent + new_stripped
+        else:
+            new_line = indent + 'await ' + new_stripped.lstrip()
+    else:
+        new_line = indent + new_stripped
+
+    lines[line_num - 1] = new_line
+
+    # 确保有 asyncio 导入
+    has_asyncio_import = any('import asyncio' in line for line in lines)
+    if not has_asyncio_import:
+        import_insert_pos = 0
+        for i, line in enumerate(lines):
+            if line.strip().startswith('import ') or line.strip().startswith('from '):
+                import_insert_pos = i + 1
+        lines.insert(import_insert_pos, 'import asyncio')
+
+    new_code = "\n".join(lines)
+    if not _check_syntax(new_code):
+        return {"success": False, "error": "修复后语法错误"}
+
+    _write_file(filepath, new_code)
+    return {"success": True, "action": "time.sleep → await asyncio.sleep"}
+
+
 DEEP_FIXERS = {
     "swallowed_exception": fix_swallowed_exception,
     "bare_except": fix_bare_except,
@@ -322,7 +547,7 @@ DEEP_FIXERS = {
     "resource_not_managed": fix_resource_management,
     "missing_timeout_config": fix_missing_timeout,
     "missing_return_type": fix_missing_return_type,
-    "missing_param_type": None,  # 太复杂，跳过
+    "missing_param_type": fix_missing_param_type,
     "high_cyclomatic_complexity": None,  # 太复杂，需人工介入
     "moderate_cyclomatic_complexity": None,
     "test_no_assertions": None,
@@ -330,8 +555,8 @@ DEEP_FIXERS = {
     "command_injection_risk": None,
     "dangerous_eval": None,
     "hardcoded_secret": None,
-    "sync_sleep_in_async": None,
-    "sync_http_in_async": None,
+    "sync_sleep_in_async": fix_sync_sleep_in_async,
+    "sync_http_in_async": None,  # 比较复杂，暂时跳过
     "missing_unified_error_handler": None,
 }
 

@@ -17,3 +17,6 @@ __pycache__/
 # 审计日志（但保留目录结构）
 logs/audit.jsonl
 logs/audit.jsonl.*
+
+# Docker 用户工作区挂载目录
+workspace/
