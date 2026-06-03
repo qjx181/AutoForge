@@ -1,9 +1,0 @@
-Round 52: 持续优化模式 — 3项质量修复
-
-变更:
-1. config.yaml: 修复 optimization_confidence_threshold 尾随注释导致YAML解析异常
-2. tests/conftest.py: 新建共享conftest(自动sys.path/fixture/pytest标记配置)
-3. enterprise_fixer.py: 补充 fix_bare_except 缺少的docstring
-
-成本: $1.00/日 ($5.00限额, 绿色级)
-评分: 60/100 (剩余16 critical issues)

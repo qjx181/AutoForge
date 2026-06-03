@@ -1,1 +1,0 @@
-{"message": "进化完成！评分 100→100，修复 2 个问题", "phase": "done", "status": "completed", "updated_at": "2026-05-20T14:46:08.597154", "score": 100, "total_issues": 8232, "critical_issues": 0, "total_fixable": 70, "max_fixes": 5, "attempted": 5, "succeeded": 2, "failed": 3, "score_before": 100, "score_after": 100, "delta": 0, "fixes_succeeded": 2, "fixes_failed": 3}
