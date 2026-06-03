@@ -1,4 +1,4 @@
-"""项目三 日志配置 — 统一管理所有输出"""
+"""AutoForge 日志配置 — 统一管理所有输出"""
 
 import logging
 import sys

@@ -4,11 +4,11 @@ from pathlib import Path
 import os
 
 CRONJOB_ID = os.environ.get('CRONJOB_ID', '79cb9d06dc5d')
-"""moreagent — 项目三 CLI 工具
+"""moreagent — AutoForge CLI 工具
 
 用法:
   moreagent scan <target-dir>       — 对目标项目执行一次深度扫描（任意项目）
-  moreagent status                  — 查看项目三当前状态（轮次、成本、tier）
+  moreagent status                  — 查看AutoForge当前状态（轮次、成本、tier）
   moreagent cost                    — 查看今日/近7天成本
   moreagent setup <target-dir>      — 将目标目录注册为优化目标
   moreagent targets                 — 列出所有注册的优化目标
@@ -76,7 +76,7 @@ def cmd_status(args) -> Any:
         return 1
 
     logging.info("╔══════════════════════════════════════╗")
-    logging.info("║     项目三：多Agent 状态面板        ║")
+    logging.info("║     AutoForge 状态面板        ║")
     logging.info("╚══════════════════════════════════════╝")
     logging.info(f"  当前轮次:     Round {state.get('current_round', '?')}")
     budget = state.get("daily_budget", {})
@@ -101,7 +101,7 @@ def cmd_cost(args) -> Any:
         today = datetime.now().strftime("%Y-%m-%d")
 
         logging.info("╔══════════════════════════════════════╗")
-        logging.info("║     项目三：成本报告                 ║")
+        logging.info("║     AutoForge：成本报告                 ║")
         logging.info("╚══════════════════════════════════════╝")
         trend = get_cost_trend(days=7)
         logging.info(f"  日预算:       $5.00")
@@ -872,11 +872,11 @@ def cmd_cron(args) -> Any:
     """控制 cron"""
     if args.action == "on":
         subprocess.run(["cronjob", "resume", "79cb9d06dc5d"], capture_output=True)
-        logging.info("✅ 项目三 cronjob 已恢复（每2小时）")
+        logging.info("✅ AutoForge cronjob 已恢复（每2小时）")
         logging.info("   首次运行可能需要等2小时内的调度点")
     elif args.action == "off":
         subprocess.run(["cronjob", "pause", "79cb9d06dc5d"], capture_output=True)
-        logging.info("⏸️  项目三 cronjob 已暂停")
+        logging.info("⏸️  AutoForge cronjob 已暂停")
     else:
         logging.info("  用法: p3 cron on|off")
     return 0
@@ -943,7 +943,7 @@ def cmd_history(args) -> Any:
     scores = [r for r in rounds if r.get("score_before") is not None]
 
     logging.info("╔══════════════════════════════════════╗")
-    logging.info("║     项目三：优化历史总览              ║")
+    logging.info("║     AutoForge：优化历史总览              ║")
     logging.info("╚══════════════════════════════════════╝")
     logging.info(f"  总轮次:       {total}")
     logging.info(f"  成功:         {success} ({success/max(total,1)*100:.0f}%)")
@@ -1005,7 +1005,7 @@ def cmd_init_ci(args) -> Any:
     ci_path = github_dir / "p3-audit.yml"
 
     ci_content = f"""# P3 Code Quality Audit — 自动代码质量门禁
-# 由项目三 (https://github.com/your-org/project3) 驱动
+# 由AutoForge (https://github.com/your-org/project3) 驱动
 # 每次 push 和 PR 自动运行深度扫描
 
 name: P3 Code Quality Audit
@@ -1036,12 +1036,12 @@ jobs:
 
       - name: Run P3 Quality Scan
         run: |
-          # 如果项目三在同一仓库，用相对路径；否则需要单独检出
+          # 如果AutoForge在同一仓库，用相对路径；否则需要单独检出
           P3_DIR="${{{{ github.workspace }}}}/../project3"
           if [ -d "$P3_DIR" ]; then
             python3 "$P3_DIR/moreagent.py" scan "${{ github.workspace }}"
           else
-            echo "项目三未检出，请先配置 P3_DIR 路径"
+            echo "AutoForge未检出，请先配置 P3_DIR 路径"
             echo "或手动运行: python3 /path/to/project3/moreagent.py scan ${{ github.workspace }}"
           fi
 
@@ -1055,13 +1055,13 @@ jobs:
     ci_path.write_text(ci_content, encoding="utf-8")
     logging.info(f"✅ CI 配置已生成: {ci_path}")
     logging.info(f"\n   将此文件 push 到 GitHub 后，每次 PR 会自动触发代码质量扫描。")
-    logging.info(f"   注意: 需要项目三也部署到 CI 环境，或在同一仓库内。")
+    logging.info(f"   注意: 需要AutoForge也部署到 CI 环境，或在同一仓库内。")
     return 0
 
 
 def main() -> Any:
     parser = argparse.ArgumentParser(
-        description="项目三：多Agent — 自进化代码质量引擎 CLI",
+        description="AutoForge — 自进化代码质量引擎 CLI",
         usage="p3 <command> [options]"
     )
     sub = parser.add_subparsers(dest="command")

@@ -1,4 +1,4 @@
-"""src — 项目三：多Agent 源码包
+"""src — AutoForge 源码包
 
 本 __init__.py 在任何 `from src.* import` 语句前自动执行，
 将项目根目录和 src/ 目录加入 sys.path，确保向后兼容。

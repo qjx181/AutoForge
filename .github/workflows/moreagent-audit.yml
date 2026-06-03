@@ -1,8 +1,8 @@
-# MoreAgent Code Quality Audit — 自动代码质量门禁
-# 由项目三 (https://github.com/qjx181/more_agent) 驱动
+# AutoForge Code Quality Audit — 自动代码质量门禁
+# 由项目三 (https://github.com/qjx181/AutoForge) 驱动
 # 每次 push 和 PR 自动运行深度扫描
 
-name: MoreAgent Code Quality Audit
+name: AutoForge Code Quality Audit
 
 on:
   push:

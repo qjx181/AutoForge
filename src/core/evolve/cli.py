@@ -59,7 +59,7 @@ def main() -> None:
             _sync_project(PROJECT1_DIR, "项目一", timestamp)
         else:
             relog("ℹ️", "项目一目录未配置（PROJECT1_DIR=None），跳过同步")
-        _sync_project(SWARM_DIR, "项目三", timestamp)
+        _sync_project(SWARM_DIR, AutoForge", timestamp)
 
         targets, is_dry_run, cost_tier = _collect_optimization_targets(cost_warning)
         cfg = _get_config()

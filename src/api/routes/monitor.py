@@ -84,7 +84,7 @@ async def get_status() -> Any:
         logging.warning(f"Docker 检查失败")
 
     return {
-        "service": "项目三：多Agent",
+        "service": "AutoForge",
         "version": "1.0.0",
         "api_uptime_seconds": metrics["uptime_seconds"],
         "github_last_commit": github_status,

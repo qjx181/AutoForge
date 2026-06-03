@@ -1,4 +1,4 @@
-# 项目三：多Agent — Hermes Agent 配置
+# AutoForge — Hermes Agent 配置
 
 自进化多Agent代码质量引擎。可持续运行，以后工作也能用。
 

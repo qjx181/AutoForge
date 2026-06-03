@@ -1,7 +1,7 @@
 """experience_store.py — 经验积累闭环（含配置变更自动传播）
 
 设计动机（面试话术）：
-  "项目三之前的 evolve_learn.py 只记录修复成功/失败，
+  "AutoForge之前的 evolve_learn.py 只记录修复成功/失败，
    但缺少一个关键环节：把成功的修复经验转化为下次可复用的知识。
    借鉴 HiveWard 的 FixExperience 设计，我实现了完整的经验闭环：
    记录 → 提取模式 → 校准置信度 → 传播到修复器 → 自动建议创建 skill。"

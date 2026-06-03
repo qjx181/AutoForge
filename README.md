@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Self--Evolution-✅-brightgreen" alt="Self Evolution">
 </p>
 
-<h1 align="center">🐝 MoreAgent</h1>
+<h1 align="center">AutoForge</h1>
 <p align="center"><b>自进化代码质量引擎 — AI Agent 自动扫描、修复、学习，越用越聪明</b></p>
 <p align="center">
   一个能持续运行的多 Agent 系统：扫描你的代码 → 自动修复 → 验证结果 → 积累经验 → 下次修得更好<br>
@@ -17,7 +17,7 @@
 
 ## 🎯 为什么需要它？
 
-| 痛点 | MoreAgent 的解法 |
+| 痛点 | AutoForge 的解法 |
 |------|-----------------|
 | Linter 只报问题不修 | **9 维度扫描 + 6 类自动修复**，发现问题直接修 |
 | 修完不知道改对没改对 | **成功验证器**：自动跑语法检查、测试、import 链验证 |
@@ -31,7 +31,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    MoreAgent 自进化引擎                         │
+│                    AutoForge 自进化引擎                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐  │
@@ -98,8 +98,8 @@
 ### 安装
 
 ```bash
-git clone https://github.com/qjx181/more_agent.git
-cd more_agent
+git clone https://github.com/qjx181/AutoForge.git
+cd AutoForge
 pip install -r requirements.txt
 ```
 
@@ -134,7 +134,7 @@ python moreagent.py init-ci /path/to/your/project
 
 ## 🧠 自进化机制
 
-MoreAgent 的核心差异化：**它不只是执行规则，它会学习。**
+AutoForge 的核心差异化：**它不只是执行规则，它会学习。**
 
 ```
                   ┌─────────────────────────────────┐
@@ -182,7 +182,7 @@ MoreAgent 的核心差异化：**它不只是执行规则，它会学习。**
 ## 📁 项目结构
 
 ```
-more_agent/
+AutoForge/
 ├── moreagent.py                   # CLI 入口
 ├── config.yaml                    # 全局配置
 ├── src/
@@ -209,7 +209,7 @@ more_agent/
 
 ## 🔗 同类项目对比
 
-| 特性 | MoreAgent | Ruff | SonarQubit | CodeRabbit |
+| 特性 | AutoForge | Ruff | SonarQubit | CodeRabbit |
 |------|-----------|------|------------|------------|
 | 自动修复 | ✅ 6 类 | ✅ 部分 | ❌ 只报告 | ❌ 只建议 |
 | 自我学习 | ✅ 经验闭环 | ❌ | ❌ | ❌ |
@@ -257,5 +257,5 @@ def try_fix(issue: dict, file_content: str) -> dict:
 
 <p align="center">
   <b>不是静态工具，是会成长的代码管家。</b><br>
-  <sub>Made with 🐝 by <a href="https://github.com/qjx181">qjx181</a></sub>
+  <sub>Made by <a href="https://github.com/qjx181">qjx181</a></sub>
 </p>

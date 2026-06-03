@@ -1,7 +1,7 @@
 """adapters.py — Scanner/Fixer 标准化接口
 
 设计动机（面试话术）：
-  "项目三有 9 个维度扫描器和 6 种修复器，但它们的接口不统一——
+  "AutoForge有 9 个维度扫描器和 6 种修复器，但它们的接口不统一——
    sec_scanner 用 scan(blueprint)，deep_enterprise_scanner 用 scan_deep(project_root)，
    enterprise_fixer 用 try_fix_deep(issue, project_root)。
    为了支持插拔式扩展（新增扫描器/修复器不改 orchestrator），我定义了标准 Adapter 接口。"

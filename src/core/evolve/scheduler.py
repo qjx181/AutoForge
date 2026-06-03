@@ -416,7 +416,7 @@ def run_safe_git_push(repo_dir: Path, message: str, repo_name: str = "unknown") 
 def _parse_cli_args() -> str:
     """解析 CLI 参数。返回时间戳。"""
     import argparse
-    arg_parser = argparse.ArgumentParser(description="项目三自进化后勤脚本")
+    arg_parser = argparse.ArgumentParser(description=AutoForge自进化后勤脚本")
     arg_parser.add_argument("--json-logs", action="store_true", default=False, help="启用 JSON 格式日志输出")
     cli_args, _ = arg_parser.parse_known_args()
     if cli_args.json_logs:
